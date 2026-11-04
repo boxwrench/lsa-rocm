@@ -131,6 +131,23 @@ Dump `ornith-yarn-code-coh-524288` (self-check cosine 0.999998927116394), tree p
 | 4096 (0.78%) | 0.51 | 0.51 | 0.51 | 0.60 | 0/8 | 0/8 | 3/8 |
 | 8192 (1.56%) | 0.57 | 0.57 | 0.57 | 0.61 | 1/8 | 2/8 | 4/8 |
 
+### nanbeige-prose32768: 32768 tokens
+
+Dump `nanbeige-prose-32768` (self-check cosine 0.9999985694885254), tree preset `scaled`, window 512, mean retrieval efficiency over layers. Source: `results/b2_1-summary-nanbeige-prose32768.json`.
+
+| k (share of keys) | flat | tree | block-sparse | recency | layers flat >= 0.70 | flat > recency | flat > block-sparse |
+|---|---|---|---|---|---|---|---|
+| 512 (1.56%) | 0.32 | 0.32 | 0.40 | 0.25 | 0/52 | 48/52 | 0/52 |
+| 2048 (6.25%) | 0.55 | 0.55 | 0.62 | 0.37 | 0/52 | 52/52 | 1/52 |
+| 4096 (12.50%) | 0.66 | 0.66 | 0.72 | 0.42 | 7/52 | 52/52 | 0/52 |
+
+
+**Nanbeige index-dimension check (32K, k=2048, mean efficiency over the 52 layers).** d_idx 64: flat 0.548; d_idx 256: 0.584;
+d_idx 1024 (no projection): 0.587; block-sparse 0.62; recency 0.372. Sources: `results/b2_1-nanbeige-prose32768-k2048*.json`.
+Nanbeige rotates every head dimension, so there is no position-free part: the index is built over all post-RoPE dims, which is
+not the paper's recipe, and the position-dependent rotation probably hurts. Dropping from 1024 to 64 dims costs about 0.04; the rest of
+the gap to block-sparse is granularity (block-sparse scores every block of 4 keys, LSA scores buckets of about 32 keys).
+
 ## Conclusion
 As pre-registered, **Gate 1 fails** on this run: efficiency is below 0.70 on every layer at k=2048, and LSA does not beat the block-sparse baseline. Two readings, both preliminary: (a) the paper's claim is parity with block-sparse at a much cheaper index, and parity is what we see, so the 'beats block-sparse' criterion was mis-specified; (b) the efficiency criterion is a real shortfall at 32K for this model, though the paper's own budget regime is 1M and beyond. Diagnostics: the projected 64-dim shared index space reaches 68 to 80% of the ideal at k=2048 and clustering costs roughly a third more; raising d_idx to 768 changes efficiency by under 0.02.
 
