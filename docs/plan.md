@@ -130,6 +130,16 @@ more prompts (code, technical), Nanbeige, and long context, where the budget sha
 | B4 | Qwen3.8-27B quantized spike and run, then small models and gpt-oss control | after Gate 2 |
 | B5 | `FINDINGS.md`, each claim linked to an experiment | last |
 
+## Status update, 2026-11-04 (overnight run)
+
+Done: B2.1 paper mode, B2.2 block-sparse baseline, B1g chunked dumper, B2.5a KV offload and YaRN, B2.3 Ornith runs on prose, code and technical text at 32K and 128K,
+B2.5 long-context dumps and analysis at 512K (prose, code) and 917K (code; 1,048,576 tokens was not reachable from a single source), B2.4 Nanbeige at 32K (with weights partly offloaded to CPU),
+B3 and B3b stage timing on the R9700 and CPU, including synthetic 1M and 10M keys. Results and caveats: [FINDINGS.md](FINDINGS.md).
+Gate outcomes are recorded there and not rewritten here: Gate 1 fails on prose and code and passes on the technical docs at 32K; Gate 2 is not met as written at 32K and 128K (the gather is a fixed cost) and is met at 10M.
+
+Not done: B2.6 (about 2M tokens on the Strix Halo node, needs a ROCm torch for gfx1151), GPU clustering stage timings, tech 512K and 1M prompts (not enough single-source text),
+a cross-prompt PCA test, a second model at long context, and any end-task accuracy measurement.
+
 ## Open questions
 
 - Does the PCA basis from one prompt generalise to another, or must it be fitted per prompt? The paper fits it per layer.

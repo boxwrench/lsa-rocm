@@ -3,7 +3,7 @@
 An exploratory, public lab notebook: does Latent Sparse Attention (LSA) style key retrieval work on current
 open models, and is it worth running on AMD ROCm hardware?
 
-**Status: planning, with the first read-only checks done. No experiments have been run, and there are no results or claims here.**
+**Status: first results are in (preliminary, see [docs/FINDINGS.md](docs/FINDINGS.md)). They measure attention-retrieval quality and index-stage cost, not end-task accuracy.**
 This is independent exploration, not a reproduction of the original paper and not an official port.
 The idea and reference implementation come from Prefrontal AI's
 [latent-sparse-attention](https://github.com/Prefrontal-AI/latent-sparse-attention) repository. Credit and any
@@ -16,7 +16,7 @@ the full-attention layers of recent models, and whether it is cheap on an AMD GP
 - [docs/metrics.md](docs/metrics.md): exactly how retrieval quality is measured.
 - `experiments/NNN-name/`: one folder per experiment with hypothesis, command, result and conclusion.
   Negative results are kept.
-- `FINDINGS.md`: appears once there is something to report. Each claim will link to an experiment.
+- [docs/FINDINGS.md](docs/FINDINGS.md): current conclusions, each linked to an experiment, with caveats.
 
 ## How the work is done
 
