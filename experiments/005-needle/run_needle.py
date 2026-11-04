@@ -18,7 +18,7 @@ ap.add_argument("--model", default="/ai/models/llm/Ornith-1.5-9B"); ap.add_argum
 ap.add_argument("--text", default=None); ap.add_argument("--depths", default="0.05,0.25,0.5,0.75,0.95")
 ap.add_argument("--facts", type=int, default=2); ap.add_argument("--chunk", type=int, default=2048)
 ap.add_argument("--max-new", type=int, default=16); ap.add_argument("--seed", type=int, default=0)
-ap.add_argument("--k", type=int, default=2048); ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--mode", default="full"); ap.add_argument("--out", required=True)
+ap.add_argument("--k", type=int, default=2048); ap.add_argument("--check-finite", action="store_true"); ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--mode", default="full"); ap.add_argument("--out", required=True)
 a = ap.parse_args()
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
@@ -48,7 +48,9 @@ def build_layer_index(key, Tp):
     Hkv, D = key.shape[1], key.shape[3]
     raw = key[0, :, :Tp, ROT:].float().permute(1, 0, 2).reshape(Tp, -1)
     mean = raw.mean(0, keepdim=True)
-    _, _, V = torch.pca_lowrank(raw - mean, q=64, center=False); basis = V[:, :64].T.contiguous()
+    if not torch.isfinite(raw).all(): raise RuntimeError(f"layer key cache has non-finite values at Tp={Tp}")
+    x = (raw - mean).double(); cov = x.T @ x / x.shape[0]
+    _, evec = torch.linalg.eigh(cov); basis = evec[:, -64:].flip(1).T.float().contiguous()   # top-64 principal directions
     idxk = F.normalize((raw - mean) @ basis.T, dim=-1)
     ncl = (Tp // 512) * 512
     cfg = OracleConfig(pool_size=4, bucket_size=8, bucket_cap=CAP, cluster_block_size=512)
@@ -84,21 +86,31 @@ for d, n, code in jobs:
     needle = f"\n\nNote for the record: the access code for vault {n} is {code}.\n\n"
     question = f"\n\nQuestion: What is the access code for vault {n}?\nAnswer: The access code for vault {n} is"
     ids = tok(pre + needle + suf + question, add_special_tokens=False, return_tensors="pt")["input_ids"].cuda()
-    T = ids.shape[1]; t0 = time.time()
-    with torch.no_grad():
-        past = DynamicCache(config=model.config)
-        for s in range(0, T, a.chunk):
-            out = model(input_ids=ids[:, s:s + a.chunk], position_ids=torch.arange(s, min(s + a.chunk, T), device="cuda")[None],
-                        past_key_values=past, use_cache=True, logits_to_keep=1)
-        pre_s = time.time() - t0; nan_after_prefill = bool(torch.isnan(out.logits).any()); gen = []; t1 = time.time()
-        for i in range(a.max_new):
-            nxt = out.logits[:, -1].argmax(-1, keepdim=True); gen.append(nxt.item())
-            out = model(input_ids=nxt, position_ids=torch.tensor([[T + i]], device="cuda"), past_key_values=past, use_cache=True, logits_to_keep=1)
-        dec_s = time.time() - t1
-    ans = tok.decode(gen); ok = code in ans; degenerate = len(set(gen)) == 1 or nan_after_prefill
-    results.append({"depth": d, "vault": n, "code": code, "tokens": T, "answer": ans, "correct": ok, "nan_after_prefill": nan_after_prefill, "degenerate": degenerate, "prefill_s": pre_s, "decode_s": dec_s})
-    print(f"depth {d:.2f} T={T} {'OK ' if ok else ('DEGENERATE' if degenerate else 'MISS')} prefill {pre_s:.0f}s decode {dec_s:.1f}s -> {ans!r}", flush=True)
+    T = ids.shape[1]; faults = 0
+    for attempt in range(1, 4):   # a GPU numerical fault (non-finite cache or logits) is retried and counted, never scored as a miss
+        t0 = time.time(); sparse_state.clear(); fault = False
+        try:
+            with torch.no_grad():
+                past = DynamicCache(config=model.config)
+                for s in range(0, T, a.chunk):
+                    out = model(input_ids=ids[:, s:s + a.chunk], position_ids=torch.arange(s, min(s + a.chunk, T), device="cuda")[None],
+                                past_key_values=past, use_cache=True, logits_to_keep=1)
+                pre_s = time.time() - t0; nan_after_prefill = not bool(torch.isfinite(out.logits).all()); gen = []; t1 = time.time()
+                if nan_after_prefill: raise RuntimeError("non-finite logits after prefill")
+                for i in range(a.max_new):
+                    nxt = out.logits[:, -1].argmax(-1, keepdim=True); gen.append(nxt.item())
+                    out = model(input_ids=nxt, position_ids=torch.tensor([[T + i]], device="cuda"), past_key_values=past, use_cache=True, logits_to_keep=1)
+                dec_s = time.time() - t1
+            break
+        except RuntimeError as e:
+            if "non-finite" not in str(e): raise
+            faults += 1; print(f"  FAULT attempt {attempt}: {e}", flush=True); del past; torch.cuda.empty_cache()
+    else:
+        pre_s = dec_s = 0.0; gen = [0]; nan_after_prefill = True
+    ans = tok.decode(gen); ok = code in ans; degenerate = nan_after_prefill or len(set(gen)) == 1
+    results.append({"depth": d, "vault": n, "code": code, "tokens": T, "answer": ans, "correct": ok, "faults_retried": faults, "degenerate": degenerate, "prefill_s": pre_s, "decode_s": dec_s})
+    print(f"depth {d:.2f} T={T} {'OK ' if ok else ('DEGENERATE' if degenerate else 'MISS')} faults {faults} prefill {pre_s:.0f}s decode {dec_s:.1f}s -> {ans!r}", flush=True)
     del past; sparse_state.clear(); torch.cuda.empty_cache()
 acc = sum(r["correct"] for r in results) / len(results)
 print(f"accuracy {acc:.2f} ({sum(r['correct'] for r in results)}/{len(results)})")
-json.dump({"mode": a.mode, "length": a.length, "model": a.model, "text": text_path, "accuracy": acc, "results": results, "torch": torch.__version__}, open(a.out, "w"), indent=1)
+json.dump({"mode": a.mode, "length": a.length, "model": a.model, "text": text_path, "accuracy": acc, "k": a.k, "faults_total": sum(r["faults_retried"] for r in results), "results": results, "torch": torch.__version__}, open(a.out, "w"), indent=1)

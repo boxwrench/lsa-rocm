@@ -154,6 +154,10 @@ Later, noted at the user's request: replace the synthetic haystack with a real, 
 
 Needle test (experiment 005): `experiments/005-needle/run_needle.py`, full-attention baseline running at 32K and 128K (prose haystack, inserted vault-code fact, 5 depths x 2 facts). One transient degenerate output (`!!!!`, suspected NaN) was seen once in a smoke run and did not reproduce; the runner now flags degenerate outputs.
 
+### Hypothesis added, 2026-11-04
+
+LSA plus quantized KV plus a CPU-resident cache could raise the context limit well beyond what VRAM holds. Estimates and the test order are in [long-context-memory.md](long-context-memory.md). Not yet tested.
+
 ## Open questions
 
 - Does the PCA basis from one prompt generalise to another, or must it be fitted per prompt? The paper fits it per layer.
