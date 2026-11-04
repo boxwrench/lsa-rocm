@@ -17,7 +17,7 @@ ap.add_argument("--model", default="/ai/models/llm/Ornith-1.5-9B"); ap.add_argum
 ap.add_argument("--depths", default="0.05,0.25,0.5,0.75,0.95"); ap.add_argument("--facts", type=int, default=2)
 ap.add_argument("--chunk", type=int, default=2048); ap.add_argument("--max-new", type=int, default=16)
 ap.add_argument("--seed", type=int, default=0); ap.add_argument("--configs", required=True); ap.add_argument("--out", required=True)
-ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None); ap.add_argument("--distractors", type=int, default=0); ap.add_argument("--rope-yarn", type=float, default=0.0)
+ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None); ap.add_argument("--distractors", type=int, default=0); ap.add_argument("--multi", type=int, default=1); ap.add_argument("--rope-yarn", type=float, default=0.0)
 a = ap.parse_args()
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
@@ -107,7 +107,11 @@ def qdq(x, quant):
 results = []
 for d, n, code in jobs:
     body = base_ids[: a.length - 80]; cut = int(len(body) * d)
-    marks = [(cut, n, code)]
+    marks = [(cut, n, code)]; targets = [(n, code)]
+    mrng = random.Random(a.seed * 77 + n)
+    for j in range(1, a.multi):   # extra target facts, other depths; the question asks for all of them
+        tn = mrng.choice([x for x in range(100, 1000) if x != n]); tc = f"{mrng.randint(1000,9999)}-{''.join(mrng.choice('ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(3))}"
+        marks.append((int(len(body) * min(max(d + (j - 0.5 * (a.multi - 1)) * 0.15, 0.03), 0.97)), tn, tc)); targets.append((tn, tc))
     drng = random.Random(a.seed * 1000 + n)
     for j in range(a.distractors):   # similar facts about other vaults, spread over the whole text
         vn = drng.choice([x for x in range(100, 1000) if x != n]); marks.append((int(len(body) * (j + 0.5) / a.distractors), vn, f"{drng.randint(1000,9999)}-{''.join(drng.choice('ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(3))}"))
@@ -116,7 +120,8 @@ for d, n, code in jobs:
         pieces.append(tok.decode(body[prev:c_])); pieces.append(f"\n\nNote for the record: the access code for vault {vn} is {vc}.\n\n"); prev = c_
     pieces.append(tok.decode(body[prev:]))
     text = "".join(pieces) + \
-        f"\n\nQuestion: What is the access code for vault {n}?\nAnswer: The access code for vault {n} is"
+        (f"\n\nQuestion: What is the access code for vault {n}?\nAnswer: The access code for vault {n} is" if a.multi == 1 else
+         f"\n\nQuestion: What are the access codes for vaults {', '.join(str(t[0]) for t in targets)}?\nAnswer: The access codes are")
     ids = tok(text, add_special_tokens=False, return_tensors="pt")["input_ids"].cuda(); T = ids.shape[1]; faults = 0
     for attempt in range(1, 4):
         try:
@@ -148,8 +153,8 @@ for d, n, code in jobs:
             for i in range(a.max_new):
                 nxt = o.logits[:, -1].argmax(-1, keepdim=True); gen.append(nxt.item())
                 o = model(input_ids=nxt, position_ids=torch.tensor([[T + i]], device="cuda"), past_key_values=pc, use_cache=True, logits_to_keep=1)
-        ans = tok.decode(gen); ok = code in ans
-        row["configs"][name] = {"answer": ans, "correct": ok, "decode_s": time.time() - t1}
+        ans = tok.decode(gen); found = sum(c in ans for _, c in targets); ok = found == len(targets)
+        row["configs"][name] = {"answer": ans, "correct": ok, "found": found, "n_targets": len(targets), "decode_s": time.time() - t1}
         print(f"depth {d:.2f} {name:18s} {'OK ' if ok else 'MISS'} -> {ans[:40]!r}", flush=True)
         del pc; sparse_state.clear(); torch.cuda.empty_cache()
     results.append(row); del past; torch.cuda.empty_cache()
