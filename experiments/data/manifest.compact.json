@@ -1,0 +1,264 @@
+{
+ "tokenizer": "/ai/models/llm/Ornith-1.5-9B",
+ "add_special_tokens": false,
+ "seed": 20261103,
+ "note": "Compact manifest. Texts are not committed. Rebuild with experiments/data/build_prompts.py. 'code' and 'technical' prompts are stitched from many short items (see README caveat).",
+ "prompts": [
+  {
+   "id": "prose-4096",
+   "genre": "prose",
+   "length": 4096,
+   "token_count": 4096,
+   "sha256": "3662ed8958010e18ae7f30cef1e1ba3d63d27fe518e13da0765b8e0cdcae2f91",
+   "licences": [
+    "MIT"
+   ],
+   "num_documents": 2,
+   "sources": {
+    "dataset:sgoel9/paul_graham_essays": 2
+   }
+  },
+  {
+   "id": "prose-32768",
+   "genre": "prose",
+   "length": 32768,
+   "token_count": 32768,
+   "sha256": "fbd3a6e3773359a716bb3cdd113ba41834f8b01b2dcb46b4fa35e826a54c9470",
+   "licences": [
+    "MIT"
+   ],
+   "num_documents": 19,
+   "sources": {
+    "dataset:sgoel9/paul_graham_essays": 19
+   }
+  },
+  {
+   "id": "prose-131072",
+   "genre": "prose",
+   "length": 131072,
+   "token_count": 131072,
+   "sha256": "b1db07153606d775e4e3a223bf0b352d775e9a7de9536b977fc3323658d02557",
+   "licences": [
+    "MIT"
+   ],
+   "num_documents": 38,
+   "sources": {
+    "dataset:sgoel9/paul_graham_essays": 38
+   }
+  },
+  {
+   "id": "code-4096",
+   "genre": "code",
+   "length": 4096,
+   "token_count": 4096,
+   "sha256": "94827a8231b8ffe2316e0742c46671bcb5ac5753d048e639704c43e4f437e34e",
+   "licences": [
+    "MIT",
+    "apache-2.0",
+    "mit",
+    "other",
+    "unknown"
+   ],
+   "num_documents": 16,
+   "sources": {
+    "model:ornith-ai/Ornith-1.5-9B": 1,
+    "model:Nanbeige/Nanbeige4.3-33B": 1,
+    "model:nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16": 1,
+    "dataset:openai/openai_humaneval": 9,
+    "model:Baekpica/Ling-3.1-flash-VQ-GGUF": 1,
+    "model:nvidia/NVIDIA-Nemotron-Labs-Dory1.0-4B-BF16": 1,
+    "model:dots-studio/dots3-note-prev": 1,
+    "model:MiniMaxAI/MiniMax-Music3": 1
+   }
+  },
+  {
+   "id": "code-32768",
+   "genre": "code",
+   "length": 32768,
+   "token_count": 32768,
+   "sha256": "db87efd48eb8a30b151d99ed1705c6d9bdc01cf0589cd31d66d50a31bf1302a8",
+   "licences": [
+    "- mit",
+    "Apache-2.0",
+    "MIT",
+    "apache-2.0",
+    "mit",
+    "other",
+    "unknown"
+   ],
+   "num_documents": 98,
+   "sources": {
+    "dataset:openai/openai_humaneval": 40,
+    "model:Qwen/Qwen3.8-27B": 3,
+    "model:ornith-ai/Ornith-1.5-35B-A3B": 4,
+    "model:bartowski/Ling-3.0-flash-GGUF": 1,
+    "dataset:google/IFEval": 1,
+    "model:nvidia/NVIDIA-Nemotron-Labs-Dory1.0-4B-BF16": 3,
+    "model:hoidhxd/NVIDIA-NemotronLabs-VoiceChat-11B-GGUF": 3,
+    "model:jcbtc/Ling-3.0-Flash-CIRU-IU4": 1,
+    "model:AtomicChat/Ling-3.0-flash-NVFP4": 1,
+    "model:bartowski/Ling-3.1-flash-GGUF": 2,
+    "model:peasantsmith/GLM-5.3-Flash-Maya-GGUF": 1,
+    "model:dots-studio/dots3-note-prev": 1,
+    "model:MiniMaxAI/MiniMax-H3": 3,
+    "model:Nanbeige/Nanbeige4.3-33B": 1,
+    "model:ornith-ai/Ornith-1.5-9B": 2,
+    "model:MiniMaxAI/MiniMax-Music3": 2,
+    "dataset:openai/gsm8k": 2,
+    "model:zai-org/GLM-5.3-Flash": 1,
+    "model:Lightricks/LTX-2.5": 2,
+    "model:Qwen/Qwen-Image-2.1-PE-T2I": 1,
+    "model:RecursiveSI/flint": 1,
+    "model:boxwrench/Ling-3.1-flash-exl3-wrench-2.10bpw": 2,
+    "model:unsloth/Qwen3.8-27B-GGUF": 1,
+    "model:nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16": 3,
+    "model:jcbtc/Qwen3.8-Flash-CIRU-STRIX-Orca": 1,
+    "model:Comfy-Org/Qwen-Image-2.1": 1,
+    "model:agentionai/Qwen3.8-Flash-Next-Gyro-GGUF": 1,
+    "model:inclusionAI/Ling-3.0-flash-UBTree": 1,
+    "model:nvidia/nemotron-speech-streaming-en-0.6b": 2,
+    "model:robbyant/lingbot-world-base-cam": 1,
+    "model:bloomer010/Ling-3.0-flash-REAP288-73B-A5B-GGUF": 1,
+    "model:LiquidAI/LFM2.5-24B-A2B": 1,
+    "model:Qwen/Qwen3.8-Flash-Next": 1,
+    "model:KRAFTON/Raon-1-mini-preview": 2,
+    "model:nvidia/Qwen3-8B-NVFP4": 1,
+    "model:tencent/Hy-Memory-30B-A3B-GGUF": 1,
+    "model:unsloth/Ling-1T-GGUF": 1,
+    "unknown": 1
+   }
+  },
+  {
+   "id": "code-131072",
+   "genre": "code",
+   "length": 131072,
+   "token_count": 131072,
+   "sha256": "4e8df031621bdc363ec02d3fbe83e59bab7a3521d5d12d5d0821a22adf15d559",
+   "licences": [
+    "- mit",
+    "Apache-2.0",
+    "MIT",
+    "apache-2.0",
+    "cc-by-nc-sa-4.0",
+    "mit",
+    "other",
+    "unknown"
+   ],
+   "num_documents": 441,
+   "sources": {
+    "model:dots-studio/dots3-note-prev": 7,
+    "dataset:openai/openai_humaneval": 165,
+    "model:bartowski/Ling-3.1-flash-GGUF": 8,
+    "model:peasantsmith/GLM-5.3-Flash-Maya-GGUF": 1,
+    "model:nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16": 20,
+    "model:unsloth/Ling-1T-GGUF": 5,
+    "model:AtomicChat/Ling-3.0-flash-GGUF": 2,
+    "model:robbyant/lingbot-world-base-cam": 5,
+    "model:boxwrench/Ling-3.1-flash-exl3-wrench-2.10bpw": 6,
+    "model:LiquidAI/LFM2.5-24B-A2B": 8,
+    "model:Qwen/Qwen3.8-27B": 10,
+    "model:robbyant/lingbot-world-v2-14b-causal-pretrain": 7,
+    "dataset:ilabai/3dcodeverse": 8,
+    "model:Qwen/Qwen3.8-Flash-Next": 8,
+    "model:jcbtc/Ling-3.0-Flash-CIRU-IU4": 4,
+    "model:KRAFTON/Raon-1-mini-preview": 21,
+    "model:boxwrench/Hy-Memory-30B-A3B-q4nx-wrench": 1,
+    "model:hoidhxd/NVIDIA-NemotronLabs-VoiceChat-11B-GGUF": 11,
+    "model:raulvidis/Ling-3.0-flash-ROCmFP4-STRIX-MTP-GGUF": 1,
+    "model:ornith-ai/Ornith-1.5-35B-A3B": 15,
+    "dataset:google/IFEval": 3,
+    "model:zai-org/GLM-5.3-Flash": 1,
+    "model:Lightricks/LTX-2.5": 10,
+    "model:tencent/Hy-Memory-30B-A3B": 1,
+    "model:MiniMaxAI/MiniMax-Music3": 8,
+    "model:unsloth/Qwen3.8-27B-GGUF": 2,
+    "model:nvidia/NVIDIA-Nemotron-Labs-Dory1.0-4B-BF16": 12,
+    "model:RecursiveSI/flint": 2,
+    "model:MiniMaxAI/MiniMax-H3": 5,
+    "model:Ruler97/Godoter-27B-GGUF": 2,
+    "model:TD-Labs/Nemotron-3.5-Super-VL-DCOCO": 2,
+    "unknown": 5,
+    "model:nvidia/nemotron-speech-streaming-en-0.6b": 10,
+    "model:ornith-ai/Ornith-1.5-9B": 11,
+    "model:larryvrh/MiniMax-H3-Turbo-Lora": 2,
+    "model:nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB": 3,
+    "model:inclusionAI/Ling-3.0-flash-int4": 3,
+    "model:JohnDOeNNN/Qwen3.8-35B-A3B-APEX-Abliterated-Blender-v1-GGUF": 1,
+    "model:tencent/Hy-Memory-30B-A3B-GGUF": 3,
+    "model:Qwen/Qwen-Image-2.1-PE-T2I": 4,
+    "model:jcbtc/Qwen3.8-Flash-CIRU-STRIX-Orca": 2,
+    "model:hugypufy/Qwen3.8-27B-DFLASH2-PARO-M2XFP4": 2,
+    "model:Baekpica/Ling-3.1-flash-VQ-GGUF": 1,
+    "model:Hikari07jp/Ling-3.1-flash-NVFP4-Ablitrated-MTP-RTX-PRO-6000-TP4": 1,
+    "model:Nanbeige/Nanbeige4.3-33B": 4,
+    "model:inclusionAI/Ling-3.0-flash-UBTree": 2,
+    "model:agentionai/Qwen3.8-Flash-Next-Gyro-GGUF": 2,
+    "model:RadixArk/Qwen3.8-27B-NVFP4": 1,
+    "model:inclusionAI/Ling-3.0-tiny-UBTree": 1,
+    "model:0xBakeer/TandemLLM-Nemotron-3.5-Bolt-74B-A9B-EXL3-4.0": 1,
+    "model:bartowski/Ling-3.0-flash-GGUF": 4,
+    "model:black-forest-labs/FLUX.2-klein-9B": 2,
+    "model:lapadatbogdan/GLM-5.3-Flash-REAP144-Coder-GGUF": 2,
+    "model:jyohukuchan/Hy-Memory-30B-A3B-exl3-4.08bpw": 2,
+    "model:unsloth/MiniMax-H3-GGUF": 1,
+    "model:bloomer010/Ling-3.0-flash-REAP288-73B-A5B-GGUF": 1,
+    "dataset:openai/gsm8k": 3,
+    "model:Comfy-Org/Qwen-Image-2.1": 1,
+    "model:nvidia/Qwen3-8B-NVFP4": 1,
+    "model:AtomicChat/Ling-3.0-flash-NVFP4": 3,
+    "model:Comfy-Org/MiniMax-H3": 1
+   }
+  },
+  {
+   "id": "technical-4096",
+   "genre": "technical",
+   "length": 4096,
+   "token_count": 4096,
+   "sha256": "b3e2f0ffc9d93cd4f29966529e895a27002acf46efc14603b7611e685dd1d10b",
+   "licences": [
+    "Apache-2.0",
+    "MIT"
+   ],
+   "num_documents": 23,
+   "sources": {
+    "dataset:TIGER-Lab/MMLU-Pro": 16,
+    "dataset:openai/gsm8k": 6,
+    "dataset:google/IFEval": 1
+   }
+  },
+  {
+   "id": "technical-32768",
+   "genre": "technical",
+   "length": 32768,
+   "token_count": 32768,
+   "sha256": "94e364ac4792e1d19f0938e75eca77d35a49789311d6f19ed15f512ab24c737a",
+   "licences": [
+    "Apache-2.0",
+    "MIT"
+   ],
+   "num_documents": 181,
+   "sources": {
+    "dataset:TIGER-Lab/MMLU-Pro": 108,
+    "dataset:openai/gsm8k": 65,
+    "dataset:google/IFEval": 8
+   }
+  },
+  {
+   "id": "technical-131072",
+   "genre": "technical",
+   "length": 131072,
+   "token_count": 131072,
+   "sha256": "7c7dea47f09c97ff3e6445328ff04a51c27c1064db2f916e4cead9fa81e64d75",
+   "licences": [
+    "Apache-2.0",
+    "MIT"
+   ],
+   "num_documents": 692,
+   "sources": {
+    "dataset:TIGER-Lab/MMLU-Pro": 394,
+    "dataset:google/IFEval": 20,
+    "dataset:openai/gsm8k": 278
+   }
+  }
+ ]
+}

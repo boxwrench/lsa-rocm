@@ -8,3 +8,4 @@ agents/reports/*.log
 agents/scratch/
 experiments/data/texts/
 results/dumps/
+experiments/data/manifest.json
