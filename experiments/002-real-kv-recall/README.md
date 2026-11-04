@@ -81,6 +81,16 @@ Dump `ornith-code-coh-32768` (self-check cosine 0.9999988079071045), tree preset
 | 2048 (6.25%) | 0.54 | 0.54 | 0.55 | 0.20 | 0/8 | 8/8 | 2/8 |
 | 4096 (12.50%) | 0.65 | 0.65 | 0.65 | 0.22 | 3/8 | 8/8 | 4/8 |
 
+### ornith-tech32768: 32768 tokens
+
+Dump `ornith-tech-coh-32768` (self-check cosine 0.9999986886978149), tree preset `scaled`, window 512, mean retrieval efficiency over layers. Source: `results/b2_1-summary-ornith-tech32768.json`.
+
+| k (share of keys) | flat | tree | block-sparse | recency | layers flat >= 0.70 | flat > recency | flat > block-sparse |
+|---|---|---|---|---|---|---|---|
+| 512 (1.56%) | 0.69 | 0.69 | 0.70 | 0.47 | 5/8 | 8/8 | 1/8 |
+| 2048 (6.25%) | 0.83 | 0.83 | 0.84 | 0.62 | 7/8 | 8/8 | 4/8 |
+| 4096 (12.50%) | 0.89 | 0.89 | 0.89 | 0.65 | 8/8 | 8/8 | 5/8 |
+
 ## Conclusion
 As pre-registered, **Gate 1 fails** on this run: efficiency is below 0.70 on every layer at k=2048, and LSA does not beat the block-sparse baseline. Two readings, both preliminary: (a) the paper's claim is parity with block-sparse at a much cheaper index, and parity is what we see, so the 'beats block-sparse' criterion was mis-specified; (b) the efficiency criterion is a real shortfall at 32K for this model, though the paper's own budget regime is 1M and beyond. Diagnostics: the projected 64-dim shared index space reaches 68 to 80% of the ideal at k=2048 and clustering costs roughly a third more; raising d_idx to 768 changes efficiency by under 0.02.
 
