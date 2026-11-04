@@ -17,3 +17,13 @@ Rules:
 - The true top-k and mass use the same scaling and masking as the model.
 - GQA: queries sharing a KV head are evaluated against that head's keys. State whether the budget is per query head or per KV head.
 - Aggregate by layer and by head. A mean over all heads hides the easy and hard heads, which is the interesting result.
+
+## Open points (to settle in B0c and B2b)
+
+- **Keys before or after RoPE.** The upstream indexer reads pre-RoPE, position-free dimensions (a 64-dim rotated
+  prefix of a 256-dim head is dropped), summed or concatenated per KV group. HF caches store post-RoPE keys. The
+  B2b ablation compares both. Ground truth (true attention) always uses the model's real post-RoPE keys.
+- **Attention scaling.** Use the model's own scaling factor, not an assumed `1/sqrt(d)`. Some checkpoints define
+  their own multiplier. The dumper records it per layer.
+- **Per head or per KV group.** The upstream index is shared across the query heads of a KV group. State which
+  one each result uses.
