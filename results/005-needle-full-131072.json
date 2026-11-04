@@ -1,0 +1,130 @@
+{
+ "mode": "full",
+ "length": 131072,
+ "model": "/ai/models/llm/Ornith-1.5-9B",
+ "text": "/ai/github/lsa-rocm/experiments/data/texts/prose-131072.txt",
+ "accuracy": 0.9,
+ "results": [
+  {
+   "depth": 0.05,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 131045,
+   "answer": " 7311-PBJ.\n</think>\n\nThe access code for vault",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 119.35534191131592,
+   "decode_s": 2.4968297481536865
+  },
+  {
+   "depth": 0.05,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 131045,
+   "answer": " 8961-NKR.\n</think>\n\nThe access code for vault",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.39432287216187,
+   "decode_s": 2.487576723098755
+  },
+  {
+   "depth": 0.25,
+   "vault": 466,
+   "code": "4578-SEK",
+   "tokens": 131046,
+   "answer": " 4578-SEK.\nQuestion: What is the main",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.48915839195251,
+   "decode_s": 2.4844653606414795
+  },
+  {
+   "depth": 0.25,
+   "vault": 243,
+   "code": "2553-VJT",
+   "tokens": 131045,
+   "answer": " 2553-VJT.\nQuestion: What is the most important",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.49011611938477,
+   "decode_s": 2.4859657287597656
+  },
+  {
+   "depth": 0.5,
+   "vault": 822,
+   "code": "3407-KDZ",
+   "tokens": 131046,
+   "answer": " 3407-KDZ.\nQuestion: What is the access",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.65408086776733,
+   "decode_s": 2.484647035598755
+  },
+  {
+   "depth": 0.5,
+   "vault": 175,
+   "code": "6409-RTD",
+   "tokens": 131046,
+   "answer": "!!!!!!!!!!!!!!!!",
+   "correct": false,
+   "nan_after_prefill": true,
+   "degenerate": true,
+   "prefill_s": 114.56586360931396,
+   "decode_s": 2.4833385944366455
+  },
+  {
+   "depth": 0.75,
+   "vault": 462,
+   "code": "8113-LVW",
+   "tokens": 131046,
+   "answer": " 8113-LVW.\n</think>\n\nThe access code for",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.61643171310425,
+   "decode_s": 2.488151788711548
+  },
+  {
+   "depth": 0.75,
+   "vault": 309,
+   "code": "8815-QSJ",
+   "tokens": 131045,
+   "answer": " 8815-QSJ.\n</think>\n\nThe access code for vault",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.52321362495422,
+   "decode_s": 2.483018636703491
+  },
+  {
+   "depth": 0.95,
+   "vault": 163,
+   "code": "9989-ACZ",
+   "tokens": 131046,
+   "answer": " 9989-ACZ.\n</think>\n\nThe access code for",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.6199722290039,
+   "decode_s": 2.4848906993865967
+  },
+  {
+   "depth": 0.95,
+   "vault": 960,
+   "code": "7534-YXW",
+   "tokens": 131046,
+   "answer": " 7534-YXW.\n\nQuestion: What is the access",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 117.60739994049072,
+   "decode_s": 2.4808616638183594
+  }
+ ],
+ "torch": "2.12.0+rocm7.14.0"
+}
