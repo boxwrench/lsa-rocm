@@ -9,7 +9,7 @@ usage: run_matrix.py --length 131072 --configs full:none,lsa:none:2048,lsa:int4:
 import sys, json, time, argparse, random, copy
 sys.path[:0] = ["/ai/github/lsa-rocm/src", "/ai/github/lsa-rocm/third_party/lsa/src"]
 import torch, torch.nn.functional as F
-from lsa_rocm.dump import _make_gqa_sdpa, _full_attention_indices
+from lsa_rocm.dump import _make_gqa_sdpa, _full_attention_indices, _apply_rope_yarn
 from lsa_rocm.oracle import OracleConfig, build_flat_index
 
 ap = argparse.ArgumentParser()
@@ -17,7 +17,7 @@ ap.add_argument("--model", default="/ai/models/llm/Ornith-1.5-9B"); ap.add_argum
 ap.add_argument("--depths", default="0.05,0.25,0.5,0.75,0.95"); ap.add_argument("--facts", type=int, default=2)
 ap.add_argument("--chunk", type=int, default=2048); ap.add_argument("--max-new", type=int, default=16)
 ap.add_argument("--seed", type=int, default=0); ap.add_argument("--configs", required=True); ap.add_argument("--out", required=True)
-ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None)
+ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None); ap.add_argument("--rope-yarn", type=float, default=0.0)
 a = ap.parse_args()
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
@@ -34,7 +34,11 @@ configs = []
 for c in a.configs.split(","):
     p = c.split(":"); configs.append((p[0], p[1], int(p[2]) if len(p) > 2 else 2048))
 
-model = AutoModelForCausalLM.from_pretrained(a.model, dtype=torch.bfloat16, trust_remote_code=True, attn_implementation="sdpa").to("cuda").eval()
+load_cfg = None
+if a.rope_yarn > 0:
+    from transformers import AutoConfig
+    load_cfg = AutoConfig.from_pretrained(a.model, trust_remote_code=True); print("YARN", _apply_rope_yarn(load_cfg, a.rope_yarn), flush=True)
+model = AutoModelForCausalLM.from_pretrained(a.model, dtype=torch.bfloat16, trust_remote_code=True, attn_implementation="sdpa", config=load_cfg).to("cuda").eval()
 gqa = _make_gqa_sdpa(128)
 FULL = set(_full_attention_indices(model.config)[0]); tcfg = getattr(model.config, "text_config", model.config)
 ROT = int(tcfg.head_dim * tcfg.partial_rotary_factor); SINK, WIN, CAP = 4, 512 + 32, 16
