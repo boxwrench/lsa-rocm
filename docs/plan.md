@@ -150,6 +150,10 @@ a cross-prompt PCA test, a second model at long context, and any end-task accura
 
 North star proposed by a reviewer and adopted as a goal, not yet started: Ornith 9B at long context producing correct answers with sparse decoding, with tokens per second measured. Steps: (1) sparse decoding in the real model at 128K, comparing output and speed with full attention; (2) a fact-at-depth (needle) test at 128K and 512K, the first end-task measurement; (3) GPU-side selection and CPU-offloaded KV gather; (4) sparse prefill; (5) 2M on the Strix Halo node. Attention-mass numbers do not show that facts are retrieved, so step 2 comes early.
 
+Later, noted at the user's request: replace the synthetic haystack with a real, well-known corpus (for example a famous open-source project, or a legal text) so the test is realistic. Caveat: the model may have memorised famous texts, so pair the real corpus with facts it cannot know (inserted facts, or a recent project version) to make sure the context is what gets read.
+
+Needle test (experiment 005): `experiments/005-needle/run_needle.py`, full-attention baseline running at 32K and 128K (prose haystack, inserted vault-code fact, 5 depths x 2 facts). One transient degenerate output (`!!!!`, suspected NaN) was seen once in a smoke run and did not reproduce; the runner now flags degenerate outputs.
+
 ## Open questions
 
 - Does the PCA basis from one prompt generalise to another, or must it be fitted per prompt? The paper fits it per layer.
