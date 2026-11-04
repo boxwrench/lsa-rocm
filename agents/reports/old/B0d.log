@@ -1,0 +1,760 @@
+[0m
+> build · deepseek/deepseek-v4.1-flash-1017
+[0m
+[0m$ [0mls -la; echo "---"; ls docs agents 2>/dev/null
+total 48
+drwxrwxr-x  10 boxwrench boxwrench 4096 Nov  3 16:23 .
+drwxrwxr-x 144 boxwrench boxwrench 4096 Nov  3 16:22 ..
+drwxrwxr-x   4 boxwrench boxwrench 4096 Nov  3 16:30 agents
+drwxrwxr-x   2 boxwrench boxwrench 4096 Nov  3 16:23 docs
+drwxrwxr-x   2 boxwrench boxwrench 4096 Nov  3 16:22 experiments
+drwxrwxr-x   8 boxwrench boxwrench 4096 Nov  3 16:29 .git
+-rw-rw-r--   1 boxwrench boxwrench  106 Nov  3 16:30 .gitignore
+-rw-rw-r--   1 boxwrench boxwrench  612 Nov  3 16:23 README.md
+drwxrwxr-x   2 boxwrench boxwrench 4096 Nov  3 16:22 results
+drwxrwxr-x   3 boxwrench boxwrench 4096 Nov  3 16:22 src
+drwxrwxr-x   2 boxwrench boxwrench 4096 Nov  3 16:22 tests
+drwxrwxr-x   3 boxwrench boxwrench 4096 Nov  3 16:29 third_party
+---
+agents:
+reports
+scratch
+
+docs:
+metrics.md
+plan.md
+[0m
+[0m→ [0mRead docs/plan.md
+[0m
+[0m$ [0mls -la /ai/huggingface /ai/models 2>&1 | head -50; echo "---"; ls /ai/huggingface/hub 2>/dev/null | grep -iE "granite|nanbeige|ornith|qwen|oss" 
+/ai/huggingface:
+total 52
+drwx------   7 boxwrench boxwrench  4096 Oct  9 08:45 .
+drwx------  39 boxwrench boxwrench  4096 Nov  2 16:33 ..
+-rw-rw-r--   1 boxwrench boxwrench  5778 Nov  1 21:13 .agent_harnesses.json
+-rw-rw-r--   1 boxwrench boxwrench     0 Nov  1 21:13 .check_for_skill_update_done
+-rw-rw-r--   1 boxwrench boxwrench     0 Nov  1 21:13 .check_for_update_done
+drwxrwxr-x   3 boxwrench boxwrench  4096 Aug 11 12:29 cli
+drwxrwxr-x   7 boxwrench boxwrench  4096 Oct 25 07:46 datasets
+drwxrwxr-x 138 boxwrench boxwrench 12288 Nov  2 08:00 hub
+drwxrwxr-x   4 boxwrench boxwrench  4096 Oct 19 09:22 modules
+-rw-------   1 boxwrench boxwrench   949 Oct  9 08:45 stored_tokens
+-rw-rw-r--   1 boxwrench boxwrench     0 Oct  9 08:45 stored_tokens.lock
+-rw-------   1 boxwrench boxwrench   825 Oct  9 08:45 token
+drwxrwxr-x   4 boxwrench boxwrench  4096 Aug 11 12:30 xet
+
+/ai/models:
+total 19049048
+drwxrwxr-x 51 boxwrench boxwrench       4096 Oct 27 06:27 .
+drwx------ 39 boxwrench boxwrench       4096 Nov  2 16:33 ..
+drwxrwxr-x  3 boxwrench boxwrench       4096 Aug 11 22:35 .cache
+drwxr-xr-x  2 boxwrench boxwrench       4096 Aug 11 18:29 checkpoints
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 15 16:40 chinese-wav2vec2-base
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 15 16:40 depth
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 15 16:40 det_align
+drwxr-xr-x  5 boxwrench boxwrench       4096 Oct 25 14:33 diffusion_models
+drwxr-xr-x  2 boxwrench boxwrench       4096 Aug 23 07:56 embeddings
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 15 16:40 flow
+-rw-rw-r--  1 boxwrench boxwrench 9436494308 Aug 15 17:55 flux-2-klein-9b_quanto_bf16_int8.safetensors
+-rw-rw-r--  1 boxwrench boxwrench  336211292 Aug 15 17:55 flux2_vae.safetensors
+drwxrwxr-x  3 boxwrench boxwrench       4096 Oct 21 14:48 glm53-fp4-sample
+drwxrwxr-x  4 boxwrench boxwrench       4096 Aug 11 15:31 image
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 15 16:42 kugelaudio_text_tokenizer
+drwxrwxr-x  5 boxwrench boxwrench       4096 Aug 12 17:23 leaptalk
+drwxrwxr-x  3 boxwrench boxwrench       4096 Sep  9 16:58 lingbot-gguf
+drwxrwxr-x  4 boxwrench boxwrench       4096 Sep  9 11:50 lingbot-world-v2-1.3b-causal-fast
+drwxrwxr-x  2 boxwrench boxwrench       4096 Sep  9 11:57 lingbot-world-v2-1.3b-causal-fast-assembled
+drwxrwxr-x  4 boxwrench boxwrench       4096 Sep  9 11:47 lingbot-world-v2-14b-assets
+drwxrwxr-x  4 boxwrench boxwrench       4096 Oct 16 11:45 ling-packs
+drwxr-xr-x 16 boxwrench boxwrench       4096 Nov  1 09:06 llm
+drwxr-xr-x 13 boxwrench boxwrench       4096 Sep 30 18:32 loras
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 15 16:41 mask
+drwxrwxr-x  7 boxwrench boxwrench       4096 Aug 17 20:46 minimax_h3
+drwxrwxr-x 10 boxwrench boxwrench       4096 Aug 15 18:01 minimax_music3
+drwxrwxr-x  3 boxwrench boxwrench       4096 Oct 10 20:01 MiniMax-Music3
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 20 07:20 MiniMaxMusic3-Qwen3
+-rw-rw-r--  1 boxwrench boxwrench 2451847348 Aug 20 07:18 MiniMax_Music3_transformer_int8_convrot.safetensors
+-rw-rw-r--  1 boxwrench boxwrench       2391 Aug 15 17:57 modular_model_index.json
+drwxrwxr-x  3 boxwrench boxwrench       4096 Oct 18 20:40 MOSS-Image-GGUF
+drwxrwxr-x 10 boxwrench boxwrench       4096 Oct 18 20:22 MOSS-Image-SFT
+---
+models--agentionai--Qwen3.8-27B-AP-GGUF
+models--agentionai--Qwen3.8-Flash-Next-Gyro-GGUF
+models--amd--Qwen3.8-27B-Quark-AWQ-MXFP4
+models--cbfight--Ling-3.1-flash-NVFP4-lossless8
+models--ccore--Qwen3.5-4B-3D-Coder
+models--Comfy-Org--Qwen3.5
+models--Comfy-Org--Qwen-Image-2.1
+models--Danrisi--grainscape_moss
+models--hugypufy--Qwen3.8-27B-DFLASH2-PARO-M2XFP4
+models--incoai--Qwen3.8-27B-DFlash2
+models--jcbtc--Qwen3.8-27B-CIRU-ActiveFPX-PromptForge
+models--jcbtc--Qwen3.8-Flash-CIRU-STRIX-Orca
+models--JohnDOeNNN--Qwen3.8-35B-A3B-APEX-Abliterated-Blender-v1-GGUF
+models--liana313--tokengate-2wikimqa-qwen3-1.7b
+models--liana313--tokengate-multinews-qwen3-1.7b
+models--liana313--tokengate-niah-qwen3-1.7b
+models--liana313--tokengate-niah-qwen3.5-2b
+models--Nanbeige--Nanbeige4.3-33B
+models--nvidia--Qwen3-8B-NVFP4
+models--OpenMOSS-Team--MOSS-Image-Base
+models--OpenMOSS-Team--MOSS-Image-SFT
+models--ornith-ai--Ornith-1.5-35B-A3B
+models--ornith-ai--Ornith-1.5-9B
+models--prithivMLmods--Qwen-Image-2.1-PE-I2I-GGUF
+models--Qwen--Qwen3-1.7B
+models--Qwen--Qwen3-4B
+models--Qwen--Qwen3.5-0.8B
+models--Qwen--Qwen3.5-2B
+models--Qwen--Qwen3.5-9B
+models--Qwen--Qwen3.8-27B
+models--Qwen--Qwen3.8-Flash-Next
+models--Qwen--Qwen-Image-2.1-PE-T2I
+models--RadixArk--Qwen3.8-27B-NVFP4
+models--SamsungSAILMontreal--Qwen3-30B-A3B-Instruct-2507-REAM
+models--TD-Labs--Qwen3-4B-DCOCO
+models--TD-Labs--Qwen3-8B-DCOCO
+models--unsloth--Qwen3.6-27B-GGUF
+models--unsloth--Qwen3.6-35B-A3B-GGUF
+models--unsloth--Qwen3.8-27B-GGUF
+models--Viggle--Qwen-Image-2.1-viggle-turbo
+models--z-lab--Qwen3-4B-DFlash-b16
+models--z-lab--Qwen3-8B-DFlash-b16
+[0m
+[0m$ [0mls -la /ai/envs /ai/environments 2>&1; echo "---rocm-smi---"; which rocm-smi rocminfo 2>&1; echo "---"; rocm-smi 2>&1 | head -60
+lrwxrwxrwx  1 boxwrench boxwrench   16 Aug 11 18:29 /ai/envs -> /ai/environments
+
+/ai/environments:
+total 40
+drwxr-xr-x 10 boxwrench boxwrench 4096 Oct 17 06:16 .
+drwx------ 39 boxwrench boxwrench 4096 Nov  2 16:33 ..
+drwxrwxr-x  7 boxwrench boxwrench 4096 Aug 16 17:30 comfyui-h3
+drwxrwxr-x  6 boxwrench boxwrench 4096 Sep 20 07:36 comfyui-qwen21
+drwxrwxr-x  6 boxwrench boxwrench 4096 Sep  8 18:44 comfyui-rocm10
+drwxrwxr-x  6 boxwrench boxwrench 4096 Sep  8 18:39 comfyui-rocm714
+drwxrwxr-x  6 boxwrench boxwrench 4096 Aug 16 21:26 gguf-convert
+drwxrwxr-x  7 boxwrench boxwrench 4096 Sep  2 20:08 kitchen-test
+drwxrwxr-x  6 boxwrench boxwrench 4096 Sep  9 11:27 lingbot-world-v2
+drwxrwxr-x  7 boxwrench boxwrench 4096 Aug 15 11:36 maestro
+---rocm-smi---
+/usr/bin/rocm-smi
+/usr/bin/rocminfo
+---
+
+
+========================================== ROCm System Management Interface ==========================================
+==================================================== Concise Info ====================================================
+Device  Node  IDs              Temp    Power   Partitions          SCLK    MCLK     Fan    Perf  PwrCap  VRAM%  GPU%  
+[3m              (DID,     GUID)  (Edge)  (Avg)   (Mem, Compute, ID)                                                     [0m
+======================================================================================================================
+0       1     0x7551,   23334  30.0°C  17.0W   N/A, N/A, 0         406Mhz  96Mhz    49.8%  auto  300.0W  4%     5%    
+1       2     0x7551,   2277   29.0°C  12.0W   N/A, N/A, 0         0Mhz    96Mhz    49.8%  auto  300.0W  0%     0%    
+2       3     0x13c0,   38647  41.0°C  0.009W  N/A, N/A, 0         N/A     1800Mhz  0%     auto  N/A     0%     0%    
+======================================================================================================================
+================================================ End of ROCm SMI Log =================================================
+[0m
+[0m$ [0mls /ai/huggingface/hub | grep -iE "granite|switch|oss|gpt|ornith|nanbeige|qwen3.5-0.8"; echo "---llm---"; ls -la /ai/models/llm
+models--cbfight--Ling-3.1-flash-NVFP4-lossless8
+models--Danrisi--grainscape_moss
+models--Nanbeige--Nanbeige4.3-33B
+models--OpenMOSS-Team--MOSS-Image-Base
+models--OpenMOSS-Team--MOSS-Image-SFT
+models--ornith-ai--Ornith-1.5-35B-A3B
+models--ornith-ai--Ornith-1.5-9B
+models--Qwen--Qwen3.5-0.8B
+---llm---
+total 1521224
+drwxr-xr-x 16 boxwrench boxwrench       4096 Nov  1 09:06 .
+drwxrwxr-x 51 boxwrench boxwrench       4096 Oct 27 06:27 ..
+drwxrwxr-x  2 boxwrench boxwrench       4096 Aug 17 20:40 bin
+drwxrwxr-x  3 boxwrench boxwrench       4096 Nov  1 09:53 ext-qwen38-35b-blender-v1
+drwxrwxr-x  3 boxwrench boxwrench       4096 Oct 10 20:01 gemma-4-E4B-heretic
+drwxrwxr-x  3 boxwrench boxwrench       4096 Aug 15 20:46 gemma-4-E4B-it-heretic
+drwxrwxr-x  2 boxwrench boxwrench       4096 Sep 21 09:48 llama-bin
+drwxrwxr-x  3 boxwrench boxwrench       4096 Sep 21 11:16 maestro-cache
+drwxrwxr-x  4 boxwrench boxwrench       4096 Oct 26 07:04 Ornith-1.5-35B-A3B
+drwxrwxr-x  4 boxwrench boxwrench       4096 Oct 25 22:16 Ornith-1.5-9B
+drwxrwxr-x  3 boxwrench boxwrench       4096 Oct 24 15:06 Qwen3-4B
+drwxrwxr-x  3 boxwrench boxwrench       4096 Oct 18 02:40 Qwen3.5-0.8B
+-rw-rw-r--  1 boxwrench boxwrench 1557662720 Oct 18 02:44 Qwen3.5-0.8B-BF16.gguf
+drwxrwxr-x  3 boxwrench boxwrench       4096 Oct 31 23:04 Qwen3.5-4B-3D-Coder
+drwxrwxr-x  3 boxwrench boxwrench       4096 Sep 22 12:27 qwen-image-2.1-pe-i2i
+drwxrwxr-x  3 boxwrench boxwrench       4096 Sep 20 11:23 qwen-image-2.1-pe-t2i
+drwxrwxr-x  8 boxwrench boxwrench       4096 Oct 25 07:46 tokengate
+[0m
+[0m$ [0mrocm-smi --showproductname --showmeminfo vram --showuniqueid 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
+============================ ROCm System Management Interface ============================
+======================================= Unique ID ========================================
+GPU[0]		: Unique ID: 0x3381da60b25d6672
+GPU[1]		: Unique ID: 0x2eb39d7393ac0942
+GPU[2]		: Unique ID: 0x0
+==========================================================================================
+================================== Memory Usage (Bytes) ==================================
+GPU[0]		: VRAM Total Memory (B): 34208743424
+GPU[0]		: VRAM Total Used Memory (B): 1586913280
+GPU[1]		: VRAM Total Memory (B): 34208743424
+GPU[1]		: VRAM Total Used Memory (B): 59912192
+GPU[2]		: VRAM Total Memory (B): 2147483648
+GPU[2]		: VRAM Total Used Memory (B): 16646144
+==========================================================================================
+====================================== Product Info ======================================
+GPU[0]		: Card Series: 		AMD Radeon AI PRO R9700
+GPU[0]		: Card Model: 		0x7551
+GPU[0]		: Card Vendor: 		Advanced Micro Devices, Inc. [AMD/ATI]
+GPU[0]		: Card SKU: 		APM107573
+GPU[0]		: Subsystem ID: 	0x5413
+GPU[0]		: Device Rev: 		0xc0
+GPU[0]		: Node ID: 		1
+GPU[0]		: GUID: 		23334
+GPU[0]		: GFX Version: 		gfx1201
+GPU[1]		: Card Series: 		AMD Radeon AI PRO R9700
+GPU[1]		: Card Model: 		0x7551
+GPU[1]		: Card Vendor: 		Advanced Micro Devices, Inc. [AMD/ATI]
+GPU[1]		: Card SKU: 		APM107573
+GPU[1]		: Subsystem ID: 	0x5413
+GPU[1]		: Device Rev: 		0xc0
+GPU[1]		: Node ID: 		2
+GPU[1]		: GUID: 		2277
+GPU[1]		: GFX Version: 		gfx1201
+GPU[2]		: Card Series: 		AMD Radeon Graphics
+GPU[2]		: Card Model: 		0x13c0
+GPU[2]		: Card Vendor: 		Advanced Micro Devices, Inc. [AMD/ATI]
+GPU[2]		: Card SKU: 		RAPHAEL
+GPU[2]		: Subsystem ID: 	0x364e
+GPU[2]		: Device Rev: 		0xcb
+GPU[2]		: Node ID: 		3
+GPU[2]		: GUID: 		38647
+GPU[2]		: GFX Version: 		gfx1036
+==========================================================================================
+================================== End of ROCm SMI Log ===================================
+[0m
+[0m$ [0mls /ai/environments/*/bin/python* /ai/environments/*/bin/activate 2>/dev/null; echo "---"; find /ai/environments -maxdepth 3 -name "torch" -type d 2>/dev/null | head
+/ai/environments/comfyui-h3/bin/activate
+/ai/environments/comfyui-h3/bin/python
+/ai/environments/comfyui-h3/bin/python3
+/ai/environments/comfyui-h3/bin/python3.12
+/ai/environments/comfyui-qwen21/bin/activate
+/ai/environments/comfyui-qwen21/bin/python
+/ai/environments/comfyui-qwen21/bin/python3
+/ai/environments/comfyui-qwen21/bin/python3.12
+/ai/environments/comfyui-rocm10/bin/activate
+/ai/environments/comfyui-rocm10/bin/python
+/ai/environments/comfyui-rocm10/bin/python3
+/ai/environments/comfyui-rocm10/bin/python3.12
+/ai/environments/comfyui-rocm714/bin/activate
+/ai/environments/comfyui-rocm714/bin/python
+/ai/environments/comfyui-rocm714/bin/python3
+/ai/environments/comfyui-rocm714/bin/python3.12
+/ai/environments/gguf-convert/bin/activate
+/ai/environments/gguf-convert/bin/python
+/ai/environments/gguf-convert/bin/python3
+/ai/environments/gguf-convert/bin/python3.12
+/ai/environments/kitchen-test/bin/activate
+/ai/environments/kitchen-test/bin/python
+/ai/environments/kitchen-test/bin/python3
+/ai/environments/kitchen-test/bin/python3.12
+/ai/environments/lingbot-world-v2/bin/activate
+/ai/environments/lingbot-world-v2/bin/python
+/ai/environments/lingbot-world-v2/bin/python3
+/ai/environments/lingbot-world-v2/bin/python3.12
+/ai/environments/maestro/bin/activate
+/ai/environments/maestro/bin/python
+/ai/environments/maestro/bin/python3
+/ai/environments/maestro/bin/python3.12
+---
+[0m
+[0m$ [0mlspci -nn | grep -iE "vga|3d|display"; echo "---drm---"; ls -la /sys/class/drm/; echo "---vulkan---"; which vulkaninfo; vulkaninfo --summary 2>&1 | head -80
+03:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:7551] (rev c0)
+06:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:7551] (rev c0)
+7e:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:13c0] (rev cb)
+---drm---
+total 0
+drwxr-xr-x  2 root root    0 Nov  3 16:29 .
+drwxr-xr-x 83 root root    0 Nov  1 16:36 ..
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card1 -> ../../devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card1-DP-1 -> ../../devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1/card1-DP-1
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card1-DP-2 -> ../../devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1/card1-DP-2
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card1-DP-3 -> ../../devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1/card1-DP-3
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card1-DP-4 -> ../../devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1/card1-DP-4
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card1-Writeback-1 -> ../../devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1/card1-Writeback-1
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card2 -> ../../devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card2-DP-5 -> ../../devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2/card2-DP-5
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card2-DP-6 -> ../../devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2/card2-DP-6
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card2-DP-7 -> ../../devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2/card2-DP-7
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card2-DP-8 -> ../../devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2/card2-DP-8
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card2-Writeback-2 -> ../../devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2/card2-Writeback-2
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card3 -> ../../devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card3-DP-10 -> ../../devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3/card3-DP-10
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card3-DP-11 -> ../../devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3/card3-DP-11
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card3-DP-9 -> ../../devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3/card3-DP-9
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card3-HDMI-A-1 -> ../../devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3/card3-HDMI-A-1
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 card3-Writeback-3 -> ../../devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3/card3-Writeback-3
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 renderD128 -> ../../devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/renderD128
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 renderD129 -> ../../devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/renderD129
+lrwxrwxrwx  1 root root    0 Nov  1 16:36 renderD130 -> ../../devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/renderD130
+-r--r--r--  1 root root 4096 Nov  3 16:29 version
+---vulkan---
+/usr/bin/vulkaninfo
+WARNING: radv is not a conformant Vulkan implementation, testing use only.
+WARNING: radv is not a conformant Vulkan implementation, testing use only.
+==========
+VULKANINFO
+==========
+
+Vulkan Instance Version: 1.3.275
+
+
+Instance Extensions: count = 24
+-------------------------------
+VK_EXT_acquire_drm_display             : extension revision 1
+VK_EXT_acquire_xlib_display            : extension revision 1
+VK_EXT_debug_report                    : extension revision 10
+VK_EXT_debug_utils                     : extension revision 2
+VK_EXT_direct_mode_display             : extension revision 1
+VK_EXT_display_surface_counter         : extension revision 1
+VK_EXT_headless_surface                : extension revision 1
+VK_EXT_surface_maintenance1            : extension revision 1
+VK_EXT_swapchain_colorspace            : extension revision 5
+VK_KHR_device_group_creation           : extension revision 1
+VK_KHR_display                         : extension revision 23
+VK_KHR_external_fence_capabilities     : extension revision 1
+VK_KHR_external_memory_capabilities    : extension revision 1
+VK_KHR_external_semaphore_capabilities : extension revision 1
+VK_KHR_get_display_properties2         : extension revision 1
+VK_KHR_get_physical_device_properties2 : extension revision 2
+VK_KHR_get_surface_capabilities2       : extension revision 1
+VK_KHR_portability_enumeration         : extension revision 1
+VK_KHR_surface                         : extension revision 25
+VK_KHR_surface_protected_capabilities  : extension revision 1
+VK_KHR_wayland_surface                 : extension revision 6
+VK_KHR_xcb_surface                     : extension revision 6
+VK_KHR_xlib_surface                    : extension revision 6
+VK_LUNARG_direct_driver_loading        : extension revision 1
+
+Instance Layers: count = 4
+--------------------------
+VK_LAYER_INTEL_nullhw            INTEL NULL HW                1.1.73   version 1
+VK_LAYER_MANGOHUD_overlay_x86_64 Vulkan Hud Overlay           1.3.0    version 1
+VK_LAYER_MESA_device_select      Linux device selection layer 1.4.303  version 1
+VK_LAYER_MESA_overlay            Mesa Overlay layer           1.4.303  version 1
+
+Devices:
+========
+GPU0:
+	apiVersion         = 1.4.318
+	driverVersion      = 25.2.8
+	vendorID           = 0x1002
+	deviceID           = 0x7551
+	deviceType         = PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+	deviceName         = AMD Radeon AI PRO R9700 (RADV GFX1201)
+	driverID           = DRIVER_ID_MESA_RADV
+	driverName         = radv
+	driverInfo         = Mesa 25.2.8-0ubuntu0.24.04.4
+	conformanceVersion = 1.4.0.0
+	deviceUUID         = 00000000-0300-0000-0000-000000000000
+	driverUUID         = 414d442d-4d45-5341-2d44-525600000000
+GPU1:
+	apiVersion         = 1.4.318
+	driverVersion      = 25.2.8
+	vendorID           = 0x1002
+	deviceID           = 0x7551
+	deviceType         = PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+	deviceName         = AMD Radeon AI PRO R9700 (RADV GFX1201)
+	driverID           = DRIVER_ID_MESA_RADV
+	driverName         = radv
+	driverInfo         = Mesa 25.2.8-0ubuntu0.24.04.4
+	conformanceVersion = 1.4.0.0
+	deviceUUID         = 00000000-0600-0000-0000-000000000000
+	driverUUID         = 414d442d-4d45-5341-2d44-525600000000
+GPU2:
+	apiVersion         = 1.4.318
+	driverVersion      = 25.2.8
+	vendorID           = 0x1002
+	deviceID           = 0x13c0
+	deviceType         = PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+	deviceName         = AMD Radeon Graphics (RADV RAPHAEL_MENDOCINO)
+	driverID           = DRIVER_ID_MESA_RADV
+	driverName         = radv
+[0m
+[0m$ [0mrocm-smi --showvbios --showserial --showbus --showmeminfo vram --showhw 2>&1 | sed 's/\x1b\[[0-9;]*m//g'; echo "=== lshw ==="; lshw -C display 2>/dev/null | grep -E "product|vendor|bus info|physical id|width|clock" 
+======================================= ROCm System Management Interface =======================================
+============================================ Concise Hardware Info =============================================
+GPU  NODE  DID     GUID   GFX VER  GFX RAS   SDMA RAS  UMC RAS  VBIOS              BUS           PARTITION ID  
+0    1     0x7551  23334  gfx1201  DISABLED  DISABLED  ENABLED  113-APM107573-101  0000:03:00.0  0             
+1    2     0x7551  2277   gfx1201  DISABLED  DISABLED  ENABLED  113-APM107573-101  0000:06:00.0  0             
+2    3     0x13c0  38647  gfx1036  N/A       N/A       N/A      102-RAPHAEL-008    0000:7E:00.0  0             
+================================================================================================================
+============================================= End of ROCm SMI Log ==============================================
+========================================= VBIOS ==========================================
+GPU[0]		: VBIOS version: 113-APM107573-101
+GPU[1]		: VBIOS version: 113-APM107573-101
+GPU[2]		: VBIOS version: 102-RAPHAEL-008
+==========================================================================================
+===================================== Serial Number ======================================
+GPU[0]		: get_serial_number, Not supported on the given system
+GPU[0]		: Serial Number: N/A
+GPU[1]		: get_serial_number, Not supported on the given system
+GPU[1]		: Serial Number: N/A
+GPU[2]		: get_serial_number, Not supported on the given system
+GPU[2]		: Serial Number: N/A
+==========================================================================================
+======================================= PCI Bus ID =======================================
+GPU[0]		: PCI Bus: 0000:03:00.0
+GPU[1]		: PCI Bus: 0000:06:00.0
+GPU[2]		: PCI Bus: 0000:7E:00.0
+==========================================================================================
+================================== Memory Usage (Bytes) ==================================
+GPU[0]		: VRAM Total Memory (B): 34208743424
+GPU[0]		: VRAM Total Used Memory (B): 1590358016
+GPU[1]		: VRAM Total Memory (B): 34208743424
+GPU[1]		: VRAM Total Used Memory (B): 59912192
+GPU[2]		: VRAM Total Memory (B): 2147483648
+GPU[2]		: VRAM Total Used Memory (B): 16646144
+==========================================================================================
+=== lshw ===
+       product: Advanced Micro Devices, Inc. [AMD/ATI]
+       vendor: Advanced Micro Devices, Inc. [AMD/ATI]
+       physical id: 0
+       bus info: pci@0000:03:00.0
+       width: 64 bits
+       clock: 33MHz
+       product: Advanced Micro Devices, Inc. [AMD/ATI]
+       vendor: Advanced Micro Devices, Inc. [AMD/ATI]
+       physical id: 0
+       bus info: pci@0000:06:00.0
+       width: 64 bits
+       clock: 33MHz
+       product: Advanced Micro Devices, Inc. [AMD/ATI]
+       vendor: Advanced Micro Devices, Inc. [AMD/ATI]
+       physical id: 0
+       bus info: pci@0000:7e:00.0
+       width: 64 bits
+       clock: 33MHz
+[0m
+[0m$ [0mfor f in /ai/environments/*/bin/python; do v=$("$f" -c 'import torch;print(torch.__version__, torch.version.hip)' 2>/dev/null); [ -n "$v" ] && echo "$f -> $v"; done
+/ai/environments/comfyui-qwen21/bin/python -> 2.12.0+rocm7.14.0 7.14.60850
+/ai/environments/comfyui-rocm10/bin/python -> 2.13.0+rocm10.1.0a20260823 7.16.26332
+/ai/environments/comfyui-rocm714/bin/python -> 2.12.0+rocm7.14.0 7.14.60850
+/ai/environments/gguf-convert/bin/python -> 2.13.0+cpu None
+[0m
+[0m$ [0mls -la /dev/kfd /dev/dri 2>&1; echo "---rocminfo---"; rocminfo 2>&1 | grep -iE "Name:|Marketing|gfx|Uuid|Agent|Device Type" | head -60; echo "---dmesg---"; dmesg 2>&1 | grep -iE "amdgpu|7900|navi|R9700" | tail -30
+crw-rw---- 1 root render 511, 0 Nov  1 16:36 /dev/kfd
+
+/dev/dri:
+total 0
+drwxr-xr-x   3 root root        180 Nov  1 16:36 .
+drwxr-xr-x  20 root root       5800 Nov  3 14:48 ..
+drwxr-xr-x   2 root root        160 Nov  1 16:36 by-path
+crw-rw----+  1 root video  226,   1 Nov  3 07:02 card1
+crw-rw----+  1 root video  226,   2 Nov  1 16:37 card2
+crw-rw----+  1 root video  226,   3 Nov  1 16:36 card3
+crw-rw----+  1 root render 226, 128 Nov  1 16:36 renderD128
+crw-rw----+  1 root render 226, 129 Nov  1 16:36 renderD129
+crw-rw----+  1 root render 226, 130 Nov  1 16:36 renderD130
+---rocminfo---
+HSA Agents               
+Agent 1                  
+  Name:                    AMD Ryzen 7 9800X3D 8-Core Processor
+  Uuid:                    CPU-XX                             
+  Marketing Name:          AMD Ryzen 7 9800X3D 8-Core Processor
+  Vendor Name:             CPU                                
+  Device Type:             CPU                                
+Agent 2                  
+  Name:                    gfx1201                            
+  Uuid:                    GPU-3381da60b25d6672               
+  Marketing Name:          AMD Radeon AI PRO R9700            
+  Vendor Name:             AMD                                
+  Device Type:             GPU                                
+      Name:                    amdgcn-amd-amdhsa--gfx1201         
+      Name:                    amdgcn-amd-amdhsa--gfx12-generic   
+Agent 3                  
+  Name:                    gfx1201                            
+  Uuid:                    GPU-2eb39d7393ac0942               
+  Marketing Name:          AMD Radeon AI PRO R9700            
+  Vendor Name:             AMD                                
+  Device Type:             GPU                                
+      Name:                    amdgcn-amd-amdhsa--gfx1201         
+      Name:                    amdgcn-amd-amdhsa--gfx12-generic   
+Agent 4                  
+  Name:                    gfx1036                            
+  Uuid:                    GPU-XX                             
+  Marketing Name:          AMD Radeon Graphics                
+  Vendor Name:             AMD                                
+  Device Type:             GPU                                
+      Name:                    amdgcn-amd-amdhsa--gfx1036         
+      Name:                    amdgcn-amd-amdhsa--gfx10-3-generic 
+---dmesg---
+[0m
+[0m$ [0mfor f in /ai/environments/*/bin/python; do echo "== $f"; "$f" -c 'import sys;print(sys.version.split()[0])' 2>/dev/null; "$f" -c 'import transformers;print("transformers",transformers.__version__)' 2>/dev/null; "$f" -c 'import torch;print("torch",torch.__version__,"hip",torch.version.hip,"cuda",torch.version.cuda)' 2>/dev/null; done
+== /ai/environments/comfyui-h3/bin/python
+3.12.3
+transformers 5.15.0
+== /ai/environments/comfyui-qwen21/bin/python
+3.12.13
+transformers 5.17.0
+torch 2.12.0+rocm7.14.0 hip 7.14.60850 cuda None
+== /ai/environments/comfyui-rocm10/bin/python
+3.12.13
+transformers 5.16.1
+torch 2.13.0+rocm10.1.0a20260823 hip 7.16.26332 cuda None
+== /ai/environments/comfyui-rocm714/bin/python
+3.12.13
+transformers 5.16.1
+torch 2.12.0+rocm7.14.0 hip 7.14.60850 cuda None
+== /ai/environments/gguf-convert/bin/python
+3.12.3
+transformers 5.15.0
+torch 2.13.0+cpu hip None cuda None
+== /ai/environments/kitchen-test/bin/python
+3.12.3
+transformers 5.15.0
+== /ai/environments/lingbot-world-v2/bin/python
+3.12.3
+== /ai/environments/maestro/bin/python
+3.12.3
+[0m
+[0m$ [0mecho "=== amdgpu sysfs ==="; for d in /sys/class/drm/card*/device; do echo "-- $d"; readlink -f "$d"; cat "$d/vendor" "$d/device" 2>/dev/null; cat "$d/mem_info_vram_total" 2>/dev/null; cat "$d/product_name" 2>/dev/null; done; echo "=== nvidia ==="; which nvidia-smi && nvidia-smi 2>&1 | head -20; echo "=== vfio ==="; ls /sys/bus/pci/drivers/ | grep -iE "vfio|amdgpu|radeon"
+=== amdgpu sysfs ===
+-- /sys/class/drm/card1/device
+/sys/devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0
+0x1002
+0x7551
+34208743424
+-- /sys/class/drm/card1-DP-1/device
+/sys/devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1
+-- /sys/class/drm/card1-DP-2/device
+/sys/devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1
+-- /sys/class/drm/card1-DP-3/device
+/sys/devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1
+-- /sys/class/drm/card1-DP-4/device
+/sys/devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1
+-- /sys/class/drm/card1-Writeback-1/device
+/sys/devices/pci0000:00/0000:00:01.1/0000:01:00.0/0000:02:00.0/0000:03:00.0/drm/card1
+-- /sys/class/drm/card2/device
+/sys/devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0
+0x1002
+0x7551
+34208743424
+-- /sys/class/drm/card2-DP-5/device
+/sys/devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2
+-- /sys/class/drm/card2-DP-6/device
+/sys/devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2
+-- /sys/class/drm/card2-DP-7/device
+/sys/devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2
+-- /sys/class/drm/card2-DP-8/device
+/sys/devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2
+-- /sys/class/drm/card2-Writeback-2/device
+/sys/devices/pci0000:00/0000:00:01.3/0000:04:00.0/0000:05:00.0/0000:06:00.0/drm/card2
+-- /sys/class/drm/card3/device
+/sys/devices/pci0000:00/0000:00:08.1/0000:7e:00.0
+0x1002
+0x13c0
+2147483648
+-- /sys/class/drm/card3-DP-10/device
+/sys/devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3
+-- /sys/class/drm/card3-DP-11/device
+/sys/devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3
+-- /sys/class/drm/card3-DP-9/device
+/sys/devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3
+-- /sys/class/drm/card3-HDMI-A-1/device
+/sys/devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3
+-- /sys/class/drm/card3-Writeback-3/device
+/sys/devices/pci0000:00/0000:00:08.1/0000:7e:00.0/drm/card3
+=== nvidia ===
+=== vfio ===
+amdgpu
+[0m
+[0m$ [0mecho "=== lspci -nnk (VGA/Display/Audio) ==="; lspci -nnk | grep -A3 -iE "vga|3d controller|display"; echo; echo "=== all AMD 1002 devices ==="; lspci -nn | grep -i "1002:"
+=== lspci -nnk (VGA/Display/Audio) ===
+03:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:7551] (rev c0)
+	Subsystem: ASRock Incorporation Device [1849:5413]
+	Kernel driver in use: amdgpu
+	Kernel modules: amdgpu
+--
+06:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:7551] (rev c0)
+	Subsystem: ASRock Incorporation Device [1849:5413]
+	Kernel driver in use: amdgpu
+	Kernel modules: amdgpu
+--
+7e:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:13c0] (rev cb)
+	Subsystem: ASRock Incorporation Device [1849:364e]
+	Kernel driver in use: amdgpu
+	Kernel modules: amdgpu
+
+=== all AMD 1002 devices ===
+01:00.0 PCI bridge [0604]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 10 XL Upstream Port of PCI Express Switch [1002:1478] (rev 24)
+02:00.0 PCI bridge [0604]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 10 XL Downstream Port of PCI Express Switch [1002:1479] (rev 24)
+03:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:7551] (rev c0)
+03:00.1 Audio device [0403]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:ab40]
+04:00.0 PCI bridge [0604]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 10 XL Upstream Port of PCI Express Switch [1002:1478] (rev 24)
+05:00.0 PCI bridge [0604]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 10 XL Downstream Port of PCI Express Switch [1002:1479] (rev 24)
+06:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:7551] (rev c0)
+06:00.1 Audio device [0403]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:ab40]
+7e:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:13c0] (rev cb)
+7e:00.1 Audio device [0403]: Advanced Micro Devices, Inc. [AMD/ATI] Rembrandt Radeon High Definition Audio Controller [1002:1640]
+[0m
+[93m[1m! [0mpermission requested: external_directory (/opt/rocm/.info/*, /opt/*); auto-rejecting
+[0m✗ [0mcat /opt/rocm/.info/version 2>/dev/null; cat /opt/rocm-*/ .info/version 2>/dev/null; ls /opt | grep -i rocm; echo "--- hip ---"; which hipcc hipconfig; hipconfig --version 2>&1 | head; echo "--- envs for rocm work? ---"; ls -la /ai/github/lsa-rocm/.venv /ai/github/lsa-rocm/venv 2>&1; echo "--- README ---"; cat /ai/github/lsa-rocm/README.md failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[0m
+[0m$ [0mecho "=== hub dirs matching ==="; ls -d /ai/huggingface/hub/models--* 2>/dev/null | grep -iE "granite|switch|nanbeige|ornith|qwen3\.5-0\.8|gpt-oss|openai"; echo "=== all hub dirs ==="; ls /ai/huggingface/hub; echo "=== /ai/models/llm child sizes ==="; du -sh /ai/models/llm/* 2>/dev/null
+=== hub dirs matching ===
+/ai/huggingface/hub/models--Nanbeige--Nanbeige4.3-33B
+/ai/huggingface/hub/models--ornith-ai--Ornith-1.5-35B-A3B
+/ai/huggingface/hub/models--ornith-ai--Ornith-1.5-9B
+/ai/huggingface/hub/models--Qwen--Qwen3.5-0.8B
+=== all hub dirs ===
+blobs
+CACHEDIR.TAG
+datasets--AtomicChat--calib-corpora
+datasets--emozilla--pg19
+datasets--google--IFEval
+datasets--ilabai--3dcodeverse
+datasets--openai--gsm8k
+datasets--openai--openai_humaneval
+datasets--Salesforce--wikitext
+datasets--sgoel9--paul_graham_essays
+datasets--TIGER-Lab--MMLU-Pro
+models--0xBakeer--TandemLLM-Nemotron-3.5-Bolt-74B-A9B-EXL3-4.0
+models--agentionai--Qwen3.8-27B-AP-GGUF
+models--agentionai--Qwen3.8-Flash-Next-Gyro-GGUF
+models--alibaba-pai--MiniMax-H3-Acc-LoRAs
+models--amd--Qwen3.8-27B-Quark-AWQ-MXFP4
+models--AtomicChat--Ling-3.0-flash-GGUF
+models--AtomicChat--Ling-3.0-flash-NVFP4
+models--AtomicChat--Ling-3.1-flash-GGUF
+models--Baekpica--Ling-3.1-flash-VQ-GGUF
+models--bartowski--apodex_Apodex-1.1-mini-GGUF
+models--bartowski--Ling-3.0-flash-GGUF
+models--bartowski--Ling-3.1-flash-GGUF
+models--black-forest-labs--FLUX.2-klein-9B
+models--bloomer010--Ling-3.0-flash-REAP288-73B-A5B-GGUF
+models--boxwrench--Hy-Memory-30B-A3B-BF16-GGUF
+models--boxwrench--Hy-Memory-30B-A3B-q4nx-wrench
+models--boxwrench--Ling-3.1-flash-exl3-wrench-2.10bpw
+models--cbfight--Ling-3.1-flash-NVFP4-lossless8
+models--ccore--Qwen3.5-4B-3D-Coder
+models--circlestone-labs--Anima
+models--Comfy-Org--gemma-4
+models--Comfy-Org--Krea-2
+models--Comfy-Org--MiniMax-H3
+models--Comfy-Org--Qwen3.5
+models--Comfy-Org--Qwen-Image-2.1
+models--Comfy-Org--SeedVR2
+models--conradlocke--krea2-identity-edit
+models--Danrisi--grainscape_moss
+models--dots-studio--dots3-note-prev
+models--Gazingstars123--Anima-2.9B
+models--Hikari07jp--Ling-3.1-flash-NVFP4-Ablitrated-MTP-RTX-PRO-6000-TP4
+models--hoidhxd--NVIDIA-NemotronLabs-VoiceChat-11B-GGUF
+models--hugypufy--Qwen3.8-27B-DFLASH2-PARO-M2XFP4
+models--HussainIsWashed--unity-csharp-coder
+models--ilintar--trellis2-gguf
+models--inclusionAI--Ling-3.0-flash-fp8
+models--inclusionAI--Ling-3.0-flash-int4
+models--inclusionAI--Ling-3.0-flash-UBTree
+models--inclusionAI--Ling-3.0-tiny-UBTree
+models--inclusionAI--Ling-3.1-flash
+models--inclusionAI--Ling-3.1-flash-1019
+models--incoai--Qwen3.8-27B-DFlash2
+models--jarrelscy--Ling-3.1-flash-NestQuant-2-4bit
+models--jcbtc--Ling-3.0-Flash-CIRU-IU4
+models--jcbtc--Qwen3.8-27B-CIRU-ActiveFPX-PromptForge
+models--jcbtc--Qwen3.8-Flash-CIRU-STRIX-Orca
+models--joeygambino--MiniMax-H3-x-Z-Image-native
+models--JohnDOeNNN--Qwen3.8-35B-A3B-APEX-Abliterated-Blender-v1-GGUF
+models--jyohukuchan--Hy-Memory-30B-A3B-exl3-4.08bpw
+models--kindlingai--glm-5.3-flash-exlr8-k2-k3-k4
+models--KRAFTON--Raon-1-mini-preview
+models--lapadatbogdan--GLM-5.3-Flash-REAP144-Coder-GGUF
+models--larryvrh--MiniMax-H3-Turbo-Lora
+models--liana313--tokengate-2wikimqa-qwen3-1.7b
+models--liana313--tokengate-multinews-qwen3-1.7b
+models--liana313--tokengate-niah-qwen3-1.7b
+models--liana313--tokengate-niah-qwen3.5-2b
+models--Lightricks--LTX-2.5
+models--lightx2v--Minimax-h3-Turbo
+models--LiquidAI--LFM2.5-24B-A2B
+models--lmstudio-community--NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4-LiLiCorr-GGUF
+models--magnitudedev--NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4-LiLiCorr-GGUF
+models--MiniMaxAI--MiniMax-H3
+models--MiniMaxAI--MiniMax-Music3
+models--Nanbeige--Nanbeige4.3-33B
+models--nvidia--nemotron-3.5-asr-streaming-0.6b
+models--nvidia--nemotron-speech-streaming-en-0.6b
+models--nvidia--NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB
+models--nvidia--NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF
+models--nvidia--NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-LiLiCorr
+models--nvidia--NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-LiLiCorr-GGUF
+models--nvidia--NVIDIA-Nemotron-3.5-Bolt-74B-A9B-BF16
+models--nvidia--NVIDIA-Nemotron-3.5-Bolt-E4B-BF16
+models--nvidia--NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4-LiLiCorr
+models--nvidia--NVIDIA-Nemotron-Labs-Dory1.0-4B-BF16
+models--nvidia--Qwen3-8B-NVFP4
+models--OpenMOSS-Team--MOSS-Image-Base
+models--OpenMOSS-Team--MOSS-Image-SFT
+models--ornith-ai--Ornith-1.5-35B-A3B
+models--ornith-ai--Ornith-1.5-9B
+models--peasantsmith--GLM-5.3-Flash-Maya-GGUF
+models--Pika-Labs--Pika-H3-Flex
+models--prithivMLmods--Qwen-Image-2.1-PE-I2I-GGUF
+models--Qwen--Qwen3-1.7B
+models--Qwen--Qwen3-4B
+models--Qwen--Qwen3.5-0.8B
+models--Qwen--Qwen3.5-2B
+models--Qwen--Qwen3.5-9B
+models--Qwen--Qwen3.8-27B
+models--Qwen--Qwen3.8-Flash-Next
+models--Qwen--Qwen-Image-2.1-PE-T2I
+models--r0b0tlab--NVIDIA-Nemotron-3.5-Bolt-74B-A9B-LiLiCorr-EXL3-6bpw
+models--RadixArk--Qwen3.8-27B-NVFP4
+models--raulvidis--Ling-3.0-flash-ROCmFP4-STRIX-MTP-GGUF
+models--realrebelai--LingBot_World_V2_ComfyUI
+models--RecursiveSI--flint
+models--robbyant--lingbot-world-base-cam
+models--robbyant--lingbot-world-fast
+models--robbyant--lingbot-world-v2-1.3b-causal-fast
+models--robbyant--lingbot-world-v2-14b-causal-fast
+models--robbyant--lingbot-world-v2-14b-causal-pretrain
+models--Ruler97--Godoter-27B-GGUF
+models--SamsungSAILMontreal--Qwen3-30B-A3B-Instruct-2507-REAM
+models--SexGod1979--PinkCherry_MiniMax-H3
+models--TD-Labs--Nemotron-3.5-Super-VL-DCOCO
+models--TD-Labs--Qwen3-4B-DCOCO
+models--TD-Labs--Qwen3-8B-DCOCO
+models--tencent--Hy-Memory-30B-A3B
+models--tencent--Hy-Memory-30B-A3B-GGUF
+models--Tongyi-MAI--Z-Image-Turbo
+models--turboderp--Ling-3.1-flash-exl3
+models--unsloth--DeepSeek-V4.1-Flash-1017-GGUF
+models--unsloth--DeepSeek-V4-Flash-0731-GGUF
+models--unsloth--Ling-1T-GGUF
+models--unsloth--MiniMax-H3
+models--unsloth--MiniMax-H3-FP8
+models--unsloth--MiniMax-H3-GGUF
+models--unsloth--NVIDIA-Nemotron-3.5-Bolt-74B-A9B-GGUF
+models--unsloth--Qwen3.6-27B-GGUF
+models--unsloth--Qwen3.6-35B-A3B-GGUF
+models--unsloth--Qwen3.8-27B-GGUF
+models--Viggle--Qwen-Image-2.1-viggle-turbo
+models--zai-org--GLM-5.3-Flash
+models--z-lab--Qwen3-4B-DFlash-b16
+models--z-lab--Qwen3-8B-DFlash-b16
+version.txt
+=== /ai/models/llm child sizes ===
+53M	/ai/models/llm/bin
+16G	/ai/models/llm/ext-qwen38-35b-blender-v1
+945M	/ai/models/llm/gemma-4-E4B-heretic
+5.9G	/ai/models/llm/gemma-4-E4B-it-heretic
+4.0K	/ai/models/llm/llama-bin
+945M	/ai/models/llm/maestro-cache
+67G	/ai/models/llm/Ornith-1.5-35B-A3B
+19G	/ai/models/llm/Ornith-1.5-9B
+7.6G	/ai/models/llm/Qwen3-4B
+1.7G	/ai/models/llm/Qwen3.5-0.8B
+1.5G	/ai/models/llm/Qwen3.5-0.8B-BF16.gguf
+8.5G	/ai/models/llm/Qwen3.5-4B-3D-Coder
+6.2G	/ai/models/llm/qwen-image-2.1-pe-i2i
+5.3G	/ai/models/llm/qwen-image-2.1-pe-t2i
+8.5G	/ai/models/llm/tokengate
+[0m

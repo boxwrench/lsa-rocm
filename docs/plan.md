@@ -140,6 +140,12 @@ Gate outcomes are recorded there and not rewritten here: Gate 1 fails on prose a
 Not done: B2.6 (about 2M tokens on the Strix Halo node, needs a ROCm torch for gfx1151), GPU clustering stage timings, tech 512K and 1M prompts (not enough single-source text),
 a cross-prompt PCA test, a second model at long context, and any end-task accuracy measurement.
 
+### Update, 2026-11-04 (after outside review)
+
+- Review found two measurement problems in experiment 003, both confirmed: the GPU file's clustering time (755 s at 10M) was a thread-oversubscription artifact, fixed and rerun (13.5 s); the gather is always timed on a fixed 1M-row table, so its flat cost is an assumption. See `experiments/003-stage-timing/README.md`.
+- B2.6 prerequisite met: Nimo has a ROCm torch for gfx1151 (`~/lsa-rocm-env`, torch 2.9.1+rocm7.13.0, sees the Radeon 8060S with ~120 GB addressable). The 2M-token dump itself has not run.
+- Proposed next experiment (from the review): end-to-end sparse-attention microbenchmark on real captured KV at 32K, 128K and 512K, comparing full attention, block-sparse and LSA flat/tree, with output error, VRAM traffic, tree nodes visited, and prefill vs decode separated. Not started.
+
 ## Open questions
 
 - Does the PCA basis from one prompt generalise to another, or must it be fitted per prompt? The paper fits it per layer.

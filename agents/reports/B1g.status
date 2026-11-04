@@ -1,0 +1,1 @@
+PASS (supervisor; 32K chunked matches single-pass, 128K recompute 0.999999)

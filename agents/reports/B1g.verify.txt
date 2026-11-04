@@ -1,0 +1,2 @@
+[1;91mE-001h rocSHMEM[0m Could not open libnuma. Returning	[90mNUMAWrapper@src/gda/numa_wrapper.cpp:48[0m
+FAILS: ['missing /ai/github/lsa-rocm/results/dumps/ornith-chunked-32768/meta.json', 'missing /ai/github/lsa-rocm/results/dumps/ornith-chunked-131072/meta.json']

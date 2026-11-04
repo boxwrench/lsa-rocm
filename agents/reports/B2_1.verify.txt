@@ -1,0 +1,10 @@
+[1;91mE-001h rocSHMEM[0m Could not open libnuma. Returning	[90mNUMAWrapper@src/gda/numa_wrapper.cpp:48[0m
+.0995 recall 0.0276 mass 0.5351
+[    0.1s] paper layer 7 done in 0.1s
+[    0.1s] WROTE /ai/github/lsa-rocm/results/b2_1-verify.json (16 records, 10 samples) in 0.1s
+/ai/github/lsa-rocm/agents/scratch/venv-lsa-min/lib/python3.12/site-packages/torch/_subclasses/functional_tensor.py:368: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /__w/pytorch/pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+
+mean outside-window head-avg mass: {'flat/flat': 0.0995, 'tree/tree': 0.0995, 'flat/random': 0.0741, 'flat/recency': 0.0118, 'flat/exhaustive': 0.7251, 'tree/random': 0.0741, 'tree/recency': 0.0118, 'tree/exhaustive': 0.7251, 'block_sparse/block_sparse': 0.0899, 'block_sparse/random': 0.0722, 'block_sparse/recency': 0.0118, 'block_sparse/exhaustive': 0.7251}
+independent mass_outside_headavg=0.10777 reported=0.10777
+FAILS: none

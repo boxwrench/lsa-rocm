@@ -1,0 +1,2634 @@
+[0m
+> build · deepseek/deepseek-v4.1-flash-1017
+[0m
+[0m→ [0mRead docs/plan.md
+[0m
+[0m$ [0mpython -c "import huggingface_hub; print(huggingface_hub.__version__)" 2>&1; which hf curl 2>&1
+/bin/bash: line 1: python: command not found
+/home/boxwrench/.local/bin/hf
+/usr/bin/curl
+[0m
+[0m$ [0mgit status --short && git log --oneline -5 && ls agents/reports 2>/dev/null && ls agents/scratch 2>/dev/null
+M .gitignore
+cbe0f42 Scaffold lsa-rocm: plan, metrics, layout
+B0a.log
+B0b.log
+B0c.log
+B0d.log
+[0m
+[0m$ [0mls -la agents/reports agents/scratch; cat agents/reports/B0a.log agents/reports/B0b.log 2>&1 | head -50
+agents/reports:
+total 32
+drwxrwxr-x 2 boxwrench boxwrench 4096 Nov  3 16:30 .
+drwxrwxr-x 4 boxwrench boxwrench 4096 Nov  3 16:30 ..
+-rw-rw-r-- 1 boxwrench boxwrench 1362 Nov  3 16:30 B0a.log
+-rw-rw-r-- 1 boxwrench boxwrench  508 Nov  3 16:30 B0b.log
+-rw-rw-r-- 1 boxwrench boxwrench 4438 Nov  3 16:30 B0c.log
+-rw-rw-r-- 1 boxwrench boxwrench 8148 Nov  3 16:30 B0d.log
+
+agents/scratch:
+total 8
+drwxrwxr-x 2 boxwrench boxwrench 4096 Nov  3 16:30 .
+drwxrwxr-x 4 boxwrench boxwrench 4096 Nov  3 16:30 ..
+[0m
+> build · deepseek/deepseek-v4.1-flash-1017
+[0m
+I'll start by reading the plan file and then investigate the model.
+[0m→ [0mRead docs/plan.md
+[0m
+[0m$ [0mpwd && ls && git status --short | head -50
+/ai/github/lsa-rocm
+agents
+docs
+experiments
+README.md
+results
+src
+tests
+third_party
+ M .gitignore
+[0m
+[0m$ [0mgit log --oneline -5; echo ---; cat .gitignore
+cbe0f42 Scaffold lsa-rocm: plan, metrics, layout
+---
+results/*.pt
+results/dumps/
+__pycache__/
+*.pyc
+.venv/
+third_party/*/
+agents/reports/*.log
+agents/scratch/
+[0m
+[0m$ [0mls -la agents agents/scratch 2>/dev/null; echo ---; ls /ai/huggingface 2>/dev/null | head; echo ---; python -c "import transformers; print(transformers.__version__, transformers.__file__)" 2>&1 | head -5
+agents:
+total 16
+drwxrwxr-x  4 boxwrench boxwrench 4096 Nov  3 16:30 .
+drwxrwxr-x 10 boxwrench boxwrench 4096 Nov  3 16:23 ..
+drwxrwxr-x  2 boxwrench boxwrench 4096 Nov  3 16:30 reports
+drwxrwxr-x  2 boxwrench boxwrench 4096 Nov  3 16:30 scratch
+
+agents/scratch:
+total 8
+drwxrwxr-x 2 boxwrench boxwrench 4096 Nov  3 16:30 .
+drwxrwxr-x 4 boxwrench boxwrench 4096 Nov  3 16:30 ..
+---
+cli
+datasets
+hub
+modules
+stored_tokens
+stored_tokens.lock
+token
+[0m
+[0m$ [0mwhich python3 pip3; python3 -c "import huggingface_hub; print(huggingface_hub.__version__)" 2>&1; ls /ai/huggingface 2>/dev/null | head -40
+/usr/bin/python3
+/usr/bin/pip3
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'huggingface_hub'
+cli
+datasets
+hub
+modules
+stored_tokens
+stored_tokens.lock
+token
+xet
+[0m
+[0m$ [0mls /ai/huggingface/hub | head -50; ls /ai/huggingface/hub | grep -i nanbeige
+blobs
+CACHEDIR.TAG
+datasets--AtomicChat--calib-corpora
+datasets--emozilla--pg19
+datasets--google--IFEval
+datasets--ilabai--3dcodeverse
+datasets--openai--gsm8k
+datasets--openai--openai_humaneval
+datasets--Salesforce--wikitext
+datasets--sgoel9--paul_graham_essays
+datasets--TIGER-Lab--MMLU-Pro
+models--0xBakeer--TandemLLM-Nemotron-3.5-Bolt-74B-A9B-EXL3-4.0
+models--agentionai--Qwen3.8-27B-AP-GGUF
+models--agentionai--Qwen3.8-Flash-Next-Gyro-GGUF
+models--alibaba-pai--MiniMax-H3-Acc-LoRAs
+models--amd--Qwen3.8-27B-Quark-AWQ-MXFP4
+models--AtomicChat--Ling-3.0-flash-GGUF
+models--AtomicChat--Ling-3.0-flash-NVFP4
+models--AtomicChat--Ling-3.1-flash-GGUF
+models--Baekpica--Ling-3.1-flash-VQ-GGUF
+models--bartowski--apodex_Apodex-1.1-mini-GGUF
+models--bartowski--Ling-3.0-flash-GGUF
+models--bartowski--Ling-3.1-flash-GGUF
+models--black-forest-labs--FLUX.2-klein-9B
+models--bloomer010--Ling-3.0-flash-REAP288-73B-A5B-GGUF
+models--boxwrench--Hy-Memory-30B-A3B-BF16-GGUF
+models--boxwrench--Hy-Memory-30B-A3B-q4nx-wrench
+models--boxwrench--Ling-3.1-flash-exl3-wrench-2.10bpw
+models--cbfight--Ling-3.1-flash-NVFP4-lossless8
+models--ccore--Qwen3.5-4B-3D-Coder
+models--circlestone-labs--Anima
+models--Comfy-Org--gemma-4
+models--Comfy-Org--Krea-2
+models--Comfy-Org--MiniMax-H3
+models--Comfy-Org--Qwen3.5
+models--Comfy-Org--Qwen-Image-2.1
+models--Comfy-Org--SeedVR2
+models--conradlocke--krea2-identity-edit
+models--Danrisi--grainscape_moss
+models--dots-studio--dots3-note-prev
+models--Gazingstars123--Anima-2.9B
+models--Hikari07jp--Ling-3.1-flash-NVFP4-Ablitrated-MTP-RTX-PRO-6000-TP4
+models--hoidhxd--NVIDIA-NemotronLabs-VoiceChat-11B-GGUF
+models--hugypufy--Qwen3.8-27B-DFLASH2-PARO-M2XFP4
+models--HussainIsWashed--unity-csharp-coder
+models--ilintar--trellis2-gguf
+models--inclusionAI--Ling-3.0-flash-fp8
+models--inclusionAI--Ling-3.0-flash-int4
+models--inclusionAI--Ling-3.0-flash-UBTree
+models--inclusionAI--Ling-3.0-tiny-UBTree
+models--Nanbeige--Nanbeige4.3-33B
+[0m
+[0m→ [0mRead agents/reports/B0a.log
+[0m
+[0m$ [0mfind /ai/huggingface/hub/models--Nanbeige--Nanbeige4.3-33B -maxdepth 3 -type f -o -type l | head -50; echo ---; ls -la /ai/huggingface/hub/models--Nanbeige--Nanbeige4.3-33B/snapshots/*/ 2>/dev/null
+/ai/huggingface/hub/models--Nanbeige--Nanbeige4.3-33B/refs/main
+/ai/huggingface/hub/models--Nanbeige--Nanbeige4.3-33B/snapshots/c1093c501cc6460427c0ac634db7223d0450c0ee/README.md
+/ai/huggingface/hub/models--Nanbeige--Nanbeige4.3-33B/blobs/b85cb82077cb4d81836597644756610d8cb328b8
+---
+total 8
+drwxrwxr-x 2 boxwrench boxwrench 4096 Oct 26 06:17 .
+drwxrwxr-x 3 boxwrench boxwrench 4096 Oct 26 06:17 ..
+lrwxrwxrwx 1 boxwrench boxwrench   52 Oct 26 06:17 README.md -> ../../blobs/b85cb82077cb4d81836597644756610d8cb328b8
+[0m
+[0m$ [0mhf auth whoami 2>&1 | head -5; echo ---; hf api model-info Nanbeige/Nanbeige4.3-33B 2>&1 | head -100
+Hint: A new version of huggingface_hub (2.4.0) is available! You are using version 1.27.0.
+To update, run: hf update
+user=boxwrench orgs=Operational-Inference
+---
+Usage: hf [OPTIONS] [COMMAND] [ARGS]...
+Try 'hf --help' for help.
+
+Error: No such command 'api'.
+
+Available commands for 'hf':
+  auth                           Manage authentication (login, logout, etc.).
+  buckets                        Commands to interact with buckets.
+  cache                          Manage local cache directory.
+  collections                    Interact with collections on the Hub.
+  cp                             Copy files between local paths, repositories, and buckets.
+  datasets                       Interact with datasets on the Hub.
+  discussions                    Manage discussions and pull requests on the Hub.
+  download                       Download files from the Hub.
+  endpoints                      Manage Hugging Face Inference Endpoints.
+  env                            Print information about the environment.
+  extensions                     Manage hf CLI extensions.
+  jobs                           Run and manage Jobs on the Hub.
+  models                         Interact with models on the Hub.
+  papers                         Interact with papers on the Hub.
+  repos                          Manage repos on the Hub.
+  sandbox                        Run and manage sandboxes on Hugging Face Jobs.
+  skills                         Manage skills for AI assistants.
+  spaces                         Interact with spaces on the Hub.
+  sync                           Sync files between local directory and a bucket.
+  update                         Update the `hf` CLI to the latest version.
+  upload                         Upload a file or a folder to the Hub.
+  upload-large-folder            [Deprecated] Upload a large folder to the Hub.
+  version                        Print information about the hf version.
+  webhooks                       Manage webhooks on the Hub.
+
+Run 'hf --help' for full details.
+[0m
+[0m$ [0mcurl -sL "https://huggingface.co/api/models/Nanbeige/Nanbeige4.3-33B" -o agents/scratch/nanbeige_info.json; wc -c agents/scratch/nanbeige_info.json; head -c 3000 agents/scratch/nanbeige_info.json
+11828 agents/scratch/nanbeige_info.json
+{"_id":"6adc1caea171e3197498083f","id":"Nanbeige/Nanbeige4.3-33B","private":false,"pipeline_tag":"text-generation","library_name":"transformers","tags":["transformers","safetensors","llama","text-generation","llm","nanbeige","conversational","en","zh","base_model:Nanbeige/Nanbeige4.3-33B-Base","base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base","license:apache-2.0","eval-results","text-generation-inference","endpoints_compatible","region:us"],"downloads":17839,"likes":1027,"modelId":"Nanbeige/Nanbeige4.3-33B","author":"Nanbeige","sha":"df919e1e2cf077a22204c78b6c826bf3db18bc08","lastModified":"2026-10-28T01:59:01.000Z","gated":false,"disabled":false,"widgetData":[{"text":"Hi, what can you help me with?"},{"text":"What is 84 * 3 / 2?"},{"text":"Tell me an interesting fact about the universe!"},{"text":"Explain quantum computing in simple terms."}],"model-index":null,"config":{"architectures":["LlamaForCausalLM"],"model_type":"llama","tokenizer_config":{"bos_token":"<|im_start|>","chat_template":"\n\n{%- macro visible_text(content) -%}\n    {%- if content is string -%}\n        {{- content }}\n    {%- elif content is iterable and content is not mapping -%}\n        {%- for item in content -%}\n            {%- if item is mapping and item.type == 'text' -%}\n                {{- item.text }}\n            {%- elif item is string -%}\n                {{- item }}\n            {%- elif item is mapping and item.type in ['image', 'image_url', 'video', 'video_url', 'audio', 'audio_url', 'input_audio'] -%}\n                {%- set media_type = item.type | replace('_url', '') | replace('input_', '') -%}\n                {{- \"<reminder>You are unable to process this \" ~ media_type ~ \" because you don't have multi-modal input ability. Try different methods.</reminder>\" }}\n            {%- endif -%}\n        {%- endfor -%}\n    {%- else -%}\n        {{- content }}\n    {%- endif -%}\n{%- endmacro -%}\n\n\n{%- set tool_call_format = tool_call_format if tool_call_format is defined else 'xml' %}\n{%- if tools %}\n    {{- '<|im_start|>system\\n' }}    \n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- visible_text(messages[0].content) + '\\n\\n' }}\n    {%- else %} \n        {{- '你是一位工具函数调用专家，你会得到一个问题和一组可能的工具函数。根据问题，你需要进行一个或多个函数/工具调用以实现目的，请尽量尝试探索通过工具解决问题。\\n如果没有一个函数可以使用，请直接使用自然语言回复用户。\\n如果给定的问题缺少函数所需的参数，请使用自然语言进行提问，向用户询问必要信息。\\n如果调用结果已经足够回答用户问题，请对历史结果进行总结，使用自然语言回复用户。' }} \n    {%- endif %}\n\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\"
+[0m
+[0m$ [0mhf models info Nanbeige/Nanbeige4.3-33B 2>&1 | head -80
+{"id": "Nanbeige/Nanbeige4.3-33B", "author": "Nanbeige", "card_data": {}, "config": {"architectures": ["LlamaForCausalLM"], "model_type": "llama", "tokenizer_config": {"bos_token": "<|im_start|>", "chat_template": "\n\n{%- macro visible_text(content) -%}\n    {%- if content is string -%}\n        {{- content }}\n    {%- elif content is iterable and content is not mapping -%}\n        {%- for item in content -%}\n            {%- if item is mapping and item.type == 'text' -%}\n                {{- item.text }}\n            {%- elif item is string -%}\n                {{- item }}\n            {%- elif item is mapping and item.type in ['image', 'image_url', 'video', 'video_url', 'audio', 'audio_url', 'input_audio'] -%}\n                {%- set media_type = item.type | replace('_url', '') | replace('input_', '') -%}\n                {{- \"<reminder>You are unable to process this \" ~ media_type ~ \" because you don't have multi-modal input ability. Try different methods.</reminder>\" }}\n            {%- endif -%}\n        {%- endfor -%}\n    {%- else -%}\n        {{- content }}\n    {%- endif -%}\n{%- endmacro -%}\n\n\n{%- set tool_call_format = tool_call_format if tool_call_format is defined else 'xml' %}\n{%- if tools %}\n    {{- '<|im_start|>system\\n' }}    \n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- visible_text(messages[0].content) + '\\n\\n' }}\n    {%- else %} \n        {{- '\u4f60\u662f\u4e00\u4f4d\u5de5\u5177\u51fd\u6570\u8c03\u7528\u4e13\u5bb6\uff0c\u4f60\u4f1a\u5f97\u5230\u4e00\u4e2a\u95ee\u9898\u548c\u4e00\u7ec4\u53ef\u80fd\u7684\u5de5\u5177\u51fd\u6570\u3002\u6839\u636e\u95ee\u9898\uff0c\u4f60\u9700\u8981\u8fdb\u884c\u4e00\u4e2a\u6216\u591a\u4e2a\u51fd\u6570/\u5de5\u5177\u8c03\u7528\u4ee5\u5b9e\u73b0\u76ee\u7684\uff0c\u8bf7\u5c3d\u91cf\u5c1d\u8bd5\u63a2\u7d22\u901a\u8fc7\u5de5\u5177\u89e3\u51b3\u95ee\u9898\u3002\\n\u5982\u679c\u6ca1\u6709\u4e00\u4e2a\u51fd\u6570\u53ef\u4ee5\u4f7f\u7528\uff0c\u8bf7\u76f4\u63a5\u4f7f\u7528\u81ea\u7136\u8bed\u8a00\u56de\u590d\u7528\u6237\u3002\\n\u5982\u679c\u7ed9\u5b9a\u7684\u95ee\u9898\u7f3a\u5c11\u51fd\u6570\u6240\u9700\u7684\u53c2\u6570\uff0c\u8bf7\u4f7f\u7528\u81ea\u7136\u8bed\u8a00\u8fdb\u884c\u63d0\u95ee\uff0c\u5411\u7528\u6237\u8be2\u95ee\u5fc5\u8981\u4fe1\u606f\u3002\\n\u5982\u679c\u8c03\u7528\u7ed3\u679c\u5df2\u7ecf\u8db3\u591f\u56de\u7b54\u7528\u6237\u95ee\u9898\uff0c\u8bf7\u5bf9\u5386\u53f2\u7ed3\u679c\u8fdb\u884c\u603b\u7ed3\uff0c\u4f7f\u7528\u81ea\u7136\u8bed\u8a00\u56de\u590d\u7528\u6237\u3002' }} \n    {%- endif %}\n\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    \n    {%- if tool_call_format == 'json' %}\n        {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n\" }}\n        {{- '<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n' }}\n    {%- else %}\n        {{- \"\\n</tools>\\n\\nFor each function call, output the function name and arguments within the following XML format:\\n\" }}\n        {{- '<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call><|im_end|>\\n' }}\n    {%- endif %}\n    \n{%- else %}\n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- '<|im_start|>system\\n' + visible_text(messages[0].content) + '<|im_end|>\\n' }}\n    {%- else %} \n        {{- '<|im_start|>system\\n\u4f60\u662f\u5357\u5317\u9601\uff0c\u4e00\u6b3e\u7531BOSS\u76f4\u8058\u81ea\u4e3b\u7814\u53d1\u5e76\u8bad\u7ec3\u7684\u4e13\u4e1a\u5927\u8bed\u8a00\u6a21\u578b\u3002<|im_end|>\\n' }} \n    {%- endif %}\n{%- endif %}\n\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.get('role', '') == \"user\" and visible_text(message.content) is string and not(visible_text(message.content).startswith('<tool_response>') and visible_text(message.content).endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n\n{%- for message in messages %}\n    {%- if visible_text(message.content) is string %}\n        {%- set content = visible_text(message.content) %}\n    {%- else %}\n        {%- set content = '' %}\n    {%- endif %}\n    \n    {%- if message.get('role', '') == \"system\" %}\n        {%- if not loop.first %}\n            {{- raise_exception('System message must be at the beginning.') }}\n        {%- endif %}\n        \n    {%- elif message.get('role', '') == \"assistant\" %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is string %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in content %}\n                {%- set reasoning_content = content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n                {%- set content = content.split('</think>')[-1].lstrip('\\n').rstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- set content = content|trim %}\n        {%- set reasoning_content = reasoning_content|trim %}\n        \n        {%- if (preserve_thinking is defined and preserve_thinking is false) and (loop.index0 < ns.last_query_index) %}\n            {{- '<|im_start|>' + message.get('role', '') + '\\n<think>\\n\\n</think>\\n\\n' + content }}\n        {%- else %}\n            {{- '<|im_start|>' + message.get('role', '') + '\\n<think>\\n' + reasoning_content + '\\n</think>\\n\\n' + content }}\n        {%- endif %}\n        \n        {%- if message.tool_calls and message.tool_calls is iterable and message.tool_calls is not mapping %}\n            {%- if tool_call_format == 'json' %}\n                {%- for tool_call in message.tool_calls %}\n                    {%- if (loop.first and content) or (not loop.first) %}\n                        {{- '\\n' }}\n                    {%- endif %}\n                    {%- if tool_call.function %}\n                        {%- set tool_call = tool_call.function %}\n                    {%- endif %}\n                    {{- '<tool_call>\\n{\"name\": \"' }}\n                    {{- tool_call.name }}\n                    {{- '\", \"arguments\": ' }}\n                    {%- if tool_call.arguments is string %}\n                        {{- tool_call.arguments }}\n                    {%- else %}\n                        {{- tool_call.arguments | tojson }}\n                    {%- endif %}\n                    {{- '}\\n</tool_call>' }}\n                {%- endfor %}\n            {%- else %}\n                {%- for tool_call in message.tool_calls %}\n                    {%- if tool_call.function is defined %}\n                        {%- set tool_call = tool_call.function %}\n                    {%- endif %}\n                    \n                    {%- if loop.first %}\n                        {%- if content|trim %}\n                            {{- '\n\n<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                        {%- else %}\n                            {{- '<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                        {%- endif %}\n                    {%- else %}\n                        {{- '\n<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                    {%- endif %}\n                    \n                    {%- if tool_call.arguments is defined %}\n                        {%- for args_name, args_value in tool_call.arguments|items %}\n                            {{- '<parameter=' + args_name + '>\n' }}\n                            {%- set args_value = args_value | string if args_value is string else args_value | tojson | safe %}\n                            {{- args_value }}\n                            {{- '\n</parameter>\n' }}\n                        {%- endfor %}\n                    {%- endif %}\n                    {{- '</function>\n</tool_call>' }}\n                {%- endfor %}\n            {%- endif %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n        \n    {%- elif message.get('role', '') == \"tool\" %}\n        {%- if loop.previtem and loop.previtem.get('role', '') != \"tool\" %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or loop.nextitem.get('role', '') != \"tool\" %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- elif message.get('role', '') != '' %}\n        {{- '<|im_start|>' + message.get('role', '') + '\\n' + content + '<|im_end|>' + '\\n' }}\n    {%- endif %}\n{%- endfor %}\n\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    \n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\n\n</think>\n\n' }}\n    {%- else %}\n        {{- '<think>\n' }}\n    {%- endif %}\n    \n{%- endif %}\n", "eos_token": "<|im_end|>", "pad_token": "<unk>", "unk_token": "<unk>", "use_default_system_prompt": false}}, "created_at": "2026-10-24T02:49:18+00:00", "disabled": false, "downloads": 17839, "gated": false, "last_modified": "2026-10-28T01:59:01+00:00", "library_name": "transformers", "likes": 1027, "pipeline_tag": "text-generation", "private": false, "safetensors": {"parameters": {"BF16": 33118977024}, "total": 33118977024}, "sha": "df919e1e2cf077a22204c78b6c826bf3db18bc08", "siblings": [{"rfilename": ".eval_results/Nanbeige4.3-33B.yaml"}, {"rfilename": ".gitattributes"}, {"rfilename": "README.md"}, {"rfilename": "added_tokens.json"}, {"rfilename": "config.json"}, {"rfilename": "figures/nanbeige43-benchmarks.png"}, {"rfilename": "figures/nbg.png"}, {"rfilename": "figures/occupation.png"}, {"rfilename": "generation_config.json"}, {"rfilename": "model-00001-of-00014.safetensors"}, {"rfilename": "model-00002-of-00014.safetensors"}, {"rfilename": "model-00003-of-00014.safetensors"}, {"rfilename": "model-00004-of-00014.safetensors"}, {"rfilename": "model-00005-of-00014.safetensors"}, {"rfilename": "model-00006-of-00014.safetensors"}, {"rfilename": "model-00007-of-00014.safetensors"}, {"rfilename": "model-00008-of-00014.safetensors"}, {"rfilename": "model-00009-of-00014.safetensors"}, {"rfilename": "model-00010-of-00014.safetensors"}, {"rfilename": "model-00011-of-00014.safetensors"}, {"rfilename": "model-00012-of-00014.safetensors"}, {"rfilename": "model-00013-of-00014.safetensors"}, {"rfilename": "model-00014-of-00014.safetensors"}, {"rfilename": "model.safetensors.index.json"}, {"rfilename": "special_tokens_map.json"}, {"rfilename": "tokenizer.json"}, {"rfilename": "tokenizer.model"}, {"rfilename": "tokenizer_config.json"}], "spaces": ["fastgpu/vram-and-gpu-cost-calculator", "apathy-exe/Nanbeige4.3-33B", "600me/llm-gpu-cost-calculator", "600me/rag-web-scraping-cost-calculator", "600me/residential-proxy-sticky-session-calculator", "600me/ai-saas-stripe-vs-mor-tax-calculator", "joeWorld/nanbeige4-3-33b-chat", "600me/pdf-api-cost-calculator", "600me/seo-workflow-tco-calculator"], "tags": ["transformers", "safetensors", "llama", "text-generation", "llm", "nanbeige", "conversational", "en", "zh", "base_model:Nanbeige/Nanbeige4.3-33B-Base", "base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base", "license:apache-2.0", "eval-results", "text-generation-inference", "endpoints_compatible", "region:us"], "transformers_info": {"auto_model": "AutoModelForCausalLM", "pipeline_tag": "text-generation", "processor": "AutoTokenizer"}, "used_storage": 66259989086, "widget_data": [{"text": "Hi, what can you help me with?"}, {"text": "What is 84 * 3 / 2?"}, {"text": "Tell me an interesting fact about the universe!"}, {"text": "Explain quantum computing in simple terms."}]}
+[0m
+[0m$ [0mcurl -sL "https://huggingface.co/api/models?search=Nanbeige4.3-33B&limit=100" -o agents/scratch/nb_search.json; python3 - <<'EOF'
+import json
+d=json.load(open('/ai/github/lsa-rocm/agents/scratch/nb_search.json'))
+for m in d:
+    print(m['id'], m.get('pipeline_tag'), m.get('downloads'), m.get('tags',[])[:6])
+EOF
+Nanbeige/Nanbeige4.3-33B text-generation 17839 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF text-generation 35938 ['gguf', 'nanbeige', 'nanbeige4.3', 'uncensored', 'abliterated', 'imatrix']
+abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF text-generation 20548 ['gguf', 'text-generation', 'gsq', 'rco', 'llama.cpp', 'quantized']
+Nanbeige/Nanbeige4.3-33B-Base text-generation 1532 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+AtomicChat/Nanbeige4.3-33B-GGUF text-generation 54056 ['gguf', 'atomic-dynamic', 'llama.cpp', 'nanbeige', 'imatrix', 'quantized']
+bartowski/Nanbeige_Nanbeige4.3-33B-GGUF text-generation 118217 ['gguf', 'llm', 'nanbeige', 'text-generation', 'en', 'zh']
+FRENCHFAKER/Nanbeige4.3-33B-cybersec-abliterated-GGUF text-generation 5153 ['gguf', 'abliterated', 'uncensored', 'llama.cpp', 'nanbeige', 'cybersecurity']
+Nanbeige/Nanbeige4.3-33B-INT4 text-generation 194 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+webbrain-one/Nanbeige4.3-33B-NVFP4 text-generation 1112 ['transformers', 'safetensors', 'llama', 'text-generation', 'nvfp4', 'fp4']
+Luni/Nanbeige-4.3-33B-Heretic text-generation 710 ['transformers', 'safetensors', 'llama', 'text-generation', 'nanbeige', 'full-attention']
+Nanbeige/Nanbeige4.3-33B-FP8 text-generation 203 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+Nanbeige/Nanbeige4.3-33B-INT8 text-generation 115 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+sakamakismile/Nanbeige4.3-33B-Heretic-NVFP4 text-generation 325 ['transformers', 'safetensors', 'llama', 'text-generation', 'nvfp4', 'autoround']
+Harsha001/Nanbeige4.3-33B-ROCmFPX text-generation 304 ['gguf', 'rocmfpx', 'rocmfp4', 'amd', 'rocm', 'strix-halo']
+prithivMLmods/Nanbeige4.3-33B-NVFP4-GGUF text-generation 744 ['transformers', 'gguf', 'text-generation-inference', 'llama-cpp', 'llm', 'llama']
+Luni/Nanbeige-4.3-33B-Heretic-GSQ-RCO-GGUF text-generation 4344 ['gguf', 'text-generation', 'gsq', 'rco', 'llama.cpp', 'quantized']
+mradermacher/Nanbeige4.3-33B-i1-GGUF None 3395 ['transformers', 'gguf', 'llm', 'nanbeige', 'en', 'zh']
+DogukanUrker/Nanbeige4.3-33B-GGUF text-generation 545 ['gguf', 'nanbeige', 'llama.cpp', 'imatrix', 'agentic', 'tool-use']
+primitive-ai/Nanbeige4.3-33B-NVFP4 text-generation 1196 ['vllm', 'safetensors', 'llama', 'compressed-tensors', 'nvfp4', 'quantized']
+Nurymanau/Nanbeige4.3-33B-MLX-4bit text-generation 2529 ['mlx', 'safetensors', 'llama', 'nanbeige', '4-bit', 'conversational']
+pyros-vault/Nanbeige4.3-33B-oQ4e text-generation 1318 ['mlx', 'safetensors', 'llama', 'omlx', 'oq', 'quantized']
+fcmeyer/Nanbeige4.3-33B-MLX-6bit text-generation 321 ['mlx', 'safetensors', 'llama', 'nanbeige', 'text-generation', 'conversational']
+pratikgx/Nanbeige4.3-33B-MLX-4bit text-generation 1555 ['mlx', 'safetensors', 'llama', 'nanbeige', '4-bit', 'apple-silicon']
+pyros-vault/Nanbeige4.3-33B-oQ8e text-generation 293 ['mlx', 'safetensors', 'llama', 'omlx', 'oq', 'quantized']
+Tech2wild/Nanbeige4.3-33B-W4A16-AutoRound text-generation 364 ['vllm', 'safetensors', 'llama', 'nanbeige', 'int4', 'w4a16']
+ProCreations/Nanbeige4.3-33B-DFlash2 text-generation 1434 ['sglang', 'safetensors', 'qwen3', 'dflash2', 'speculative-decoding', 'nanbeige']
+ProCreations/Nanbeige4.3-33B-NVFP4-A16 text-generation 360 ['transformers', 'safetensors', 'llama', 'text-generation', 'quantized', 'nvfp4']
+wasifb/Nanbeige4.3-33B-AutoRound-W4A16 text-generation 185 ['transformers', 'safetensors', 'llama', 'text-generation', 'nanbeige', 'autoround']
+shisa-ai/Nanbeige4.3-33B-DMS-2x None 0 ['dms', 'kv-cache', 'fastdms', 'sidecar', 'llama', 'en']
+PollardWeights/Nanbeige4.3-33B-Pollard text-generation 1312 ['gguf', 'pollard-weights', 'pollard', 'llama.cpp', 'ik_llama.cpp', 'trellis']
+0bserverx/Nanbeige4.3-33B-RVN-Uncensored-Heretic-Abliterated-RCO-GGUF text-generation 1069 ['gguf', 'heretic', 'abliterated', 'uncensored', 'ara', 'rco']
+axteam/Nanbeige4.3-33B-NVFP4A16 text-generation 1496 ['transformers', 'safetensors', 'llama', 'text-generation', 'compressed-tensors', 'vllm']
+axteam/Nanbeige4.3-33B-AWQ-4bit text-generation 156 ['transformers', 'safetensors', 'llama', 'text-generation', 'compressed-tensors', 'vllm']
+axteam/Nanbeige4.3-33B-NVFP4 text-generation 1480 ['transformers', 'safetensors', 'llama', 'text-generation', 'compressed-tensors', 'vllm']
+axteam/Nanbeige4.3-33B-GGUF text-generation 384 ['gguf', 'llama.cpp', 'quantized', 'text-generation', 'base_model:Nanbeige/Nanbeige4.3-33B', 'base_model:quantized:Nanbeige/Nanbeige4.3-33B']
+junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-4bit text-generation 218 ['mlx', 'safetensors', 'llama', 'abliterated', 'uncensored', 'heretic']
+SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic text-generation 478 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+eepos/Nanbeige4.3-33B-Q4_K_S-GGUF text-generation 869 ['transformers', 'gguf', 'llm', 'nanbeige', 'llama-cpp', 'gguf-my-repo']
+KnutJaegersberg/Nanbeige4.3-33B-Q8_0-GGUF text-generation 385 ['transformers', 'gguf', 'llm', 'nanbeige', 'llama-cpp', 'gguf-my-repo']
+CVLTAI/Nanbeige4.3-33B-GGUF text-generation 1565 ['llama.cpp', 'gguf', 'llm', 'llama', 'nanbeige', 'text-generation']
+KnutJaegersberg/Nanbeige4.3-33B-Base-Q8_0-GGUF text-generation 172 ['transformers', 'gguf', 'llm', 'nanbeige', 'llama-cpp', 'gguf-my-repo']
+blallo27/Nanbeige4.3-33B-Q6_K-GGUF text-generation 98 ['transformers', 'gguf', 'llm', 'nanbeige', 'llama-cpp', 'gguf-my-repo']
+moeshawky/Nanbeige4.3-33B-GGUF text-generation 350 ['gguf', 'nanbeige', 'llama', 'quantized', 'q4', 'q6']
+eyes-ml/Nanbeige4.3-33B text-generation 165 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+eyes-ml/Nanbeige4.3-33B-Base text-generation 209 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+Duckets/Nanbeige4.3-33B-MLX-4bit text-generation 345 ['mlx', 'safetensors', 'llama', 'coding', 'agent', 'text-generation']
+XTer123/Nanbeige4.3-33B-GGUF text-generation 84 ['gguf', 'llama-cpp', 'nanbeige', 'imatrix', 'text-generation', 'zh']
+moeshawky/Nanbeige4.3-33B-INT8-safetensors text-generation 110 ['safetensors', 'llama', 'nanbeige', 'int8', 'quantized', 'w8a16']
+nesymerp1/Nanbeige4.3-33B-Base-Q4_K_M-GGUF text-generation 3800 ['transformers', 'gguf', 'llm', 'nanbeige', 'llama-cpp', 'gguf-my-repo']
+primitive-ai/Nanbeige4.3-33B-FP8 text-generation 586 ['vllm', 'safetensors', 'llama', 'compressed-tensors', 'fp8', 'quantized']
+DJLougen/Nanbeige4.3-33B-MLX text-generation 0 ['mlx', 'safetensors', 'nanbeige', 'quantized', 'text-generation', 'base_model:Nanbeige/Nanbeige4.3-33B']
+moeshawky/Nanbeige4.3-33B-FP8-safetensors text-generation 53 ['transformers', 'safetensors', 'llama', 'text-generation', 'llm', 'nanbeige']
+stuchapin/Nanbeige4.3-33B-Base-W4A16-AutoRound text-generation 474 ['transformers', 'safetensors', 'llama', 'text-generation', 'quantized', '4-bit']
+killen8/Nanbeige4.3-33B-MLX-4bit None 132 ['mlx', 'safetensors', 'llama', '4-bit', 'apple-silicon', 'agentic']
+hamuz/Nanbeige4.3-33B-MLX text-generation 0 ['mlx', 'safetensors', 'mlx-lm', 'apple-silicon', 'quantized', 'nanbeige']
+fcmeyer/Nanbeige4.3-33B-MLX-bf16 text-generation 342 ['mlx', 'safetensors', 'llama', 'nanbeige', 'text-generation', 'conversational']
+fcmeyer/Nanbeige4.3-33B-MLX-4bit text-generation 235 ['mlx', 'safetensors', 'llama', 'nanbeige', 'text-generation', 'conversational']
+fcmeyer/Nanbeige4.3-33B-MLX-8bit text-generation 283 ['mlx', 'safetensors', 'llama', 'nanbeige', 'text-generation', 'conversational']
+primitive-ai/Nanbeige4.3-33B-mixed-NVFP4-FP8 text-generation 182 ['vllm', 'safetensors', 'llama', 'compressed-tensors', 'nvfp4', 'fp8']
+fcmeyer/Nanbeige4.3-33B-MLX-4bit-g128 text-generation 94 ['mlx', 'safetensors', 'llama', 'nanbeige', 'text-generation', 'conversational']
+fcmeyer/Nanbeige4.3-33B-MLX-mixed-4-6-g64 text-generation 324 ['mlx', 'safetensors', 'llama', 'nanbeige', 'text-generation', 'conversational']
+Razor3D/Nanbeige4.3-33B-Q4_K_M-GGUF text-generation 107 ['transformers', 'gguf', 'llm', 'nanbeige', 'llama-cpp', 'gguf-my-repo']
+Luni/Nanbeige-4.3-33B-EXL3 text-generation 78 ['exllamav3', 'exl3', 'nanbeige', 'llama', 'full-attention', 'reasoning']
+Luni/Nanbeige-4.3-33B-Heretic-EXL3 text-generation 70 ['exllamav3', 'exl3', 'nanbeige', 'reasoning', 'thinking', 'uncensored']
+a-gordo/Nanbeige4.3-33B-oQ8e text-generation 459 ['mlx', 'safetensors', 'llama', 'omlx', 'oqe', 'quantized']
+a-gordo/Nanbeige4.3-33B-oQ6e text-generation 649 ['mlx', 'safetensors', 'llama', 'omlx', 'oqe', 'quantized']
+a-gordo/Nanbeige4.3-33B-oQ4e text-generation 301 ['mlx', 'safetensors', 'llama', 'omlx', 'oqe', 'quantized']
+stuchapin/Nanbeige4.3-33B-Base-W3A16-AutoRound text-generation 540 ['transformers', 'safetensors', 'llama', 'text-generation', 'quantized', '3-bit']
+kapitsaprime/Nanbeige4.3-33B-MLX-4bit text-generation 414 ['mlx', 'safetensors', 'llama', 'nanbeige', 'awq', '4-bit']
+kapitsaprime/Nanbeige4.3-33B-MLX-8bit text-generation 281 ['mlx', 'safetensors', 'llama', 'nanbeige', '8-bit', 'apple-silicon']
+lxe/Nanbeige4.3-33B-EXL3-2.5bpw text-generation 326 ['exllamav3', 'safetensors', 'llama', 'nanbeige', 'dense', 'reasoning']
+chriswessels/Nanbeige4.3-33B-oQ8e None 95 ['mlx', 'safetensors', 'llama', 'oq', 'quantized', '8-bit']
+pyros-vault/Nanbeige4.3-33B-oQ6e text-generation 495 ['mlx', 'safetensors', 'llama', 'omlx', 'oq', 'quantized']
+stuchapin/Nanbeige4.3-33B-Base-W8A16-AutoRound text-generation 935 ['transformers', 'safetensors', 'llama', 'text-generation', 'quantized', '8-bit']
+OsaurusAI/Nanbeige4.3-33B-JANG_4D text-generation 300 ['mlx', 'safetensors', 'llama', 'jang', 'quantized', 'apple-silicon']
+OsaurusAI/Nanbeige4.3-33B-JANG_6M text-generation 280 ['mlx', 'safetensors', 'llama', 'jang', 'quantized', 'apple-silicon']
+ProCreations/Nanbeige4.3-33B-FP8 text-generation 276 ['transformers', 'safetensors', 'llama', 'text-generation', 'quantized', 'fp8']
+OsaurusAI/Nanbeige4.3-33B-JANG_2D text-generation 290 ['mlx', 'safetensors', 'llama', 'jang', 'quantized', 'apple-silicon']
+nonkronk/Nanbeige4.3-33B-EXL3-4.0bpw text-generation 137 ['safetensors', 'llama', 'exl3', 'exllamav3', '4bpw', 'quantized']
+jeonghyeon00/Nanbeige4.3-33B-w8a16-compressed-tensors text-generation 173 ['transformers', 'safetensors', 'llama', 'text-generation', 'nanbeige', 'vllm']
+jeonghyeon00/Nanbeige4.3-33B-w4a16-gptq-compressed-tensors text-generation 180 ['transformers', 'safetensors', 'llama', 'text-generation', 'nanbeige', 'vllm']
+Luni/Nanbeige-4.3-33B-Heretic-GGUF text-generation 7252 ['gguf', 'imatrix', 'nanbeige', 'llama', 'full-attention', 'reasoning']
+ProCreations/Nanbeige4.3-33B-EXL3 text-generation 130 ['exl3', 'exllamav3', 'quantized', 'llama', 'text-generation', 'en']
+XTer123/Nanbeige4.3-33B-Uncensored-GGUF text-generation 2919 ['gguf', 'llama.cpp', 'uncensored', 'abliterated', 'text-generation', 'zh']
+jeonghyeon00/Nanbeige4.3-33B-W4A16-AutoRound text-generation 263 ['transformers', 'safetensors', 'llama', 'text-generation', 'nanbeige', 'vllm']
+alexwengg/Nanbeige4.3-33B-MLX-mixed-3-4-6bit text-generation 325 ['mlx', 'safetensors', 'llama', 'nanbeige', 'agent', 'apple-silicon']
+alexwengg/Nanbeige4.3-33B-MLX-3bit text-generation 275 ['mlx', 'safetensors', 'llama', 'nanbeige', 'agent', 'apple-silicon']
+mph/Nanbeige4.3-33B-MXFP8 text-generation 38 ['transformers', 'safetensors', 'llama', 'text-generation', 'mxfp8', 'fp8']
+Luni/Nanbeige-4.3-33B-Heretic-EXL3-SC text-generation 26 ['exllamav3', 'exl3', 'self-calibrated', 'nanbeige', 'reasoning', 'thinking']
+danyalmalik/Nanbeige4.3-33B-IQ2_M-ONNX-WebGPU None 134 ['onnx', 'llama', 'webgpu', 'quick-inference', 'gguf', 'base_model:Nanbeige/Nanbeige4.3-33B']
+vcruz305/Nanbeige4.3-33B-SAGE-EXL3-4.50bpw text-generation 227 ['safetensors', 'llama', 'nanbeige', 'exl3', 'exllamav3', 'sage-exl3']
+danyalmalik/Nanbeige4.3-33B-Q4_K_M-ONNX-WebGPU None 151 ['onnx', 'llama', 'webgpu', 'quick-inference', 'gguf', 'base_model:Nanbeige/Nanbeige4.3-33B']
+yamz-labs/Nanbeige4.3-33B-EXL3-Yamz text-generation 272 ['exllamav3', 'safetensors', 'llama', 'exl3', 'quantized', 'nanbeige']
+3hs4n/Nanbeige4.3-33B-mlx-JANG_2D-compact text-generation 271 ['mlx', 'safetensors', 'llama', 'apple-silicon', 'quantized', 'reasoning']
+mradermacher/Nanbeige4.3-33B-Base-GGUF None 535 ['transformers', 'gguf', 'llm', 'nanbeige', 'en', 'zh']
+heliophage/Nanbeige4.3-33B-W4A16-GPTQ text-generation 68 ['transformers', 'safetensors', 'llama', 'text-generation', 'nanbeige', 'compressed-tensors']
+akhtyamovpavel/Nanbeige4.3-33B-Hyper-GGUF text-generation 137 ['gguf', 'llama.cpp', 'nanbeige', 'mixed-precision', 'speculative-decoding', 'rtx-3090']
+stoyani/Nanbeige4.3-33B-FP8-KVcal text-generation 48 ['vllm', 'safetensors', 'llama', 'nanbeige', 'fp8', 'kv-cache']
+mradermacher/Nanbeige4.3-33B-Base-i1-GGUF None 2587 ['transformers', 'gguf', 'llm', 'nanbeige', 'en', 'zh']
+Luni/Nanbeige-4.3-33B-DFlash2 text-generation 409 ['safetensors', 'qwen3', 'dflash2', 'speculative-decoding', 'block-diffusion', 'draft-model']
+[0m
+[0m$ [0mcd agents/scratch && for f in config.json README.md generation_config.json model.safetensors.index.json; do curl -sL "https://huggingface.co/Nanbeige/Nanbeige4.3-33B/resolve/main/$f" -o "nb_$f"; done; wc -c nb_*; echo ---; cat nb_config.json
+883 nb_config.json
+   164 nb_generation_config.json
+ 38810 nb_model.safetensors.index.json
+  8884 nb_README.md
+ 55285 nb_search.json
+104026 total
+---
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}
+[0m
+[0m$ [0mcd agents/scratch && cat nb_README.md
+---
+license: apache-2.0
+language:
+- en
+- zh
+library_name: transformers
+pipeline_tag: text-generation
+tags:
+- llm
+- nanbeige
+base_model:
+- Nanbeige/Nanbeige4.3-33B-Base
+---
+
+<div align="center">
+<img src="figures/nbg.png" width="200" alt="Nanbeige Logo">
+</div>
+
+# <span id="Introduction">1. Introduction</span>
+
+In Nanbeige4.3, we take a foundational step toward pushing the boundaries of lightweight agents. Our strategy centers on building a high-capacity teacher agent first, which will subsequently anchor the distillation of advanced agentic capabilities into smaller models.
+
+To this end, we first introduce Nanbeige4.3-33B, designed as the flagship teacher model for the Nanbeige4.3 series. Delivering state-of-the-art agentic performance among open models in the ~30B parameter class, Nanbeige4.3-33B excels at complex coding and professional cowork tasks. It not only offers a powerful, cost-effective option for immediate real-world deployment, but also lays the necessary foundation to power our upcoming small model distillation pipeline (e.g., for Nanbeige4.3-3B).
+
+
+<div align="center">
+<img src="figures/nanbeige43-benchmarks.png" width="1000">
+</div>
+
+# <span id="Model-Performance">2. Model Performance</span>
+
+We compare Nanbeige4.3-33B with recently released frontier models at around the 30B-parameter scale: Qwen3.8-27B, Muse-Glimmer-30B, and Gemma4-31B. All models are evaluated at their highest thinking effort. For each benchmark, we use the same inference hyperparameters and harness across models.
+<table>
+  <thead>
+    <tr>
+      <th>Category</th><th>Benchmark</th><th>Nanbeige4.3-33B<sup>1</sup></th><th>Qwen3.8-27B</th><th>Muse-Glimmer-30B</th><th>Gemma4-31B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td rowspan="8">Agentic Coding</td><td>Terminal-Bench 2.1<sup>2</sup></td><td><strong>80.9</strong></td><td>73.0</td><td>61.8</td><td>47.2</td></tr>
+    <tr><td>Terminal-Bench 4.0<sup>3</sup></td><td><strong>23.8</strong></td><td>6.3</td><td>1.6</td><td>0.0</td></tr>
+    <tr><td>DeepSWE<sup>3</sup></td><td><strong>65.5</strong></td><td>42.5</td><td>4.4</td><td>2.7</td></tr>
+    <tr><td>SWE-Bench Pro<sup>3</sup></td><td>60.3</td><td><strong>61.7</strong></td><td>51.2</td><td>36.9</td></tr>
+    <tr><td>SWE-Atlas-QnA<sup>4</sup></td><td><strong>50.8</strong></td><td>41.9</td><td>17.7</td><td>3.3</td></tr>
+    <tr><td>NL2Repo<sup>5</sup></td><td><strong>53.0</strong></td><td>48.3</td><td>27.4</td><td>33.8</td></tr>
+    <tr><td>Scicode</td><td><strong>52.6</strong></td><td>46.7</td><td>44.9</td><td>45.5</td></tr>
+    <tr><td>SkillsBench</td><td><strong>61.1</strong></td><td>56.4</td><td>39.7</td><td>28.9</td></tr>
+    <tr><td rowspan="9">Agentic Cowork</td><td>Automation Bench<sup>6</sup></td><td><strong>54.2</strong></td><td>38.3</td><td>15.2</td><td>9.7</td></tr>
+    <tr><td>JobBench<sup>7</sup></td><td><strong>44.8</strong></td><td>34.5</td><td>16.6</td><td>9.0</td></tr>
+    <tr><td>GDPval<sup>8</sup></td><td>84.8</td><td><strong>86.4</strong></td><td>75.8</td><td>71.4</td></tr>
+    <tr><td>Claw-Eval<sub>pass^3</sub><sup>9</sup></td><td><strong>78.3</strong></td><td>75.2</td><td>57.3</td><td>44.2</td></tr>
+    <tr><td>Toolathlon-Verified<sup>10</sup></td><td><strong>70.4</strong></td><td>68.5</td><td>47.2</td><td>27.8</td></tr>
+    <tr><td>DeepPlanning<sup>12</sup></td><td><strong>63.3</strong></td><td>49.2</td><td>21.4</td><td>19.4</td></tr>
+    <tr><td>EnterpriseOps-Gym<sup>12</sup></td><td><strong>41.0</strong></td><td>40.2</td><td>30.5</td><td>27.3</td></tr>
+    <tr><td>YC-bench<sup>11</sup></td><td><strong>$1,025,437</strong></td><td>$641,290</td><td>$513,978</td><td>$265,152</td></tr>
+    <tr><td>Tau3-Bench<sup>12</sup></td><td><strong>48.8</strong></td><td>48.5</td><td>33.7</td><td>18.6</td></tr>
+    <tr><td rowspan="3">Reasoning</td><td>GPQA Diamond</td><td>89.5</td><td>89.2</td><td>83.5</td><td><strong>91.3</strong></td></tr>
+    <tr><td>AIME 2026</td><td><strong>95.2</strong></td><td>94.5</td><td>94.7</td><td>89.2</td></tr>
+    <tr><td>AA-LCR</td><td><strong>84.0</strong></td><td>82.0</td><td>83.3</td><td>72.0</td></tr>
+  </tbody>
+</table>
+
+<small>
+<sup>1</sup> Nanbeige4.3-33B is evaluated with <code>preserve_thinking=true</code> in the chat template.<br>
+<sup>2</sup> Terminal-Bench 2.1 is evaluated using Terminus 2.<br>
+<sup>3</sup> Terminal-Bench 4 and DeepSWE are evaluated using mini-swe-agent v2.4.6.<br>
+<sup>4</sup> SWE-Atlas-QnA is evaluated using mini-swe-agent v2.4.6. Answers are evaluated against 1,304 task-specific rubrics using GPT-6 Sol as the judge, with medium reasoning effort.<br>
+<sup>5</sup> NL2Repo is evaluated using Claude Code.<br>
+<sup>6</sup> Automation Bench v1.0.6 includes 600 publicly released tasks.<br>
+<sup>7</sup> JobBench is evaluated with the Claude Code harness equipped with a search tool.<br>
+<sup>8</sup> GDPval is scored using revised rubrics.<br>
+<sup>9</sup> Claw-Eval is evaluated exclusively on the Claw-Eval General subset (comprising 157 single-turn user interaction tasks).<br>
+<sup>10</sup> Toolathlon-Verified sets no max_tokens limit for individual model requests.<br>
+<sup>11</sup> YC-bench retains only the most recent 10 turns of user dialogue as historical context before each model call.<br>
+<sup>12</sup> DeepPlanning, EnterpriseOps-Gym, Tau3-Bench are evaluated using their official repositories.<br>
+</small>
+
+Nanbeige4.3-33B leads on most of the benchmarks, showing strong performance in both agentic coding and cowork tasks. 
+Beyond its breadth across benchmarks, Nanbeige4.3-33B shows strong performance on **agent tasks across a wide range of professions and industries**. For example, on JobBench, it outperforms the baseline in most of the 35 occupations evaluated.
+
+<div align="center">
+  <img src="figures/occupation.png" width="1000" alt="occupation">
+</div>
+
+
+
+
+# <span id="Quickstart">3. Quickstart</span>
+
+The tokenizer provides a configurable chat template for reasoning and tool-use scenarios:
+
+- `enable_thinking` controls whether the model generates reasoning for the current response. It is enabled by default; set it to `False` for non-thinking mode.
+- `preserve_thinking` controls whether reasoning from previous assistant turns is retained in a multi-turn conversation. We recommend `False` for general chat and question answering, and `True` for multi-turn tool use, office tasks, and code-agent workflows.
+- Passing `tools` enables the tool-use template. We recommend `tool_call_format="xml"` for the best tool-calling performance; `json` is also supported for compatibility.
+
+The model supports a context length of up to 524,288 tokens (512K).
+
+We recommend adjusting the inference settings according to the target scenario:
+
+| Scenario | Temperature | Top_p | Max New Tokens |
+|---|---:|---:|---:|
+| Agentic and tool-use tasks | 1.0 | 0.95 | 65,536 |
+| Reasoning and chat tasks | 0.6 | 0.95 | 262,144 |
+
+
+You can run the model with Transformers, SGLang, or vLLM:
+
+## Transformers
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_id = 'Nanbeige/Nanbeige4.3-33B'
+tokenizer = AutoTokenizer.from_pretrained(
+  model_id,
+  use_fast=False,
+  trust_remote_code=True
+)
+model = AutoModelForCausalLM.from_pretrained(
+  model_id,
+  torch_dtype='auto',
+  device_map='auto',
+  trust_remote_code=True
+)
+
+messages = [{'role': 'user', 'content': 'Which number is bigger, 9.11 or 9.8?'}]
+inputs = tokenizer.apply_chat_template(
+  messages,
+  add_generation_prompt=True,
+  return_tensors='pt'
+).to(model.device)
+output_ids = model.generate(inputs, max_new_tokens=1024)
+response = tokenizer.decode(output_ids[0][inputs.shape[-1]:], skip_special_tokens=True)
+print(response)
+```
+
+## SGLang
+
+```bash
+MODEL_PATH=/path/to/your/Nanbeige4.3-33B
+python -m sglang.launch_server \
+  --model-path ${MODEL_PATH} \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --tp-size 4 \
+  --mem-fraction-static 0.8 \
+  --reasoning-parser qwen3 \
+  --tool-call-parser qwen3_coder
+```
+
+## vLLM
+
+```bash
+MODEL_PATH=/path/to/your/Nanbeige4.3-33B
+vllm serve ${MODEL_PATH} \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --tensor-parallel-size 4 \
+  --gpu-memory-utilization 0.8 \
+  --enable-auto-tool-choice \
+  --reasoning-parser qwen3 \
+  --tool-call-parser qwen3_coder
+```
+
+# <span id="Contact">4. Contact</span>
+
+If you have any questions, please open an issue in this repository or contact us at nanbeige@kanzhun.com.
+
+We also welcome collaborations to build domain-specific and industry-focused agents, including joint work on data and training.
+
+# <span id="Citation">5. Citation</span>
+
+If you find our model useful or would like to use it in your own work, please cite this Hugging Face project:
+
+```bibtex
+@misc{nanbeige43chat2026,
+  title        = {Nanbeige4.3-33B},
+  author       = {Nanbeige Team},
+  year         = {2026},
+  publisher    = {Hugging Face},
+  howpublished = {\url{https://huggingface.co/Nanbeige/Nanbeige4.3-33B}}
+}
+```
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/api/models/Nanbeige/Nanbeige4.3-33B?blobs=true" -o nb_blobs.json && python3 - <<'EOF'
+import json
+d=json.load(open('nb_blobs.json'))
+tot=0
+for s in d['siblings']:
+    if s['rfilename'].endswith('.safetensors'):
+        print(s['rfilename'], s.get('size'))
+        tot+=s.get('size',0)
+print('sum safetensors bytes', tot, 'GiB', tot/1024**3)
+print('safetensors total params', d['safetensors'])
+print('used_storage', d.get('used_storage'))
+EOF
+model-00001-of-00014.safetensors 4051757592
+model-00002-of-00014.safetensors 4961951064
+model-00003-of-00014.safetensors 4947270864
+model-00004-of-00014.safetensors 4873856544
+model-00005-of-00014.safetensors 4690428272
+model-00006-of-00014.safetensors 4793130400
+model-00007-of-00014.safetensors 4727128376
+model-00008-of-00014.safetensors 4998767864
+model-00009-of-00014.safetensors 4954597256
+model-00010-of-00014.safetensors 4793131024
+model-00011-of-00014.safetensors 4895919880
+model-00012-of-00014.safetensors 4727056152
+model-00013-of-00014.safetensors 4984073248
+model-00014-of-00014.safetensors 3838940632
+sum safetensors bytes 66238009168 GiB 61.68895323574543
+safetensors total params {'parameters': {'BF16': 33118977024}, 'total': 33118977024}
+used_storage None
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import json
+d=json.load(open('nanbeige_info.json'))
+print("siblings:")
+for s in d['siblings']: print(' ', s['rfilename'])
+print('config keys:', sorted(d['config'].keys()))
+print('config:', {k:v for k,v in d['config'].items() if k!='tokenizer_config'})
+print('card_data', d.get('card_data'))
+print('transformers_info', d.get('transformers_info'))
+EOF
+echo ---; cat -n nb_config.json; echo ---; cat -n nb_generation_config.json
+siblings:
+  .eval_results/Nanbeige4.3-33B.yaml
+  .gitattributes
+  README.md
+  added_tokens.json
+  config.json
+  figures/nanbeige43-benchmarks.png
+  figures/nbg.png
+  figures/occupation.png
+  generation_config.json
+  model-00001-of-00014.safetensors
+  model-00002-of-00014.safetensors
+  model-00003-of-00014.safetensors
+  model-00004-of-00014.safetensors
+  model-00005-of-00014.safetensors
+  model-00006-of-00014.safetensors
+  model-00007-of-00014.safetensors
+  model-00008-of-00014.safetensors
+  model-00009-of-00014.safetensors
+  model-00010-of-00014.safetensors
+  model-00011-of-00014.safetensors
+  model-00012-of-00014.safetensors
+  model-00013-of-00014.safetensors
+  model-00014-of-00014.safetensors
+  model.safetensors.index.json
+  special_tokens_map.json
+  tokenizer.json
+  tokenizer.model
+  tokenizer_config.json
+config keys: ['architectures', 'model_type', 'tokenizer_config']
+config: {'architectures': ['LlamaForCausalLM'], 'model_type': 'llama'}
+card_data None
+transformers_info None
+---
+     1	{
+     2	  "architectures": [
+     3	    "LlamaForCausalLM"
+     4	  ],
+     5	  "attention_bias": false,
+     6	  "attention_dropout": 0.0,
+     7	  "bos_token_id": 166100,
+     8	  "embd_pdrop": 0.0,
+     9	  "eos_token_id": 166101,
+    10	  "ffn_hidden_size": 22016,
+    11	  "head_dim": 128,
+    12	  "hidden_act": "silu",
+    13	  "hidden_size": 7168,
+    14	  "initializer_range": 0.02,
+    15	  "intermediate_size": 22016,
+    16	  "kv_channels": 128,
+    17	  "max_position_embeddings": 524288,
+    18	  "mlp_bias": false,
+    19	  "model_type": "llama",
+    20	  "num_attention_heads": 56,
+    21	  "num_hidden_layers": 52,
+    22	  "num_key_value_heads": 8,
+    23	  "num_query_groups": 8,
+    24	  "pad_token_id": 0,
+    25	  "pretraining_tp": 1,
+    26	  "resid_pdrop": 0.0,
+    27	  "rms_norm_eps": 1e-05,
+    28	  "rope_scaling": null,
+    29	  "rope_theta": 120000000,
+    30	  "rotary_base": 120000000,
+    31	  "seq_length": 524288,
+    32	  "tie_word_embeddings": false,
+    33	  "torch_dtype": "bfloat16",
+    34	  "transformers_version": "4.51.1",
+    35	  "use_cache": false,
+    36	  "vocab_size": 166912
+    37	}---
+     1	{
+     2	  "_from_model_config": true,
+     3	  "bos_token_id": 166100,
+     4	  "eos_token_id": 166101,
+     5	  "pad_token_id": 0,
+     6	  "transformers_version": "4.51.1",
+     7	  "use_cache": false
+     8	}
+[0m
+[0m$ [0mls /ai/huggingface/modules 2>/dev/null; find / -maxdepth 6 -path '*transformers/models/llama/modeling_llama.py' 2>/dev/null | head -5; pip3 list 2>/dev/null | grep -i -E 'transformers|torch|huggingface'
+diffusers_modules
+__init__.py
+transformers_modules
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import json
+d=json.load(open('nb_model.safetensors.index.json'))
+print('metadata:', d['metadata'])
+wm=d['weight_map']
+print('num tensors', len(wm))
+import re, collections
+layers=collections.Counter()
+for k in wm:
+    m=re.match(r'model\.layers\.(\d+)\.(.+)', k)
+    if m: layers[int(m.group(1))]+=1
+print('num layers', len(layers), 'tensors/layer range', min(layers.values()), max(layers.values()))
+for k in sorted(wm):
+    if 'layers.0.' in k or not k.startswith('model.layers'):
+        print(k, '->', wm[k])
+EOF
+metadata: {'total_size': 66237954048}
+num tensors 471
+num layers 52 tensors/layer range 9 9
+lm_head.weight -> model-00003-of-00014.safetensors
+model.embed_tokens.weight -> model-00002-of-00014.safetensors
+model.layers.0.input_layernorm.weight -> model-00006-of-00014.safetensors
+model.layers.0.mlp.down_proj.weight -> model-00008-of-00014.safetensors
+model.layers.0.mlp.gate_proj.weight -> model-00005-of-00014.safetensors
+model.layers.0.mlp.up_proj.weight -> model-00005-of-00014.safetensors
+model.layers.0.post_attention_layernorm.weight -> model-00011-of-00014.safetensors
+model.layers.0.self_attn.k_proj.weight -> model-00003-of-00014.safetensors
+model.layers.0.self_attn.o_proj.weight -> model-00005-of-00014.safetensors
+model.layers.0.self_attn.q_proj.weight -> model-00006-of-00014.safetensors
+model.layers.0.self_attn.v_proj.weight -> model-00014-of-00014.safetensors
+model.norm.weight -> model-00013-of-00014.safetensors
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/api/models/Nanbeige/Nanbeige4.3-33B-INT4?blobs=true" -o nb_int4.json && curl -sL "https://huggingface.co/api/models/Nanbeige/Nanbeige4.3-33B-FP8?blobs=true" -o nb_fp8.json && curl -sL "https://huggingface.co/api/models/Nanbeige/Nanbeige4.3-33B-INT8?blobs=true" -o nb_int8.json && python3 - <<'EOF'
+import json
+for name in ['int4','fp8','int8']:
+    d=json.load(open(f'nb_{name}.json'))
+    print('====', d['id'], d.get('sha'), d.get('lastModified'))
+    print('safetensors:', d.get('safetensors'))
+    tot=0
+    for s in d['siblings']:
+        if s['rfilename'].endswith(('.safetensors','.bin')):
+            print(' ', s['rfilename'], s.get('size'))
+            tot += s.get('size') or 0
+    print(' sum bytes', tot, f'{tot/1024**3:.2f} GiB')
+    print(' files:', [s['rfilename'] for s in d['siblings'] if not s['rfilename'].startswith('figures')])
+EOF
+==== Nanbeige/Nanbeige4.3-33B-INT4 d834b414cf1c47e42640de33c147b7cf8a9321ef 2026-10-31T09:41:23.000Z
+safetensors: {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+  model-00001.safetensors 29704704
+  model-00002.safetensors 14480
+  model-00003.safetensors 38192560
+  model-00004.safetensors 14488
+  model-00005.safetensors 182469576
+  model-00006.safetensors 91234808
+  model-00007.safetensors 29704704
+  model-00008.safetensors 14480
+  model-00009.safetensors 38192560
+  model-00010.safetensors 14488
+  model-00011.safetensors 182469576
+  model-00012.safetensors 91234808
+  model-00013.safetensors 29704704
+  model-00014.safetensors 14480
+  model-00015.safetensors 38192560
+  model-00016.safetensors 14488
+  model-00017.safetensors 182469576
+  model-00018.safetensors 91234808
+  model-00019.safetensors 29704704
+  model-00020.safetensors 14480
+  model-00021.safetensors 38192560
+  model-00022.safetensors 14488
+  model-00023.safetensors 182469576
+  model-00024.safetensors 91234808
+  model-00025.safetensors 29704704
+  model-00026.safetensors 14480
+  model-00027.safetensors 38192560
+  model-00028.safetensors 14488
+  model-00029.safetensors 182469576
+  model-00030.safetensors 91234808
+  model-00031.safetensors 29704704
+  model-00032.safetensors 14480
+  model-00033.safetensors 38192560
+  model-00034.safetensors 14488
+  model-00035.safetensors 182469576
+  model-00036.safetensors 91234808
+  model-00037.safetensors 29704704
+  model-00038.safetensors 14480
+  model-00039.safetensors 38192560
+  model-00040.safetensors 14488
+  model-00041.safetensors 182469576
+  model-00042.safetensors 91234808
+  model-00043.safetensors 29704704
+  model-00044.safetensors 14480
+  model-00045.safetensors 38192560
+  model-00046.safetensors 14488
+  model-00047.safetensors 182469576
+  model-00048.safetensors 91234808
+  model-00049.safetensors 29704704
+  model-00050.safetensors 14480
+  model-00051.safetensors 38192560
+  model-00052.safetensors 14488
+  model-00053.safetensors 182469576
+  model-00054.safetensors 91234808
+  model-00055.safetensors 29704704
+  model-00056.safetensors 14480
+  model-00057.safetensors 38192560
+  model-00058.safetensors 14488
+  model-00059.safetensors 182469576
+  model-00060.safetensors 91234808
+  model-00061.safetensors 29704704
+  model-00062.safetensors 14480
+  model-00063.safetensors 38192568
+  model-00064.safetensors 14488
+  model-00065.safetensors 182469584
+  model-00066.safetensors 91234808
+  model-00067.safetensors 29704704
+  model-00068.safetensors 14480
+  model-00069.safetensors 38192568
+  model-00070.safetensors 14488
+  model-00071.safetensors 182469584
+  model-00072.safetensors 91234808
+  model-00073.safetensors 29704704
+  model-00074.safetensors 14480
+  model-00075.safetensors 38192568
+  model-00076.safetensors 14488
+  model-00077.safetensors 182469584
+  model-00078.safetensors 91234808
+  model-00079.safetensors 29704704
+  model-00080.safetensors 14480
+  model-00081.safetensors 38192568
+  model-00082.safetensors 14488
+  model-00083.safetensors 182469584
+  model-00084.safetensors 91234808
+  model-00085.safetensors 29704704
+  model-00086.safetensors 14480
+  model-00087.safetensors 38192568
+  model-00088.safetensors 14488
+  model-00089.safetensors 182469584
+  model-00090.safetensors 91234808
+  model-00091.safetensors 29704704
+  model-00092.safetensors 14480
+  model-00093.safetensors 38192568
+  model-00094.safetensors 14488
+  model-00095.safetensors 182469584
+  model-00096.safetensors 91234808
+  model-00097.safetensors 29704704
+  model-00098.safetensors 14480
+  model-00099.safetensors 38192568
+  model-00100.safetensors 14488
+  model-00101.safetensors 182469584
+  model-00102.safetensors 91234808
+  model-00103.safetensors 29704704
+  model-00104.safetensors 14480
+  model-00105.safetensors 38192568
+  model-00106.safetensors 14488
+  model-00107.safetensors 182469584
+  model-00108.safetensors 91234808
+  model-00109.safetensors 29704704
+  model-00110.safetensors 14480
+  model-00111.safetensors 38192568
+  model-00112.safetensors 14488
+  model-00113.safetensors 182469584
+  model-00114.safetensors 91234808
+  model-00115.safetensors 29704704
+  model-00116.safetensors 14480
+  model-00117.safetensors 38192568
+  model-00118.safetensors 14488
+  model-00119.safetensors 182469584
+  model-00120.safetensors 91234808
+  model-00121.safetensors 29704704
+  model-00122.safetensors 14480
+  model-00123.safetensors 38192568
+  model-00124.safetensors 14488
+  model-00125.safetensors 182469584
+  model-00126.safetensors 91234808
+  model-00127.safetensors 29704704
+  model-00128.safetensors 14480
+  model-00129.safetensors 38192568
+  model-00130.safetensors 14488
+  model-00131.safetensors 182469584
+  model-00132.safetensors 91234808
+  model-00133.safetensors 29704704
+  model-00134.safetensors 14480
+  model-00135.safetensors 38192568
+  model-00136.safetensors 14488
+  model-00137.safetensors 182469584
+  model-00138.safetensors 91234808
+  model-00139.safetensors 29704704
+  model-00140.safetensors 14480
+  model-00141.safetensors 38192568
+  model-00142.safetensors 14488
+  model-00143.safetensors 182469584
+  model-00144.safetensors 91234808
+  model-00145.safetensors 29704704
+  model-00146.safetensors 14480
+  model-00147.safetensors 38192568
+  model-00148.safetensors 14488
+  model-00149.safetensors 182469584
+  model-00150.safetensors 91234808
+  model-00151.safetensors 29704704
+  model-00152.safetensors 14480
+  model-00153.safetensors 38192568
+  model-00154.safetensors 14488
+  model-00155.safetensors 182469584
+  model-00156.safetensors 91234808
+  model-00157.safetensors 29704704
+  model-00158.safetensors 14480
+  model-00159.safetensors 38192568
+  model-00160.safetensors 14488
+  model-00161.safetensors 182469584
+  model-00162.safetensors 91234808
+  model-00163.safetensors 29704704
+  model-00164.safetensors 14480
+  model-00165.safetensors 38192568
+  model-00166.safetensors 14488
+  model-00167.safetensors 182469584
+  model-00168.safetensors 91234808
+  model-00169.safetensors 29704704
+  model-00170.safetensors 14480
+  model-00171.safetensors 38192568
+  model-00172.safetensors 14488
+  model-00173.safetensors 182469584
+  model-00174.safetensors 91234808
+  model-00175.safetensors 29704704
+  model-00176.safetensors 14480
+  model-00177.safetensors 38192568
+  model-00178.safetensors 14488
+  model-00179.safetensors 182469584
+  model-00180.safetensors 91234808
+  model-00181.safetensors 29704704
+  model-00182.safetensors 14480
+  model-00183.safetensors 38192568
+  model-00184.safetensors 14488
+  model-00185.safetensors 182469584
+  model-00186.safetensors 91234808
+  model-00187.safetensors 29704704
+  model-00188.safetensors 14480
+  model-00189.safetensors 38192568
+  model-00190.safetensors 14488
+  model-00191.safetensors 182469584
+  model-00192.safetensors 91234808
+  model-00193.safetensors 29704704
+  model-00194.safetensors 14480
+  model-00195.safetensors 38192568
+  model-00196.safetensors 14488
+  model-00197.safetensors 182469584
+  model-00198.safetensors 91234808
+  model-00199.safetensors 29704704
+  model-00200.safetensors 14480
+  model-00201.safetensors 38192568
+  model-00202.safetensors 14488
+  model-00203.safetensors 182469584
+  model-00204.safetensors 91234808
+  model-00205.safetensors 29704704
+  model-00206.safetensors 14480
+  model-00207.safetensors 38192568
+  model-00208.safetensors 14488
+  model-00209.safetensors 182469584
+  model-00210.safetensors 91234808
+  model-00211.safetensors 29704704
+  model-00212.safetensors 14480
+  model-00213.safetensors 38192568
+  model-00214.safetensors 14488
+  model-00215.safetensors 182469584
+  model-00216.safetensors 91234808
+  model-00217.safetensors 29704704
+  model-00218.safetensors 14480
+  model-00219.safetensors 38192568
+  model-00220.safetensors 14488
+  model-00221.safetensors 182469584
+  model-00222.safetensors 91234808
+  model-00223.safetensors 29704704
+  model-00224.safetensors 14480
+  model-00225.safetensors 38192568
+  model-00226.safetensors 14488
+  model-00227.safetensors 182469584
+  model-00228.safetensors 91234808
+  model-00229.safetensors 29704704
+  model-00230.safetensors 14480
+  model-00231.safetensors 38192568
+  model-00232.safetensors 14488
+  model-00233.safetensors 182469584
+  model-00234.safetensors 91234808
+  model-00235.safetensors 29704704
+  model-00236.safetensors 14480
+  model-00237.safetensors 38192568
+  model-00238.safetensors 14488
+  model-00239.safetensors 182469584
+  model-00240.safetensors 91234808
+  model-00241.safetensors 29704704
+  model-00242.safetensors 14480
+  model-00243.safetensors 38192568
+  model-00244.safetensors 14488
+  model-00245.safetensors 182469584
+  model-00246.safetensors 91234808
+  model-00247.safetensors 29704704
+  model-00248.safetensors 14480
+  model-00249.safetensors 38192568
+  model-00250.safetensors 14488
+  model-00251.safetensors 182469584
+  model-00252.safetensors 91234808
+  model-00253.safetensors 29704704
+  model-00254.safetensors 14480
+  model-00255.safetensors 38192568
+  model-00256.safetensors 14488
+  model-00257.safetensors 182469584
+  model-00258.safetensors 91234808
+  model-00259.safetensors 29704704
+  model-00260.safetensors 14480
+  model-00261.safetensors 38192568
+  model-00262.safetensors 14488
+  model-00263.safetensors 182469584
+  model-00264.safetensors 91234808
+  model-00265.safetensors 29704704
+  model-00266.safetensors 14480
+  model-00267.safetensors 38192568
+  model-00268.safetensors 14488
+  model-00269.safetensors 182469584
+  model-00270.safetensors 91234808
+  model-00271.safetensors 29704704
+  model-00272.safetensors 14480
+  model-00273.safetensors 38192568
+  model-00274.safetensors 14488
+  model-00275.safetensors 182469584
+  model-00276.safetensors 91234808
+  model-00277.safetensors 29704704
+  model-00278.safetensors 14480
+  model-00279.safetensors 38192568
+  model-00280.safetensors 14488
+  model-00281.safetensors 182469584
+  model-00282.safetensors 91234808
+  model-00283.safetensors 29704704
+  model-00284.safetensors 14480
+  model-00285.safetensors 38192568
+  model-00286.safetensors 14488
+  model-00287.safetensors 182469584
+  model-00288.safetensors 91234808
+  model-00289.safetensors 29704704
+  model-00290.safetensors 14480
+  model-00291.safetensors 38192568
+  model-00292.safetensors 14488
+  model-00293.safetensors 182469584
+  model-00294.safetensors 91234808
+  model-00295.safetensors 29704704
+  model-00296.safetensors 14480
+  model-00297.safetensors 38192568
+  model-00298.safetensors 14488
+  model-00299.safetensors 182469584
+  model-00300.safetensors 91234808
+  model-00301.safetensors 29704704
+  model-00302.safetensors 14480
+  model-00303.safetensors 38192568
+  model-00304.safetensors 14488
+  model-00305.safetensors 182469584
+  model-00306.safetensors 91234808
+  model-00307.safetensors 29704704
+  model-00308.safetensors 14480
+  model-00309.safetensors 38192568
+  model-00310.safetensors 14488
+  model-00311.safetensors 182469584
+  model-00312.safetensors 91234808
+  model-00313.safetensors 2392850576
+  model-00314.safetensors 2392850560
+  model-00315.safetensors 14456
+ sum bytes 22550508296 21.00 GiB
+ files: ['.gitattributes', 'FULL_MANIFEST.json', 'README.md', 'added_tokens.json', 'config.json', 'generation_config.json', 'model-00001.safetensors', 'model-00002.safetensors', 'model-00003.safetensors', 'model-00004.safetensors', 'model-00005.safetensors', 'model-00006.safetensors', 'model-00007.safetensors', 'model-00008.safetensors', 'model-00009.safetensors', 'model-00010.safetensors', 'model-00011.safetensors', 'model-00012.safetensors', 'model-00013.safetensors', 'model-00014.safetensors', 'model-00015.safetensors', 'model-00016.safetensors', 'model-00017.safetensors', 'model-00018.safetensors', 'model-00019.safetensors', 'model-00020.safetensors', 'model-00021.safetensors', 'model-00022.safetensors', 'model-00023.safetensors', 'model-00024.safetensors', 'model-00025.safetensors', 'model-00026.safetensors', 'model-00027.safetensors', 'model-00028.safetensors', 'model-00029.safetensors', 'model-00030.safetensors', 'model-00031.safetensors', 'model-00032.safetensors', 'model-00033.safetensors', 'model-00034.safetensors', 'model-00035.safetensors', 'model-00036.safetensors', 'model-00037.safetensors', 'model-00038.safetensors', 'model-00039.safetensors', 'model-00040.safetensors', 'model-00041.safetensors', 'model-00042.safetensors', 'model-00043.safetensors', 'model-00044.safetensors', 'model-00045.safetensors', 'model-00046.safetensors', 'model-00047.safetensors', 'model-00048.safetensors', 'model-00049.safetensors', 'model-00050.safetensors', 'model-00051.safetensors', 'model-00052.safetensors', 'model-00053.safetensors', 'model-00054.safetensors', 'model-00055.safetensors', 'model-00056.safetensors', 'model-00057.safetensors', 'model-00058.safetensors', 'model-00059.safetensors', 'model-00060.safetensors', 'model-00061.safetensors', 'model-00062.safetensors', 'model-00063.safetensors', 'model-00064.safetensors', 'model-00065.safetensors', 'model-00066.safetensors', 'model-00067.safetensors', 'model-00068.safetensors', 'model-00069.safetensors', 'model-00070.safetensors', 'model-00071.safetensors', 'model-00072.safetensors', 'model-00073.safetensors', 'model-00074.safetensors', 'model-00075.safetensors', 'model-00076.safetensors', 'model-00077.safetensors', 'model-00078.safetensors', 'model-00079.safetensors', 'model-00080.safetensors', 'model-00081.safetensors', 'model-00082.safetensors', 'model-00083.safetensors', 'model-00084.safetensors', 'model-00085.safetensors', 'model-00086.safetensors', 'model-00087.safetensors', 'model-00088.safetensors', 'model-00089.safetensors', 'model-00090.safetensors', 'model-00091.safetensors', 'model-00092.safetensors', 'model-00093.safetensors', 'model-00094.safetensors', 'model-00095.safetensors', 'model-00096.safetensors', 'model-00097.safetensors', 'model-00098.safetensors', 'model-00099.safetensors', 'model-00100.safetensors', 'model-00101.safetensors', 'model-00102.safetensors', 'model-00103.safetensors', 'model-00104.safetensors', 'model-00105.safetensors', 'model-00106.safetensors', 'model-00107.safetensors', 'model-00108.safetensors', 'model-00109.safetensors', 'model-00110.safetensors', 'model-00111.safetensors', 'model-00112.safetensors', 'model-00113.safetensors', 'model-00114.safetensors', 'model-00115.safetensors', 'model-00116.safetensors', 'model-00117.safetensors', 'model-00118.safetensors', 'model-00119.safetensors', 'model-00120.safetensors', 'model-00121.safetensors', 'model-00122.safetensors', 'model-00123.safetensors', 'model-00124.safetensors', 'model-00125.safetensors', 'model-00126.safetensors', 'model-00127.safetensors', 'model-00128.safetensors', 'model-00129.safetensors', 'model-00130.safetensors', 'model-00131.safetensors', 'model-00132.safetensors', 'model-00133.safetensors', 'model-00134.safetensors', 'model-00135.safetensors', 'model-00136.safetensors', 'model-00137.safetensors', 'model-00138.safetensors', 'model-00139.safetensors', 'model-00140.safetensors', 'model-00141.safetensors', 'model-00142.safetensors', 'model-00143.safetensors', 'model-00144.safetensors', 'model-00145.safetensors', 'model-00146.safetensors', 'model-00147.safetensors', 'model-00148.safetensors', 'model-00149.safetensors', 'model-00150.safetensors', 'model-00151.safetensors', 'model-00152.safetensors', 'model-00153.safetensors', 'model-00154.safetensors', 'model-00155.safetensors', 'model-00156.safetensors', 'model-00157.safetensors', 'model-00158.safetensors', 'model-00159.safetensors', 'model-00160.safetensors', 'model-00161.safetensors', 'model-00162.safetensors', 'model-00163.safetensors', 'model-00164.safetensors', 'model-00165.safetensors', 'model-00166.safetensors', 'model-00167.safetensors', 'model-00168.safetensors', 'model-00169.safetensors', 'model-00170.safetensors', 'model-00171.safetensors', 'model-00172.safetensors', 'model-00173.safetensors', 'model-00174.safetensors', 'model-00175.safetensors', 'model-00176.safetensors', 'model-00177.safetensors', 'model-00178.safetensors', 'model-00179.safetensors', 'model-00180.safetensors', 'model-00181.safetensors', 'model-00182.safetensors', 'model-00183.safetensors', 'model-00184.safetensors', 'model-00185.safetensors', 'model-00186.safetensors', 'model-00187.safetensors', 'model-00188.safetensors', 'model-00189.safetensors', 'model-00190.safetensors', 'model-00191.safetensors', 'model-00192.safetensors', 'model-00193.safetensors', 'model-00194.safetensors', 'model-00195.safetensors', 'model-00196.safetensors', 'model-00197.safetensors', 'model-00198.safetensors', 'model-00199.safetensors', 'model-00200.safetensors', 'model-00201.safetensors', 'model-00202.safetensors', 'model-00203.safetensors', 'model-00204.safetensors', 'model-00205.safetensors', 'model-00206.safetensors', 'model-00207.safetensors', 'model-00208.safetensors', 'model-00209.safetensors', 'model-00210.safetensors', 'model-00211.safetensors', 'model-00212.safetensors', 'model-00213.safetensors', 'model-00214.safetensors', 'model-00215.safetensors', 'model-00216.safetensors', 'model-00217.safetensors', 'model-00218.safetensors', 'model-00219.safetensors', 'model-00220.safetensors', 'model-00221.safetensors', 'model-00222.safetensors', 'model-00223.safetensors', 'model-00224.safetensors', 'model-00225.safetensors', 'model-00226.safetensors', 'model-00227.safetensors', 'model-00228.safetensors', 'model-00229.safetensors', 'model-00230.safetensors', 'model-00231.safetensors', 'model-00232.safetensors', 'model-00233.safetensors', 'model-00234.safetensors', 'model-00235.safetensors', 'model-00236.safetensors', 'model-00237.safetensors', 'model-00238.safetensors', 'model-00239.safetensors', 'model-00240.safetensors', 'model-00241.safetensors', 'model-00242.safetensors', 'model-00243.safetensors', 'model-00244.safetensors', 'model-00245.safetensors', 'model-00246.safetensors', 'model-00247.safetensors', 'model-00248.safetensors', 'model-00249.safetensors', 'model-00250.safetensors', 'model-00251.safetensors', 'model-00252.safetensors', 'model-00253.safetensors', 'model-00254.safetensors', 'model-00255.safetensors', 'model-00256.safetensors', 'model-00257.safetensors', 'model-00258.safetensors', 'model-00259.safetensors', 'model-00260.safetensors', 'model-00261.safetensors', 'model-00262.safetensors', 'model-00263.safetensors', 'model-00264.safetensors', 'model-00265.safetensors', 'model-00266.safetensors', 'model-00267.safetensors', 'model-00268.safetensors', 'model-00269.safetensors', 'model-00270.safetensors', 'model-00271.safetensors', 'model-00272.safetensors', 'model-00273.safetensors', 'model-00274.safetensors', 'model-00275.safetensors', 'model-00276.safetensors', 'model-00277.safetensors', 'model-00278.safetensors', 'model-00279.safetensors', 'model-00280.safetensors', 'model-00281.safetensors', 'model-00282.safetensors', 'model-00283.safetensors', 'model-00284.safetensors', 'model-00285.safetensors', 'model-00286.safetensors', 'model-00287.safetensors', 'model-00288.safetensors', 'model-00289.safetensors', 'model-00290.safetensors', 'model-00291.safetensors', 'model-00292.safetensors', 'model-00293.safetensors', 'model-00294.safetensors', 'model-00295.safetensors', 'model-00296.safetensors', 'model-00297.safetensors', 'model-00298.safetensors', 'model-00299.safetensors', 'model-00300.safetensors', 'model-00301.safetensors', 'model-00302.safetensors', 'model-00303.safetensors', 'model-00304.safetensors', 'model-00305.safetensors', 'model-00306.safetensors', 'model-00307.safetensors', 'model-00308.safetensors', 'model-00309.safetensors', 'model-00310.safetensors', 'model-00311.safetensors', 'model-00312.safetensors', 'model-00313.safetensors', 'model-00314.safetensors', 'model-00315.safetensors', 'model.safetensors.index.json', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer.model', 'tokenizer_config.json']
+==== Nanbeige/Nanbeige4.3-33B-FP8 0b1acaa19bae10fec482600ada7c9defcb7c4884 2026-10-31T09:27:59.000Z
+safetensors: {'parameters': {'BF16': 2393603072, 'F8_E4M3': 30725373952}, 'total': 33118977024}
+  model-00001-of-00009.safetensors 4481451200
+  model-00002-of-00009.safetensors 4412141280
+  model-00003-of-00009.safetensors 4452486792
+  model-00004-of-00009.safetensors 4412131712
+  model-00005-of-00009.safetensors 2206056136
+  model-00006-of-00009.safetensors 4481460744
+  model-00007-of-00009.safetensors 4459842408
+  model-00008-of-00009.safetensors 4404785672
+  model-00009-of-00009.safetensors 2206070616
+ sum bytes 35516426560 33.08 GiB
+ files: ['.gitattributes', 'README.md', 'added_tokens.json', 'chat_template.jinja', 'config.json', 'generation_config.json', 'model-00001-of-00009.safetensors', 'model-00002-of-00009.safetensors', 'model-00003-of-00009.safetensors', 'model-00004-of-00009.safetensors', 'model-00005-of-00009.safetensors', 'model-00006-of-00009.safetensors', 'model-00007-of-00009.safetensors', 'model-00008-of-00009.safetensors', 'model-00009-of-00009.safetensors', 'model.safetensors.index.json', 'recipe.yaml', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer.model', 'tokenizer_config.json']
+==== Nanbeige/Nanbeige4.3-33B-INT8 879049b69c5f64384f3067095924b63e9125e84f 2026-10-31T09:25:06.000Z
+safetensors: {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+  model-00001-of-00009.safetensors 4353550912
+  model-00002-of-00009.safetensors 4361231480
+  model-00003-of-00009.safetensors 4480537328
+  model-00004-of-00009.safetensors 4482974296
+  model-00005-of-00009.safetensors 2240254144
+  model-00006-of-00009.safetensors 4392084904
+  model-00007-of-00009.safetensors 4480537352
+  model-00008-of-00009.safetensors 4361231488
+  model-00009-of-00009.safetensors 2840405032
+ sum bytes 35992806936 33.52 GiB
+ files: ['.gitattributes', 'README.md', 'added_tokens.json', 'chat_template.jinja', 'config.json', 'generation_config.json', 'model-00001-of-00009.safetensors', 'model-00002-of-00009.safetensors', 'model-00003-of-00009.safetensors', 'model-00004-of-00009.safetensors', 'model-00005-of-00009.safetensors', 'model-00006-of-00009.safetensors', 'model-00007-of-00009.safetensors', 'model-00008-of-00009.safetensors', 'model-00009-of-00009.safetensors', 'model.safetensors.index.json', 'recipe.yaml', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer.model', 'tokenizer_config.json']
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/transformers/v4.51.1/transformers/models/llama/configuration_llama.py" -o configuration_llama_4.51.1.py; wc -l configuration_llama_4.51.1.py; head -3 configuration_llama_4.51.1.py
+1 configuration_llama_4.51.1.py
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message></Error>
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/transformers/v4.51.1/transformers/models/llama/modeling_llama.py" -o modeling_llama_4.51.1.py; wc -l modeling_llama_4.51.1.py; head -5 modeling_llama_4.51.1.py
+1 modeling_llama_4.51.1.py
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message></Error>
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://raw.githubusercontent.com/huggingface/transformers/v4.51.1/src/transformers/models/llama/modeling_llama.py" -o modeling_llama_4.51.1.py && curl -sL "https://raw.githubusercontent.com/huggingface/transformers/v4.51.1/src/transformers/models/llama/configuration_llama.py" -o configuration_llama_4.51.1.py && wc -l modeling_llama_4.51.1.py configuration_llama_4.51.1.py && grep -n "class LlamaAttention" -A 80 modeling_llama_4.51.1.py | head -110
+1123 modeling_llama_4.51.1.py
+  224 configuration_llama_4.51.1.py
+ 1347 total
+214:class LlamaAttention(nn.Module):
+215-    """Multi-headed attention from 'Attention Is All You Need' paper"""
+216-
+217-    def __init__(self, config: LlamaConfig, layer_idx: int):
+218-        super().__init__()
+219-        self.config = config
+220-        self.layer_idx = layer_idx
+221-        self.head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
+222-        self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
+223-        self.scaling = self.head_dim**-0.5
+224-        self.attention_dropout = config.attention_dropout
+225-        self.is_causal = True
+226-
+227-        self.q_proj = nn.Linear(
+228-            config.hidden_size, config.num_attention_heads * self.head_dim, bias=config.attention_bias
+229-        )
+230-        self.k_proj = nn.Linear(
+231-            config.hidden_size, config.num_key_value_heads * self.head_dim, bias=config.attention_bias
+232-        )
+233-        self.v_proj = nn.Linear(
+234-            config.hidden_size, config.num_key_value_heads * self.head_dim, bias=config.attention_bias
+235-        )
+236-        self.o_proj = nn.Linear(
+237-            config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.attention_bias
+238-        )
+239-
+240-    def forward(
+241-        self,
+242-        hidden_states: torch.Tensor,
+243-        position_embeddings: Tuple[torch.Tensor, torch.Tensor],
+244-        attention_mask: Optional[torch.Tensor],
+245-        past_key_value: Optional[Cache] = None,
+246-        cache_position: Optional[torch.LongTensor] = None,
+247-        **kwargs: Unpack[FlashAttentionKwargs],
+248-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
+249-        input_shape = hidden_states.shape[:-1]
+250-        hidden_shape = (*input_shape, -1, self.head_dim)
+251-
+252-        query_states = self.q_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+253-        key_states = self.k_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+254-        value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+255-
+256-        cos, sin = position_embeddings
+257-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+258-
+259-        if past_key_value is not None:
+260-            # sin and cos are specific to RoPE models; cache_position needed for the static cache
+261-            cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
+262-            key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
+263-
+264-        attention_interface: Callable = eager_attention_forward
+265-        if self.config._attn_implementation != "eager":
+266-            if self.config._attn_implementation == "sdpa" and kwargs.get("output_attentions", False):
+267-                logger.warning_once(
+268-                    "`torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True`. Falling back to "
+269-                    'eager attention. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.'
+270-                )
+271-            else:
+272-                attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
+273-
+274-        attn_output, attn_weights = attention_interface(
+275-            self,
+276-            query_states,
+277-            key_states,
+278-            value_states,
+279-            attention_mask,
+280-            dropout=0.0 if not self.training else self.attention_dropout,
+281-            scaling=self.scaling,
+282-            **kwargs,
+283-        )
+284-
+285-        attn_output = attn_output.reshape(*input_shape, -1).contiguous()
+286-        attn_output = self.o_proj(attn_output)
+287-        return attn_output, attn_weights
+288-
+289-
+290-class LlamaDecoderLayer(nn.Module):
+291-    def __init__(self, config: LlamaConfig, layer_idx: int):
+292-        super().__init__()
+293-        self.hidden_size = config.hidden_size
+294-
+[0m
+[0m$ [0mcd agents/scratch && grep -n -E "def eager_attention_forward|softmax|class LlamaRotaryEmbedding|def apply_rotary_pos_emb|class LlamaModel|attention_mask|is_causal" modeling_llama_4.51.1.py | head -50
+92:class LlamaRotaryEmbedding(nn.Module):
+133:def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
+188:def eager_attention_forward(
+193:    attention_mask: Optional[torch.Tensor],
+202:    if attention_mask is not None:
+203:        causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+206:    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
+225:        self.is_causal = True
+244:        attention_mask: Optional[torch.Tensor],
+279:            attention_mask,
+304:        attention_mask: Optional[torch.Tensor] = None,
+320:            attention_mask=attention_mask,
+401:        attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
+415:            If you want to change padding behavior, you should read [`modeling_opt._prepare_decoder_attention_mask`]
+462:class LlamaModel(LlamaPreTrainedModel):
+497:        attention_mask: Optional[torch.Tensor] = None,
+542:            attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
+573:                    attention_mask=causal_mask,
+603:        attention_mask: torch.Tensor,
+610:            if attention_mask is not None and (attention_mask == 0.0).any():
+611:                return attention_mask
+614:            if isinstance(attention_mask, torch.Tensor):
+615:                attention_mask = make_flex_block_causal_mask(attention_mask)
+616:            if isinstance(attention_mask, BlockMask):
+617:                return attention_mask
+619:        # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
+628:                attention_mask,
+641:                attention_mask.shape[-1]
+642:                if isinstance(attention_mask, torch.Tensor)
+647:        causal_mask = self._prepare_4d_causal_attention_mask_with_cache_position(
+648:            attention_mask,
+659:            and attention_mask is not None
+660:            and attention_mask.device.type in ["cuda", "xpu"]
+672:    def _prepare_4d_causal_attention_mask_with_cache_position(
+673:        attention_mask: torch.Tensor,
+684:        `(batch_size, key_value_length)`, or if the input `attention_mask` is already 4D, do nothing.
+687:            attention_mask (`torch.Tensor`):
+704:        if attention_mask is not None and attention_mask.dim() == 4:
+706:            causal_mask = attention_mask
+716:            if attention_mask is not None:
+718:                mask_length = attention_mask.shape[-1]
+719:                padding_mask = causal_mask[:, :, :, :mask_length] + attention_mask[:, None, None, :].to(
+772:        attention_mask: Optional[torch.Tensor] = None,
+823:            attention_mask=attention_mask,
+888:        attention_mask: Optional[torch.Tensor] = None,
+906:            attention_mask=attention_mask,
+983:        attention_mask: Optional[torch.FloatTensor] = None,
+1006:            attention_mask=attention_mask,
+1074:        attention_mask: Optional[torch.Tensor] = None,
+1092:            attention_mask=attention_mask,
+[0m
+[0m$ [0mcd agents/scratch && grep -n -i -E "slid|sparse|mla|latent attention|window|dense|full.attention|attention" nb_README.md | head -30; echo "README lines: $(wc -l < nb_README.md)"; echo ---; grep -n -E "sliding_window|use_sliding|attention_sink|qk_norm|q_norm|k_norm|mla|num_key_value_heads|head_dim|rope" configuration_llama_4.51.1.py
+README lines: 183
+---
+23:from ...modeling_rope_utils import rope_config_validation
+48:        num_key_value_heads (`int`, *optional*):
+50:            `num_key_value_heads=num_attention_heads`, the model will use Multi Head Attention (MHA), if
+51:            `num_key_value_heads=1` the model will use Multi Query Attention (MQA) otherwise GQA is used. When
+81:        rope_theta (`float`, *optional*, defaults to 10000.0):
+83:        rope_scaling (`Dict`, *optional*):
+84:            Dictionary containing the scaling configuration for the RoPE embeddings. NOTE: if you apply new rope type
+88:                `rope_type` (`str`):
+89:                    The sub-variant of RoPE to use. Can be one of ['default', 'linear', 'dynamic', 'yarn', 'longrope',
+92:                    Used with all rope types except 'default'. The scaling factor to apply to the RoPE embeddings. In
+96:                    Used with 'dynamic', 'longrope' and 'llama3'. The original max position embeddings used during
+99:                    Used with 'yarn' and 'longrope'. The scaling factor to be applied on the attention
+109:                    Only used with 'longrope'. The scaling factor to be applied to short contexts (<
+113:                    Only used with 'longrope'. The scaling factor to be applied to long contexts (<
+126:        head_dim (`int`, *optional*):
+167:        num_key_value_heads=None,
+178:        rope_theta=10000.0,
+179:        rope_scaling=None,
+183:        head_dim=None,
+194:        if num_key_value_heads is None:
+195:            num_key_value_heads = num_attention_heads
+197:        self.num_key_value_heads = num_key_value_heads
+203:        self.rope_theta = rope_theta
+204:        self.rope_scaling = rope_scaling
+208:        self.head_dim = head_dim if head_dim is not None else self.hidden_size // self.num_attention_heads
+210:        # BC: if there is a 'type' field, copy it it to 'rope_type'.
+211:        if self.rope_scaling is not None and "type" in self.rope_scaling:
+212:            self.rope_scaling["rope_type"] = self.rope_scaling["type"]
+213:        rope_config_validation(self)
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/api/models?author=Nanbeige&limit=100" -o nb_org.json && python3 - <<'EOF'
+import json
+d=json.load(open('nb_org.json'))
+for m in d: print(m['id'], '|', ','.join(m.get('tags',[])))
+EOF
+Nanbeige/Nanbeige4.3-33B | transformers,safetensors,llama,text-generation,llm,nanbeige,conversational,en,zh,base_model:Nanbeige/Nanbeige4.3-33B-Base,base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base,license:apache-2.0,eval-results,text-generation-inference,endpoints_compatible,region:us
+Nanbeige/Nanbeige4.3-33B-Base | transformers,safetensors,llama,text-generation,llm,nanbeige,conversational,en,zh,license:apache-2.0,text-generation-inference,endpoints_compatible,region:us
+Nanbeige/Nanbeige4.2-3B | transformers,safetensors,nanbeige,text-generation,llm,conversational,custom_code,en,zh,arxiv:2607.22083,base_model:Nanbeige/Nanbeige4.2-3B-Base,base_model:finetune:Nanbeige/Nanbeige4.2-3B-Base,license:apache-2.0,eval-results,region:us
+Nanbeige/Nanbeige4.3-33B-INT4 | transformers,safetensors,llama,text-generation,llm,nanbeige,conversational,en,zh,base_model:Nanbeige/Nanbeige4.3-33B,base_model:quantized:Nanbeige/Nanbeige4.3-33B,license:apache-2.0,text-generation-inference,endpoints_compatible,compressed-tensors,region:us
+Nanbeige/Nanbeige4.3-33B-FP8 | transformers,safetensors,llama,text-generation,llm,nanbeige,conversational,en,zh,base_model:Nanbeige/Nanbeige4.3-33B,base_model:quantized:Nanbeige/Nanbeige4.3-33B,license:apache-2.0,text-generation-inference,endpoints_compatible,compressed-tensors,region:us
+Nanbeige/Nanbeige4.3-33B-INT8 | transformers,safetensors,llama,text-generation,llm,nanbeige,conversational,en,zh,base_model:Nanbeige/Nanbeige4.3-33B,base_model:quantized:Nanbeige/Nanbeige4.3-33B,license:apache-2.0,text-generation-inference,endpoints_compatible,compressed-tensors,region:us
+Nanbeige/Nanbeige4.2-3B-DSpark | transformers,safetensors,qwen3,llm,nanbeige,text-generation,custom_code,en,zh,arxiv:2607.22083,base_model:Nanbeige/Nanbeige4.2-3B-Base,base_model:finetune:Nanbeige/Nanbeige4.2-3B-Base,license:apache-2.0,text-generation-inference,endpoints_compatible,region:us
+Nanbeige/Nanbeige4-3B-Thinking-2510 | transformers,pytorch,llama,text-generation,llm,nanbeige,conversational,en,zh,license:apache-2.0,text-generation-inference,endpoints_compatible,region:us
+Nanbeige/Nanbeige4-3B-Thinking-2511 | transformers,safetensors,llama,text-generation,llm,nanbeige,conversational,en,zh,arxiv:2512.06266,base_model:Nanbeige/Nanbeige4-3B-Base,base_model:finetune:Nanbeige/Nanbeige4-3B-Base,license:apache-2.0,eval-results,text-generation-inference,endpoints_compatible,deploy:azure,region:us
+Nanbeige/Nanbeige4.1-3B | transformers,safetensors,llama,text-generation,llm,nanbeige,conversational,en,zh,arxiv:2602.13367,base_model:Nanbeige/Nanbeige4-3B-Base,base_model:finetune:Nanbeige/Nanbeige4-3B-Base,license:apache-2.0,eval-results,text-generation-inference,endpoints_compatible,deploy:azure,region:us
+Nanbeige/Nanbeige4.2-3B-GPTQ-Int8 | transformers,safetensors,nanbeige,text-generation,llm,conversational,custom_code,en,zh,arxiv:2607.22083,base_model:Nanbeige/Nanbeige4.2-3B,base_model:quantized:Nanbeige/Nanbeige4.2-3B,license:apache-2.0,compressed-tensors,region:us
+Nanbeige/CoSineVerifier-Tool-4B | safetensors,qwen3,arxiv:2512.01224,license:mit,region:us
+Nanbeige/Nanbeige4-3B-Base | transformers,pytorch,safetensors,llama,text-generation,llm,nanbeige,en,zh,arxiv:2512.06266,license:apache-2.0,text-generation-inference,endpoints_compatible,region:us
+Nanbeige/ToolMind-Web-3B | pytorch,safetensors,llama,search-agent,rag,deep-research,3b,nlp,text-generation,conversational,en,zh,license:apache-2.0,region:us
+Nanbeige/Nanbeige4.2-3B-Base | transformers,safetensors,nanbeige,text-generation,llm,conversational,custom_code,en,zh,arxiv:2607.22083,license:apache-2.0,region:us
+Nanbeige/Nanbeige4.2-3B-FP8 | transformers,safetensors,nanbeige,text-generation,llm,conversational,custom_code,en,zh,arxiv:2607.22083,base_model:Nanbeige/Nanbeige4.2-3B,base_model:quantized:Nanbeige/Nanbeige4.2-3B,license:apache-2.0,compressed-tensors,region:us
+[0m
+[0m$ [0mcd agents/scratch && for f in config.json; do for r in Nanbeige/Nanbeige4.3-33B-INT4 Nanbeige/Nanbeige4.3-33B-FP8 Nanbeige/Nanbeige4.3-33B-INT8 Nanbeige/Nanbeige4.3-33B-Base; do echo "=== $r"; curl -sL "https://huggingface.co/$r/resolve/main/$f" | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps({k:d.get(k) for k in ['architectures','model_type','head_dim','hidden_size','num_attention_heads','num_key_value_heads','num_hidden_layers','rope_scaling','rope_theta','max_position_embeddings','torch_dtype','quantization_config','kv_lora_rank','q_lora_rank']}, indent=1)[:1200])"; done; done
+=== Nanbeige/Nanbeige4.3-33B-INT4
+{
+ "architectures": [
+  "LlamaForCausalLM"
+ ],
+ "model_type": "llama",
+ "head_dim": 128,
+ "hidden_size": 7168,
+ "num_attention_heads": 56,
+ "num_key_value_heads": 8,
+ "num_hidden_layers": 52,
+ "rope_scaling": null,
+ "rope_theta": 120000000,
+ "max_position_embeddings": 524288,
+ "torch_dtype": "bfloat16",
+ "quantization_config": {
+  "config_groups": {
+   "group_0": {
+    "input_activations": null,
+    "output_activations": null,
+    "targets": [
+     "Linear"
+    ],
+    "weights": {
+     "actorder": null,
+     "block_structure": null,
+     "dynamic": false,
+     "group_size": 32,
+     "num_bits": 4,
+     "observer": "minmax",
+     "observer_kwargs": {},
+     "strategy": "group",
+     "symmetric": false,
+     "type": "int",
+     "zp_dtype": "torch.int8"
+    }
+   }
+  },
+  "format": "pack-quantized",
+  "ignore": [
+   "lm_head",
+   "model.embed_tokens"
+  ],
+  "kv_cache_scheme": null,
+  "quant_method": "compressed-tensors",
+  "quantization_status": "compressed"
+ },
+ "kv_lora_rank": null,
+ "q_lora_rank": null
+}
+=== Nanbeige/Nanbeige4.3-33B-FP8
+{
+ "architectures": [
+  "LlamaForCausalLM"
+ ],
+ "model_type": "llama",
+ "head_dim": 128,
+ "hidden_size": 7168,
+ "num_attention_heads": 56,
+ "num_key_value_heads": 8,
+ "num_hidden_layers": 52,
+ "rope_scaling": null,
+ "rope_theta": 120000000,
+ "max_position_embeddings": 524288,
+ "torch_dtype": "bfloat16",
+ "quantization_config": {
+  "config_groups": {
+   "group_0": {
+    "format": "float-quantized",
+    "input_activations": {
+     "actorder": null,
+     "block_structure": null,
+     "dynamic": true,
+     "group_size": 128,
+     "num_bits": 8,
+     "observer": null,
+     "observer_kwargs": {},
+     "scale_dtype": null,
+     "strategy": "group",
+     "symmetric": true,
+     "type": "float",
+     "zp_dtype": null
+    },
+    "output_activations": null,
+    "targets": [
+     "Linear"
+    ],
+    "weights": {
+     "actorder": null,
+     "block_structure": [
+      128,
+      128
+     ],
+     "dynamic": false,
+     "group_size": null,
+     "num_bits": 8,
+     "observer": "memoryless_minmax",
+     "observer_kwargs": {},
+     "scale_dtype": null,
+     "strategy": "block",
+     "symmetric": true,
+     "type": "float",
+     "zp_dtype": null
+    }
+   }
+  },
+  "format": "float-quantized",
+  "global
+=== Nanbeige/Nanbeige4.3-33B-INT8
+{
+ "architectures": [
+  "LlamaForCausalLM"
+ ],
+ "model_type": "llama",
+ "head_dim": 128,
+ "hidden_size": 7168,
+ "num_attention_heads": 56,
+ "num_key_value_heads": 8,
+ "num_hidden_layers": 52,
+ "rope_scaling": null,
+ "rope_theta": 120000000,
+ "max_position_embeddings": 524288,
+ "torch_dtype": "bfloat16",
+ "quantization_config": {
+  "config_groups": {
+   "group_0": {
+    "format": "pack-quantized",
+    "input_activations": null,
+    "output_activations": null,
+    "targets": [
+     "Linear"
+    ],
+    "weights": {
+     "actorder": null,
+     "block_structure": null,
+     "dynamic": false,
+     "group_size": 128,
+     "num_bits": 8,
+     "observer": "memoryless_minmax",
+     "observer_kwargs": {},
+     "scale_dtype": null,
+     "strategy": "group",
+     "symmetric": true,
+     "type": "int",
+     "zp_dtype": null
+    }
+   }
+  },
+  "format": "pack-quantized",
+  "global_compression_ratio": null,
+  "ignore": [
+   "lm_head"
+  ],
+  "kv_cache_scheme": null,
+  "quant_method": "compressed-tensors",
+  "quantization_status": "compressed",
+  "sparsity_config": {},
+  "transform_config": {},
+  "version": "0.19.0"
+ },
+ "kv_lora_rank": null,
+ "q_lora_rank": null
+}
+=== Nanbeige/Nanbeige4.3-33B-Base
+{
+ "architectures": [
+  "LlamaForCausalLM"
+ ],
+ "model_type": "llama",
+ "head_dim": null,
+ "hidden_size": 7168,
+ "num_attention_heads": 56,
+ "num_key_value_heads": 8,
+ "num_hidden_layers": 52,
+ "rope_scaling": null,
+ "rope_theta": 10000000,
+ "max_position_embeddings": 131072,
+ "torch_dtype": "bfloat16",
+ "quantization_config": null,
+ "kv_lora_rank": null,
+ "q_lora_rank": null
+}
+[0m
+[0m$ [0mcd agents/scratch && grep -n -E "sliding_window|layer_types|attention_type|sink|q_norm|k_norm|mla|sparse" modeling_llama_4.51.1.py configuration_llama_4.51.1.py | head -40; echo '--- eager'; sed -n '185,215p' modeling_llama_4.51.1.py; echo '--- rope'; sed -n '85,140p' modeling_llama_4.51.1.py
+--- eager
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
+
+
+def eager_attention_forward(
+    module: nn.Module,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    attention_mask: Optional[torch.Tensor],
+    scaling: float,
+    dropout: float = 0.0,
+    **kwargs,
+):
+    key_states = repeat_kv(key, module.num_key_value_groups)
+    value_states = repeat_kv(value, module.num_key_value_groups)
+
+    attn_weights = torch.matmul(query, key_states.transpose(2, 3)) * scaling
+    if attention_mask is not None:
+        causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+        attn_weights = attn_weights + causal_mask
+
+    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
+    attn_weights = nn.functional.dropout(attn_weights, p=dropout, training=module.training)
+    attn_output = torch.matmul(attn_weights, value_states)
+    attn_output = attn_output.transpose(1, 2).contiguous()
+
+    return attn_output, attn_weights
+
+
+class LlamaAttention(nn.Module):
+    """Multi-headed attention from 'Attention Is All You Need' paper"""
+--- rope
+    def extra_repr(self):
+        return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
+
+
+ALL_LAYERNORM_LAYERS.append(LlamaRMSNorm)
+
+
+class LlamaRotaryEmbedding(nn.Module):
+    def __init__(self, config: LlamaConfig, device=None):
+        super().__init__()
+        # BC: "rope_type" was originally "type"
+        if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
+            self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
+        else:
+            self.rope_type = "default"
+        self.max_seq_len_cached = config.max_position_embeddings
+        self.original_max_seq_len = config.max_position_embeddings
+
+        self.config = config
+        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
+
+        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
+        self.original_inv_freq = self.inv_freq
+
+    @torch.no_grad()
+    @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    def forward(self, x, position_ids):
+        inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
+        position_ids_expanded = position_ids[:, None, :].float()
+
+        device_type = x.device.type if isinstance(x.device.type, str) and x.device.type != "mps" else "cpu"
+        with torch.autocast(device_type=device_type, enabled=False):  # Force float32
+            freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(1, 2)
+            emb = torch.cat((freqs, freqs), dim=-1)
+            cos = emb.cos() * self.attention_scaling
+            sin = emb.sin() * self.attention_scaling
+
+        return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
+
+
+def rotate_half(x):
+    """Rotates half the hidden dims of the input."""
+    x1 = x[..., : x.shape[-1] // 2]
+    x2 = x[..., x.shape[-1] // 2 :]
+    return torch.cat((-x2, x1), dim=-1)
+
+
+def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
+    """Applies Rotary Position Embedding to the query and key tensors.
+
+    Args:
+        q (`torch.Tensor`): The query tensor.
+        k (`torch.Tensor`): The key tensor.
+        cos (`torch.Tensor`): The cosine part of the rotary embedding.
+        sin (`torch.Tensor`): The sine part of the rotary embedding.
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import json, collections, re
+d=json.load(open('nb_model.safetensors.index.json'))
+names=collections.defaultdict(list)
+for k in d['weight_map']:
+    if k.startswith('model.layers.'):
+        suffix=k.split('.',3)[3]
+        names[suffix].append(k)
+for s in sorted(names): print(s, len(names[s]))
+print('non-layer:', sorted(k for k in d['weight_map'] if not k.startswith('model.layers.')))
+EOF
+input_layernorm.weight 52
+mlp.down_proj.weight 52
+mlp.gate_proj.weight 52
+mlp.up_proj.weight 52
+post_attention_layernorm.weight 52
+self_attn.k_proj.weight 52
+self_attn.o_proj.weight 52
+self_attn.q_proj.weight 52
+self_attn.v_proj.weight 52
+non-layer: ['lm_head.weight', 'model.embed_tokens.weight', 'model.norm.weight']
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import json, subprocess, struct
+base="https://huggingface.co/Nanbeige/Nanbeige4.3-33B/resolve/main/"
+def header(fn):
+    b=subprocess.run(["curl","-sL","-r","0-7",base+fn],capture_output=True).stdout
+    n=struct.unpack("<Q",b)[0]
+    h=subprocess.run(["curl","-sL","-r",f"8-{7+n}",base+fn],capture_output=True).stdout
+    return json.loads(h)
+for fn in ["model-00003-of-00014.safetensors","model-00006-of-00014.safetensors","model-00014-of-00014.safetensors","model-00002-of-00014.safetensors","model-00013-of-00014.safetensors"]:
+    h=header(fn)
+    print('==',fn)
+    for k,v in h.items():
+        if k=='__metadata__': continue
+        if any(t in k for t in ['layers.0.','layers.51.','embed_tokens','lm_head','model.norm']):
+            print(' ',k,v['dtype'],v['shape'])
+EOF
+== model-00003-of-00014.safetensors
+  lm_head.weight BF16 [166912, 7168]
+  model.layers.0.self_attn.k_proj.weight BF16 [1024, 7168]
+== model-00006-of-00014.safetensors
+  model.layers.0.input_layernorm.weight BF16 [7168]
+  model.layers.0.self_attn.q_proj.weight BF16 [7168, 7168]
+  model.layers.51.self_attn.k_proj.weight BF16 [1024, 7168]
+  model.layers.51.self_attn.q_proj.weight BF16 [7168, 7168]
+== model-00014-of-00014.safetensors
+  model.layers.0.self_attn.v_proj.weight BF16 [1024, 7168]
+== model-00002-of-00014.safetensors
+  model.embed_tokens.weight BF16 [166912, 7168]
+== model-00013-of-00014.safetensors
+  model.layers.51.mlp.down_proj.weight BF16 [7168, 22016]
+  model.norm.weight BF16 [7168]
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/api/models?search=Nanbeige4.3-33B&limit=200&full=true" -o nb_all.json && python3 - <<'EOF'
+import json,collections
+d=json.load(open('nb_all.json'))
+print('count', len(d))
+def kind(tags, rid):
+    t=set(tags)
+    for k in ['gguf','mlx','nvfp4','fp8','mxfp8','awq','exl3','int4','int8','w4a16','w8a16','onnx','gptq','autoround','compressed-tensors','rocmfpx','oqe','jang','gsq','rco','pollard']:
+        if k in t: return k
+    r=rid.lower()
+    for k in ['gguf','mlx','nvfp4','fp8','exl3','awq','int4','int8','w4a16','onnx','gptq','exl3','gsq']:
+        if k in r: return k
+    return 'other'
+cnt=collections.Counter()
+for m in d:
+    k=kind(m.get('tags',[]), m['id']); cnt[k]+=1
+    print(f"{k:18s} {m['id']}")
+print(cnt)
+EOF
+count 138
+other              Nanbeige/Nanbeige4.3-33B
+gguf               dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF
+gguf               abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF
+other              Nanbeige/Nanbeige4.3-33B-Base
+gguf               AtomicChat/Nanbeige4.3-33B-GGUF
+gguf               bartowski/Nanbeige_Nanbeige4.3-33B-GGUF
+gguf               FRENCHFAKER/Nanbeige4.3-33B-cybersec-abliterated-GGUF
+compressed-tensors Nanbeige/Nanbeige4.3-33B-INT4
+nvfp4              webbrain-one/Nanbeige4.3-33B-NVFP4
+other              Luni/Nanbeige-4.3-33B-Heretic
+compressed-tensors Nanbeige/Nanbeige4.3-33B-FP8
+compressed-tensors Nanbeige/Nanbeige4.3-33B-INT8
+nvfp4              sakamakismile/Nanbeige4.3-33B-Heretic-NVFP4
+gguf               Harsha001/Nanbeige4.3-33B-ROCmFPX
+gguf               prithivMLmods/Nanbeige4.3-33B-NVFP4-GGUF
+gguf               Luni/Nanbeige-4.3-33B-Heretic-GSQ-RCO-GGUF
+gguf               mradermacher/Nanbeige4.3-33B-i1-GGUF
+gguf               DogukanUrker/Nanbeige4.3-33B-GGUF
+nvfp4              primitive-ai/Nanbeige4.3-33B-NVFP4
+mlx                Nurymanau/Nanbeige4.3-33B-MLX-4bit
+mlx                pyros-vault/Nanbeige4.3-33B-oQ4e
+mlx                fcmeyer/Nanbeige4.3-33B-MLX-6bit
+mlx                pratikgx/Nanbeige4.3-33B-MLX-4bit
+mlx                pyros-vault/Nanbeige4.3-33B-oQ8e
+int4               Tech2wild/Nanbeige4.3-33B-W4A16-AutoRound
+other              ProCreations/Nanbeige4.3-33B-DFlash2
+nvfp4              ProCreations/Nanbeige4.3-33B-NVFP4-A16
+int4               wasifb/Nanbeige4.3-33B-AutoRound-W4A16
+other              shisa-ai/Nanbeige4.3-33B-DMS-2x
+gguf               PollardWeights/Nanbeige4.3-33B-Pollard
+gguf               0bserverx/Nanbeige4.3-33B-RVN-Uncensored-Heretic-Abliterated-RCO-GGUF
+nvfp4              axteam/Nanbeige4.3-33B-NVFP4A16
+awq                axteam/Nanbeige4.3-33B-AWQ-4bit
+nvfp4              axteam/Nanbeige4.3-33B-NVFP4
+gguf               axteam/Nanbeige4.3-33B-GGUF
+mlx                junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-4bit
+other              SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic
+gguf               eepos/Nanbeige4.3-33B-Q4_K_S-GGUF
+gguf               KnutJaegersberg/Nanbeige4.3-33B-Q8_0-GGUF
+gguf               CVLTAI/Nanbeige4.3-33B-GGUF
+gguf               KnutJaegersberg/Nanbeige4.3-33B-Base-Q8_0-GGUF
+gguf               blallo27/Nanbeige4.3-33B-Q6_K-GGUF
+gguf               moeshawky/Nanbeige4.3-33B-GGUF
+other              eyes-ml/Nanbeige4.3-33B
+other              eyes-ml/Nanbeige4.3-33B-Base
+mlx                Duckets/Nanbeige4.3-33B-MLX-4bit
+gguf               XTer123/Nanbeige4.3-33B-GGUF
+int8               moeshawky/Nanbeige4.3-33B-INT8-safetensors
+gguf               nesymerp1/Nanbeige4.3-33B-Base-Q4_K_M-GGUF
+fp8                primitive-ai/Nanbeige4.3-33B-FP8
+mlx                DJLougen/Nanbeige4.3-33B-MLX
+fp8                moeshawky/Nanbeige4.3-33B-FP8-safetensors
+gptq               stuchapin/Nanbeige4.3-33B-Base-W4A16-AutoRound
+mlx                killen8/Nanbeige4.3-33B-MLX-4bit
+mlx                hamuz/Nanbeige4.3-33B-MLX
+mlx                fcmeyer/Nanbeige4.3-33B-MLX-bf16
+mlx                fcmeyer/Nanbeige4.3-33B-MLX-4bit
+mlx                fcmeyer/Nanbeige4.3-33B-MLX-8bit
+nvfp4              primitive-ai/Nanbeige4.3-33B-mixed-NVFP4-FP8
+mlx                fcmeyer/Nanbeige4.3-33B-MLX-4bit-g128
+mlx                fcmeyer/Nanbeige4.3-33B-MLX-mixed-4-6-g64
+gguf               Razor3D/Nanbeige4.3-33B-Q4_K_M-GGUF
+exl3               Luni/Nanbeige-4.3-33B-EXL3
+exl3               Luni/Nanbeige-4.3-33B-Heretic-EXL3
+mlx                a-gordo/Nanbeige4.3-33B-oQ8e
+mlx                a-gordo/Nanbeige4.3-33B-oQ6e
+mlx                a-gordo/Nanbeige4.3-33B-oQ4e
+gptq               stuchapin/Nanbeige4.3-33B-Base-W3A16-AutoRound
+mlx                kapitsaprime/Nanbeige4.3-33B-MLX-4bit
+mlx                kapitsaprime/Nanbeige4.3-33B-MLX-8bit
+exl3               lxe/Nanbeige4.3-33B-EXL3-2.5bpw
+mlx                chriswessels/Nanbeige4.3-33B-oQ8e
+mlx                pyros-vault/Nanbeige4.3-33B-oQ6e
+gptq               stuchapin/Nanbeige4.3-33B-Base-W8A16-AutoRound
+mlx                OsaurusAI/Nanbeige4.3-33B-JANG_4D
+mlx                OsaurusAI/Nanbeige4.3-33B-JANG_6M
+fp8                ProCreations/Nanbeige4.3-33B-FP8
+mlx                OsaurusAI/Nanbeige4.3-33B-JANG_2D
+exl3               nonkronk/Nanbeige4.3-33B-EXL3-4.0bpw
+int8               jeonghyeon00/Nanbeige4.3-33B-w8a16-compressed-tensors
+w4a16              jeonghyeon00/Nanbeige4.3-33B-w4a16-gptq-compressed-tensors
+gguf               Luni/Nanbeige-4.3-33B-Heretic-GGUF
+exl3               ProCreations/Nanbeige4.3-33B-EXL3
+gguf               XTer123/Nanbeige4.3-33B-Uncensored-GGUF
+w4a16              jeonghyeon00/Nanbeige4.3-33B-W4A16-AutoRound
+mlx                alexwengg/Nanbeige4.3-33B-MLX-mixed-3-4-6bit
+mlx                alexwengg/Nanbeige4.3-33B-MLX-3bit
+fp8                mph/Nanbeige4.3-33B-MXFP8
+exl3               Luni/Nanbeige-4.3-33B-Heretic-EXL3-SC
+gguf               danyalmalik/Nanbeige4.3-33B-IQ2_M-ONNX-WebGPU
+exl3               vcruz305/Nanbeige4.3-33B-SAGE-EXL3-4.50bpw
+gguf               danyalmalik/Nanbeige4.3-33B-Q4_K_M-ONNX-WebGPU
+exl3               yamz-labs/Nanbeige4.3-33B-EXL3-Yamz
+mlx                3hs4n/Nanbeige4.3-33B-mlx-JANG_2D-compact
+gguf               mradermacher/Nanbeige4.3-33B-Base-GGUF
+int4               heliophage/Nanbeige4.3-33B-W4A16-GPTQ
+gguf               akhtyamovpavel/Nanbeige4.3-33B-Hyper-GGUF
+fp8                stoyani/Nanbeige4.3-33B-FP8-KVcal
+gguf               mradermacher/Nanbeige4.3-33B-Base-i1-GGUF
+other              Luni/Nanbeige-4.3-33B-DFlash2
+gguf               mradermacher/Nanbeige4.3-33B-GGUF
+gguf               csdhall/Nanbeige4.3-33B-GGUF
+mlx                csdhall/Nanbeige4.3-33B-MLX-8bit
+mlx                csdhall/Nanbeige4.3-33B-MLX-6bit
+mlx                csdhall/Nanbeige4.3-33B-MLX-4bit
+other              kapitsaprime/Nanbeige4.3-33B-DFlash2
+exl3               acrogenesis/Nanbeige4.3-33B-EXL3-3.55bpw
+int4               evanrodgers/Nanbeige4.3-33B-W4A16-G128
+gguf               webmp3/Sakura-Nanbeige4.3-33B-GGUF
+other              applepie69/Nanbeige4.3-33B-MTP-head-1026
+w4a16              urakozz/Nanbeige4.3-33B-W4A16-g64-AutoRound-GPTQ
+gguf               oscarwest1/Nanbeige4.3-33B-Q6_K
+mlx                PocketAiHub/Nanbeige4.3-33B-MLX-6bit
+mlx                PocketAiHub/Nanbeige4.3-33B-MLX-4bit
+gptq               groxaxo/Nanbeige-4.3-33B-Heretic-GPTQPro-W4-G64
+gguf               SolsticeAI/Nanbeige4.3-33B-GGUF-UltraOptimised-Curated-Protium
+other              infosave/Nanbeige4.3-33B-cmf
+gguf               esatapedico/Nanbeige4.3-33B-NVFP4-GGUF
+compressed-tensors cyankiwi/Nanbeige4.3-33B-AWQ-INT4
+nvfp4              esatapedico/Nanbeige4.3-33B-NVFP4
+nvfp4              hsam007/Nanbeige4.3-33B-NVFP4
+other              eyes-ml/Nanbeige4.3-33B_jacobian-lens
+fp8                nickreese/nanbeige4.3-33b-radiance-fp8
+gguf               DevQuasar/Nanbeige.Nanbeige4.3-33B-GGUF
+mlx                SolsticeAI/Nanbeige4.3-33B-MLX-UltraOptimised-Curated-Protium
+exl3               Honkware/Nanbeige4.3-33B-exl3-4.0bpw
+rco                0bserverx/Nanbeige4.3-33B-RVN-Heretic-Abliterated-Uncensored
+fp8                axteam/Nanbeige4.3-33B-FP8-dynamic
+awq                axteam/Nanbeige4.3-33B-AWQ-8bit
+other              eyes-ml/Nanbeige4.3-33B-Base_jacobian-lens
+gguf               ahtx/AH-Nanbeige4.3-33B-IQ3_XXS-GGUF
+fp8                GetCortex27/Nanbeige4.3-33B-FP8
+other              LakoMoor/Nanbeige4.3-33B-IQ3_XXS-NInfer-v3
+mlx                junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-8bit
+other              applepie69/Nanbeige4.3-33B-MTP-1101
+other              applepie69/Nanbeige4.3-33B-MTP-head-r3
+other              Solstice-AI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic
+other              SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored
+Counter({'gguf': 37, 'mlx': 35, 'other': 19, 'exl3': 10, 'nvfp4': 9, 'fp8': 8, 'compressed-tensors': 4, 'int4': 4, 'gptq': 4, 'w4a16': 3, 'awq': 2, 'int8': 2, 'rco': 1})
+[0m
+[0m$ [0mcd agents/scratch && grep -n -E "sliding|window|sink|mla|sparse|indexer" modeling_llama_4.51.1.py | head; echo "exit=$?"; echo ---; grep -n "use_sliding_window\|sliding_window" configuration_llama_4.51.1.py; echo "exit=$?"; echo ---; grep -n "class LlamaModel\|def forward\|causal_mask\|_update_causal_mask" modeling_llama_4.51.1.py | sed -n '1,20p'
+exit=0
+---
+exit=1
+---
+60:    from ...integrations.flex_attention import make_flex_block_causal_mask
+78:    def forward(self, hidden_states):
+112:    def forward(self, x, position_ids):
+171:    def forward(self, x):
+203:        causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+204:        attn_weights = attn_weights + causal_mask
+240:    def forward(
+301:    def forward(
+462:class LlamaModel(LlamaPreTrainedModel):
+494:    def forward(
+541:        causal_mask = self._update_causal_mask(
+562:                    causal_mask,
+573:                    attention_mask=causal_mask,
+601:    def _update_causal_mask(
+615:                attention_mask = make_flex_block_causal_mask(attention_mask)
+627:            if AttentionMaskConverter._ignore_causal_mask_sdpa(
+647:        causal_mask = self._prepare_4d_causal_attention_mask_with_cache_position(
+663:            # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
+667:            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
+669:        return causal_mask
+[0m
+[0m$ [0mcd agents/scratch && for r in bartowski/Nanbeige_Nanbeige4.3-33B-GGUF primitive-ai/Nanbeige4.3-33B-NVFP4 Luni/Nanbeige-4.3-33B-EXL3 ProCreations/Nanbeige4.3-33B-DFlash2 axteam/Nanbeige4.3-33B-AWQ-4bit; do echo "=== $r"; curl -sL "https://huggingface.co/$r/resolve/main/config.json" | head -c 700; echo; done
+=== bartowski/Nanbeige_Nanbeige4.3-33B-GGUF
+Entry not found
+=== primitive-ai/Nanbeige4.3-33B-NVFP4
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_ba
+=== Luni/Nanbeige-4.3-33B-EXL3
+Entry not found
+=== ProCreations/Nanbeige4.3-33B-DFlash2
+{
+  "architectures": [
+    "DFlash2DraftModel"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "dflash_config": {
+    "block_size": 8,
+    "conv_group_size": 16,
+    "conv_kernel_size": 2,
+    "mask_token_id": 0,
+    "output_multiplier": 1.0,
+    "selector_rank": 128,
+    "selector_top_k": 32,
+    "target_layer_ids": [
+      1,
+      25,
+      49
+    ]
+  },
+  "dtype": "bfloat16",
+  "eos_token_id": 166101,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 8192,
+  "is_causal": false,
+  "layer_types": [
+    "full_attention",
+    "full_attention",
+    "full_attention"
+  ],
+  "max_position_
+=== axteam/Nanbeige4.3-33B-AWQ-4bit
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_ba
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import json
+d=json.load(open('nb_all.json'))
+flags=['sliding_window','layer_types','indexer','mla','kv_lora_rank','q_lora_rank','sparse','attention_sink','num_sinks','use_sliding_window']
+import urllib.request, concurrent.futures
+def check(m):
+    rid=m['id']
+    for f in ('config.json',):
+        try:
+            with urllib.request.urlopen(f"https://huggingface.co/{rid}/raw/main/{f}", timeout=20) as r:
+                c=json.load(r)
+        except Exception as e:
+            return rid, 'ERR '+str(e)[:40], None
+        hits={k:c[k] for k in flags if k in c and c[k] not in (None, [], False)}
+        lt=c.get('layer_types')
+        return rid, hits, (lt[:6] if isinstance(lt,list) else lt)
+with concurrent.futures.ThreadPoolExecutor(max_workers=12) as ex:
+    for rid,hits,lt in ex.map(check, d):
+        print(rid, '|', hits, '| layer_types:', lt)
+EOF
+Nanbeige/Nanbeige4.3-33B | {} | layer_types: None
+dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+Nanbeige/Nanbeige4.3-33B-Base | {} | layer_types: None
+AtomicChat/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+bartowski/Nanbeige_Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+FRENCHFAKER/Nanbeige4.3-33B-cybersec-abliterated-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+Nanbeige/Nanbeige4.3-33B-INT4 | {} | layer_types: None
+webbrain-one/Nanbeige4.3-33B-NVFP4 | {} | layer_types: None
+Luni/Nanbeige-4.3-33B-Heretic | {} | layer_types: None
+Nanbeige/Nanbeige4.3-33B-FP8 | {} | layer_types: None
+Nanbeige/Nanbeige4.3-33B-INT8 | {} | layer_types: None
+sakamakismile/Nanbeige4.3-33B-Heretic-NVFP4 | {} | layer_types: None
+Harsha001/Nanbeige4.3-33B-ROCmFPX | ERR HTTP Error 404: Not Found | layer_types: None
+prithivMLmods/Nanbeige4.3-33B-NVFP4-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+Luni/Nanbeige-4.3-33B-Heretic-GSQ-RCO-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+mradermacher/Nanbeige4.3-33B-i1-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+DogukanUrker/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+primitive-ai/Nanbeige4.3-33B-NVFP4 | {} | layer_types: None
+Nurymanau/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+pyros-vault/Nanbeige4.3-33B-oQ4e | {} | layer_types: None
+fcmeyer/Nanbeige4.3-33B-MLX-6bit | {} | layer_types: None
+pratikgx/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+pyros-vault/Nanbeige4.3-33B-oQ8e | {} | layer_types: None
+Tech2wild/Nanbeige4.3-33B-W4A16-AutoRound | {} | layer_types: None
+ProCreations/Nanbeige4.3-33B-DFlash2 | {'layer_types': ['full_attention', 'full_attention', 'full_attention']} | layer_types: ['full_attention', 'full_attention', 'full_attention']
+ProCreations/Nanbeige4.3-33B-NVFP4-A16 | {} | layer_types: None
+wasifb/Nanbeige4.3-33B-AutoRound-W4A16 | {} | layer_types: None
+shisa-ai/Nanbeige4.3-33B-DMS-2x | ERR HTTP Error 404: Not Found | layer_types: None
+PollardWeights/Nanbeige4.3-33B-Pollard | ERR HTTP Error 404: Not Found | layer_types: None
+0bserverx/Nanbeige4.3-33B-RVN-Uncensored-Heretic-Abliterated-RCO-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+axteam/Nanbeige4.3-33B-NVFP4A16 | {} | layer_types: None
+axteam/Nanbeige4.3-33B-AWQ-4bit | {} | layer_types: None
+axteam/Nanbeige4.3-33B-NVFP4 | {} | layer_types: None
+axteam/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-4bit | {} | layer_types: None
+SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic | {} | layer_types: None
+eepos/Nanbeige4.3-33B-Q4_K_S-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+KnutJaegersberg/Nanbeige4.3-33B-Q8_0-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+CVLTAI/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+KnutJaegersberg/Nanbeige4.3-33B-Base-Q8_0-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+blallo27/Nanbeige4.3-33B-Q6_K-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+moeshawky/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+eyes-ml/Nanbeige4.3-33B | {} | layer_types: None
+eyes-ml/Nanbeige4.3-33B-Base | {} | layer_types: None
+Duckets/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+XTer123/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+moeshawky/Nanbeige4.3-33B-INT8-safetensors | {} | layer_types: None
+nesymerp1/Nanbeige4.3-33B-Base-Q4_K_M-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+primitive-ai/Nanbeige4.3-33B-FP8 | {} | layer_types: None
+DJLougen/Nanbeige4.3-33B-MLX | ERR HTTP Error 404: Not Found | layer_types: None
+moeshawky/Nanbeige4.3-33B-FP8-safetensors | {} | layer_types: None
+stuchapin/Nanbeige4.3-33B-Base-W4A16-AutoRound | {} | layer_types: None
+killen8/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+hamuz/Nanbeige4.3-33B-MLX | ERR HTTP Error 404: Not Found | layer_types: None
+fcmeyer/Nanbeige4.3-33B-MLX-bf16 | {} | layer_types: None
+fcmeyer/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+fcmeyer/Nanbeige4.3-33B-MLX-8bit | {} | layer_types: None
+primitive-ai/Nanbeige4.3-33B-mixed-NVFP4-FP8 | {} | layer_types: None
+fcmeyer/Nanbeige4.3-33B-MLX-4bit-g128 | {} | layer_types: None
+fcmeyer/Nanbeige4.3-33B-MLX-mixed-4-6-g64 | {} | layer_types: None
+Razor3D/Nanbeige4.3-33B-Q4_K_M-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+Luni/Nanbeige-4.3-33B-EXL3 | ERR HTTP Error 404: Not Found | layer_types: None
+Luni/Nanbeige-4.3-33B-Heretic-EXL3 | ERR HTTP Error 404: Not Found | layer_types: None
+a-gordo/Nanbeige4.3-33B-oQ8e | {} | layer_types: None
+a-gordo/Nanbeige4.3-33B-oQ6e | {} | layer_types: None
+a-gordo/Nanbeige4.3-33B-oQ4e | {} | layer_types: None
+stuchapin/Nanbeige4.3-33B-Base-W3A16-AutoRound | {} | layer_types: None
+kapitsaprime/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+kapitsaprime/Nanbeige4.3-33B-MLX-8bit | {} | layer_types: None
+lxe/Nanbeige4.3-33B-EXL3-2.5bpw | {} | layer_types: None
+chriswessels/Nanbeige4.3-33B-oQ8e | {} | layer_types: None
+pyros-vault/Nanbeige4.3-33B-oQ6e | {} | layer_types: None
+stuchapin/Nanbeige4.3-33B-Base-W8A16-AutoRound | {} | layer_types: None
+OsaurusAI/Nanbeige4.3-33B-JANG_4D | {} | layer_types: None
+OsaurusAI/Nanbeige4.3-33B-JANG_6M | {} | layer_types: None
+ProCreations/Nanbeige4.3-33B-FP8 | {} | layer_types: None
+OsaurusAI/Nanbeige4.3-33B-JANG_2D | {} | layer_types: None
+nonkronk/Nanbeige4.3-33B-EXL3-4.0bpw | {} | layer_types: None
+jeonghyeon00/Nanbeige4.3-33B-w8a16-compressed-tensors | {} | layer_types: None
+jeonghyeon00/Nanbeige4.3-33B-w4a16-gptq-compressed-tensors | {} | layer_types: None
+Luni/Nanbeige-4.3-33B-Heretic-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+ProCreations/Nanbeige4.3-33B-EXL3 | ERR HTTP Error 404: Not Found | layer_types: None
+XTer123/Nanbeige4.3-33B-Uncensored-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+jeonghyeon00/Nanbeige4.3-33B-W4A16-AutoRound | {} | layer_types: None
+alexwengg/Nanbeige4.3-33B-MLX-mixed-3-4-6bit | {} | layer_types: None
+alexwengg/Nanbeige4.3-33B-MLX-3bit | {} | layer_types: None
+mph/Nanbeige4.3-33B-MXFP8 | {} | layer_types: None
+Luni/Nanbeige-4.3-33B-Heretic-EXL3-SC | ERR HTTP Error 404: Not Found | layer_types: None
+danyalmalik/Nanbeige4.3-33B-IQ2_M-ONNX-WebGPU | {} | layer_types: None
+vcruz305/Nanbeige4.3-33B-SAGE-EXL3-4.50bpw | {} | layer_types: None
+danyalmalik/Nanbeige4.3-33B-Q4_K_M-ONNX-WebGPU | {} | layer_types: None
+yamz-labs/Nanbeige4.3-33B-EXL3-Yamz | {} | layer_types: None
+3hs4n/Nanbeige4.3-33B-mlx-JANG_2D-compact | {} | layer_types: None
+mradermacher/Nanbeige4.3-33B-Base-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+heliophage/Nanbeige4.3-33B-W4A16-GPTQ | {} | layer_types: None
+akhtyamovpavel/Nanbeige4.3-33B-Hyper-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+stoyani/Nanbeige4.3-33B-FP8-KVcal | {} | layer_types: None
+mradermacher/Nanbeige4.3-33B-Base-i1-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+Luni/Nanbeige-4.3-33B-DFlash2 | {'layer_types': ['full_attention', 'full_attention', 'full_attention']} | layer_types: ['full_attention', 'full_attention', 'full_attention']
+mradermacher/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+csdhall/Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+csdhall/Nanbeige4.3-33B-MLX-8bit | {} | layer_types: None
+csdhall/Nanbeige4.3-33B-MLX-6bit | {} | layer_types: None
+csdhall/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+kapitsaprime/Nanbeige4.3-33B-DFlash2 | {'layer_types': ['full_attention', 'full_attention', 'full_attention']} | layer_types: ['full_attention', 'full_attention', 'full_attention']
+acrogenesis/Nanbeige4.3-33B-EXL3-3.55bpw | {} | layer_types: None
+evanrodgers/Nanbeige4.3-33B-W4A16-G128 | {} | layer_types: None
+webmp3/Sakura-Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+applepie69/Nanbeige4.3-33B-MTP-head-1026 | {} | layer_types: None
+urakozz/Nanbeige4.3-33B-W4A16-g64-AutoRound-GPTQ | {} | layer_types: None
+oscarwest1/Nanbeige4.3-33B-Q6_K | ERR HTTP Error 404: Not Found | layer_types: None
+PocketAiHub/Nanbeige4.3-33B-MLX-6bit | {} | layer_types: None
+PocketAiHub/Nanbeige4.3-33B-MLX-4bit | {} | layer_types: None
+groxaxo/Nanbeige-4.3-33B-Heretic-GPTQPro-W4-G64 | {} | layer_types: None
+SolsticeAI/Nanbeige4.3-33B-GGUF-UltraOptimised-Curated-Protium | ERR HTTP Error 404: Not Found | layer_types: None
+infosave/Nanbeige4.3-33B-cmf | ERR HTTP Error 404: Not Found | layer_types: None
+esatapedico/Nanbeige4.3-33B-NVFP4-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+cyankiwi/Nanbeige4.3-33B-AWQ-INT4 | {} | layer_types: None
+esatapedico/Nanbeige4.3-33B-NVFP4 | {} | layer_types: None
+hsam007/Nanbeige4.3-33B-NVFP4 | {} | layer_types: None
+eyes-ml/Nanbeige4.3-33B_jacobian-lens | ERR HTTP Error 401: Unauthorized | layer_types: None
+nickreese/nanbeige4.3-33b-radiance-fp8 | ERR HTTP Error 404: Not Found | layer_types: None
+DevQuasar/Nanbeige.Nanbeige4.3-33B-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+SolsticeAI/Nanbeige4.3-33B-MLX-UltraOptimised-Curated-Protium | ERR HTTP Error 404: Not Found | layer_types: None
+Honkware/Nanbeige4.3-33B-exl3-4.0bpw | {} | layer_types: None
+0bserverx/Nanbeige4.3-33B-RVN-Heretic-Abliterated-Uncensored | {} | layer_types: None
+axteam/Nanbeige4.3-33B-FP8-dynamic | {} | layer_types: None
+axteam/Nanbeige4.3-33B-AWQ-8bit | {} | layer_types: None
+eyes-ml/Nanbeige4.3-33B-Base_jacobian-lens | ERR HTTP Error 401: Unauthorized | layer_types: None
+ahtx/AH-Nanbeige4.3-33B-IQ3_XXS-GGUF | ERR HTTP Error 404: Not Found | layer_types: None
+GetCortex27/Nanbeige4.3-33B-FP8 | {} | layer_types: None
+LakoMoor/Nanbeige4.3-33B-IQ3_XXS-NInfer-v3 | ERR HTTP Error 404: Not Found | layer_types: None
+junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-8bit | {} | layer_types: None
+applepie69/Nanbeige4.3-33B-MTP-1101 | ERR HTTP Error 404: Not Found | layer_types: None
+applepie69/Nanbeige4.3-33B-MTP-head-r3 | ERR HTTP Error 404: Not Found | layer_types: None
+Solstice-AI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic | ERR HTTP Error 404: Not Found | layer_types: None
+SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored | {} | layer_types: None
+[0m
+[0m$ [0mcd agents/scratch && grep -n "524,288\|512K\|nanbeige43chat2026\|license" nb_README.md | head; echo ---; grep -n "" nb_model.safetensors.index.json | head -5; echo ---; grep -n "head_dim\|num_attention_heads\|num_key_value_heads\|num_hidden_layers\|max_position_embeddings\|rope_scaling\|rope_theta\|torch_dtype\|model_type\|use_cache" nb_config.json; echo ---; sha256sum nb_config.json nb_README.md; echo ---; cat /ai/huggingface/hub/models--Nanbeige--Nanbeige4.3-33B/refs/main; echo; diff <(curl -sL https://huggingface.co/Nanbeige/Nanbeige4.3-33B/raw/main/README.md) nb_README.md && echo README_SAME
+2:license: apache-2.0
+96:The model supports a context length of up to 524,288 tokens (512K).
+176:@misc{nanbeige43chat2026,
+---
+1:{
+2:  "metadata": {
+3:    "total_size": 66237954048
+4:  },
+5:  "weight_map": {
+---
+11:  "head_dim": 128,
+17:  "max_position_embeddings": 524288,
+19:  "model_type": "llama",
+20:  "num_attention_heads": 56,
+21:  "num_hidden_layers": 52,
+22:  "num_key_value_heads": 8,
+28:  "rope_scaling": null,
+29:  "rope_theta": 120000000,
+33:  "torch_dtype": "bfloat16",
+35:  "use_cache": false,
+---
+29e79eca831543bcfe3ed87c1f268d69ae346a0cd680ca48a11e01664f8fa87b  nb_config.json
+964930c76fbf9566d47f23df08370073435cf66131d261256843350a5c8a83c2  nb_README.md
+---
+c1093c501cc6460427c0ac634db7223d0450c0ee
+README_SAME
+[0m
+[0m$ [0mcd agents/scratch && grep -n -i "auto_map\|remote_code\|_attn_implementation\|attn_impl" nb_config.json; echo "grep_exit=$?"; python3 -c "
+import json;d=json.load(open('nb_config.json'));print('keys:',sorted(d))"
+grep_exit=1
+keys: ['architectures', 'attention_bias', 'attention_dropout', 'bos_token_id', 'embd_pdrop', 'eos_token_id', 'ffn_hidden_size', 'head_dim', 'hidden_act', 'hidden_size', 'initializer_range', 'intermediate_size', 'kv_channels', 'max_position_embeddings', 'mlp_bias', 'model_type', 'num_attention_heads', 'num_hidden_layers', 'num_key_value_heads', 'num_query_groups', 'pad_token_id', 'pretraining_tp', 'resid_pdrop', 'rms_norm_eps', 'rope_scaling', 'rope_theta', 'rotary_base', 'seq_length', 'tie_word_embeddings', 'torch_dtype', 'transformers_version', 'use_cache', 'vocab_size']
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import json, subprocess, struct, collections
+base="https://huggingface.co/Nanbeige/Nanbeige4.3-33B/resolve/main/"
+shapes=collections.defaultdict(set)
+for i in range(1,15):
+    fn=f"model-{i:05d}-of-00014.safetensors"
+    b=subprocess.run(["curl","-sL","-r","0-7",base+fn],capture_output=True).stdout
+    n=struct.unpack("<Q",b)[0]
+    h=json.loads(subprocess.run(["curl","-sL","-r",f"8-{7+n}",base+fn],capture_output=True).stdout)
+    for k,v in h.items():
+        if k=='__metadata__': continue
+        suf=k.split('.',3)[3] if k.startswith('model.layers.') else k
+        shapes[suf].add(tuple(v['shape']))
+for s in sorted(shapes): print(s, shapes[s])
+EOF
+input_layernorm.weight {(7168,)}
+lm_head.weight {(166912, 7168)}
+mlp.down_proj.weight {(7168, 22016)}
+mlp.gate_proj.weight {(22016, 7168)}
+mlp.up_proj.weight {(22016, 7168)}
+model.embed_tokens.weight {(166912, 7168)}
+model.norm.weight {(7168,)}
+post_attention_layernorm.weight {(7168,)}
+self_attn.k_proj.weight {(1024, 7168)}
+self_attn.o_proj.weight {(7168, 7168)}
+self_attn.q_proj.weight {(7168, 7168)}
+self_attn.v_proj.weight {(1024, 7168)}
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/api/models/bartowski/Nanbeige_Nanbeige4.3-33B-GGUF?blobs=true" -o nb_bar.json && python3 - <<'EOF'
+import json
+d=json.load(open('nb_bar.json'))
+for s in d['siblings']:
+    print(s['rfilename'], s.get('size'))
+EOF
+.gitattributes 3566
+Nanbeige_Nanbeige4.3-33B-IQ2_M.gguf 12187167872
+Nanbeige_Nanbeige4.3-33B-IQ2_S.gguf 11150560384
+Nanbeige_Nanbeige4.3-33B-IQ2_XS.gguf 10634407040
+Nanbeige_Nanbeige4.3-33B-IQ2_XXS.gguf 10071403648
+Nanbeige_Nanbeige4.3-33B-IQ3_M.gguf 17802005632
+Nanbeige_Nanbeige4.3-33B-IQ3_XS.gguf 15212665984
+Nanbeige_Nanbeige4.3-33B-IQ3_XXS.gguf 14489959552
+Nanbeige_Nanbeige4.3-33B-IQ4_NL.gguf 20871343232
+Nanbeige_Nanbeige4.3-33B-IQ4_XS.gguf 18635041920
+Nanbeige_Nanbeige4.3-33B-Q2_K.gguf 13528816768
+Nanbeige_Nanbeige4.3-33B-Q3_K_L.gguf 17270484096
+Nanbeige_Nanbeige4.3-33B-Q3_K_M.gguf 15919746176
+Nanbeige_Nanbeige4.3-33B-Q3_K_S.gguf 15211261056
+Nanbeige_Nanbeige4.3-33B-Q4_0.gguf 19348057216
+Nanbeige_Nanbeige4.3-33B-Q4_1.gguf 21200497792
+Nanbeige_Nanbeige4.3-33B-Q4_K_L.gguf 22344395904
+Nanbeige_Nanbeige4.3-33B-Q4_K_M.gguf 20788825216
+Nanbeige_Nanbeige4.3-33B-Q4_K_S.gguf 19740519552
+Nanbeige_Nanbeige4.3-33B-Q5_K_M.gguf 25073368192
+Nanbeige_Nanbeige4.3-33B-Q5_K_S.gguf 23664311424
+Nanbeige_Nanbeige4.3-33B-Q6_K.gguf 29016857728
+Nanbeige_Nanbeige4.3-33B-Q6_K_L.gguf 30404324480
+Nanbeige_Nanbeige4.3-33B-Q6_K_S.gguf 27750272128
+Nanbeige_Nanbeige4.3-33B-Q8_0.gguf 35195128960
+Nanbeige_Nanbeige4.3-33B-bf16/Nanbeige_Nanbeige4.3-33B-bf16-00001-of-00002.gguf 39693381216
+Nanbeige_Nanbeige4.3-33B-bf16/Nanbeige_Nanbeige4.3-33B-bf16-00002-of-00002.gguf 26550082976
+Nanbeige_Nanbeige4.3-33B-calibration-v6.txt 1247459
+Nanbeige_Nanbeige4.3-33B-imatrix.gguf 27172928
+README.md 19267
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_M.layout.json 1973
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_M.tensor-types.txt 12094
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_S.layout.json 1982
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_S.tensor-types.txt 12313
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_XS.layout.json 1980
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_XS.tensor-types.txt 12364
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_XXS.layout.json 2033
+layouts/Nanbeige_Nanbeige4.3-33B-IQ2_XXS.tensor-types.txt 12622
+layouts/Nanbeige_Nanbeige4.3-33B-IQ3_M.layout.json 2001
+layouts/Nanbeige_Nanbeige4.3-33B-IQ3_M.tensor-types.txt 11898
+layouts/Nanbeige_Nanbeige4.3-33B-IQ3_XS.layout.json 1931
+layouts/Nanbeige_Nanbeige4.3-33B-IQ3_XS.tensor-types.txt 11980
+layouts/Nanbeige_Nanbeige4.3-33B-IQ3_XXS.layout.json 1986
+layouts/Nanbeige_Nanbeige4.3-33B-IQ3_XXS.tensor-types.txt 12419
+layouts/Nanbeige_Nanbeige4.3-33B-IQ4_NL.layout.json 1906
+layouts/Nanbeige_Nanbeige4.3-33B-IQ4_NL.tensor-types.txt 12124
+layouts/Nanbeige_Nanbeige4.3-33B-IQ4_XS.layout.json 1937
+layouts/Nanbeige_Nanbeige4.3-33B-IQ4_XS.tensor-types.txt 12220
+layouts/Nanbeige_Nanbeige4.3-33B-Q2_K.layout.json 1916
+layouts/Nanbeige_Nanbeige4.3-33B-Q2_K.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q3_K_L.layout.json 1959
+layouts/Nanbeige_Nanbeige4.3-33B-Q3_K_L.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q3_K_M.layout.json 1993
+layouts/Nanbeige_Nanbeige4.3-33B-Q3_K_M.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q3_K_S.layout.json 1938
+layouts/Nanbeige_Nanbeige4.3-33B-Q3_K_S.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q4_K_L.layout.json 1958
+layouts/Nanbeige_Nanbeige4.3-33B-Q4_K_L.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q4_K_M.layout.json 1940
+layouts/Nanbeige_Nanbeige4.3-33B-Q4_K_M.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q4_K_S.layout.json 1904
+layouts/Nanbeige_Nanbeige4.3-33B-Q4_K_S.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q5_K_M.layout.json 1887
+layouts/Nanbeige_Nanbeige4.3-33B-Q5_K_M.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q5_K_S.layout.json 1903
+layouts/Nanbeige_Nanbeige4.3-33B-Q5_K_S.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q6_K.layout.json 1885
+layouts/Nanbeige_Nanbeige4.3-33B-Q6_K.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q6_K_L.layout.json 1906
+layouts/Nanbeige_Nanbeige4.3-33B-Q6_K_L.tensor-types.txt 11730
+layouts/Nanbeige_Nanbeige4.3-33B-Q6_K_S.layout.json 1870
+layouts/Nanbeige_Nanbeige4.3-33B-Q6_K_S.tensor-types.txt 11730
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/api/models/Nanbeige/Nanbeige4.3-33B-INT4?blobs=true" -o nb_int4b.json && python3 - <<'EOF'
+import json
+d=json.load(open('nb_int4b.json'))
+names={s['rfilename'] for s in d['siblings']}
+print('has FULL_MANIFEST', 'FULL_MANIFEST.json' in names)
+for s in d['siblings']:
+    if s['rfilename'] in ('FULL_MANIFEST.json','recipe.yaml'): print(s)
+EOF
+curl -sL "https://huggingface.co/Nanbeige/Nanbeige4.3-33B-INT4/raw/main/FULL_MANIFEST.json" | head -c 600
+has FULL_MANIFEST True
+{'rfilename': 'FULL_MANIFEST.json', 'blobId': '1c1b80b31b5b0f0305194d17c84e7521f8a46c00', 'size': 558233}
+{
+  "complete": true,
+  "iteration": 23,
+  "tensor_count": 1563,
+  "tensor_bytes": 22550315872,
+  "files": {
+    "model-00001.safetensors": {
+      "size": 29704704,
+      "sha256": "9c633f09905768db58635b05cbd520a994216065b38ca2eb0c0219173419a74b"
+    },
+    "model-00002.safetensors": {
+      "size": 14480,
+      "sha256": "0c26a03629949ac20a10ab18a434ed1e6465ccfbea95cfaa730ff183bd973204"
+    },
+    "model-00003.safetensors": {
+      "size": 38192560,
+      "sha256": "19891839eff12d8ab180f7056a1a187b81e2be83dbdd982896504e8a15547728"
+    },
+    "model-00004.safetensors": {
+      "size": 14488,
+[0m
+[0m$ [0mcd agents/scratch && curl -sL -r 0-4000000 "https://huggingface.co/bartowski/Nanbeige_Nanbeige4.3-33B-GGUF/resolve/main/Nanbeige_Nanbeige4.3-33B-Q4_K_M.gguf" -o gguf_head.bin && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+assert b[:4]==b'GGUF', b[:4]
+ver=struct.unpack('<I',b[4:8])[0]
+n_tensors=struct.unpack('<Q',b[8:16])[0]
+n_kv=struct.unpack('<Q',b[16:24])[0]
+print('gguf version',ver,'tensors',n_tensors,'kv',n_kv)
+o=24
+def rd_str(o):
+    n=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+    s=b[o:o+n].decode('utf-8','replace'); o+=n
+    return s,o
+types={0:'u8',1:'i8',2:'u16',3:'i16',4:'u32',5:'i32',6:'f32',7:'bool',8:'str',9:'arr',10:'u64',11:'i64',12:'f64'}
+def rd_val(o,t):
+    if t==8: return rd_str(o)
+    fmt={0:'<B',1:'<b',2:'<H',3:'<h',4:'<I',5:'<i',6:'<f',7:'<?',10:'<Q',11:'<q',12:'<d'}[t]
+    sz=struct.calcsize(fmt)
+    return struct.unpack(fmt,b[o:o+sz])[0], o+sz
+out={}
+for i in range(n_kv):
+    k,o=rd_str(o)
+    t=struct.unpack('<I',b[o:o+4])[0]; o+=4
+    if types[t]=='arr':
+        at=struct.unpack('<I',b[o:o+4])[0]; o+=4
+        n=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+        vals=[]
+        for _ in range(n):
+            v,o=rd_val(o,at); vals.append(v)
+        out[k]=vals
+    else:
+        v,o=rd_val(o,t); out[k]=v
+for k in sorted(out):
+    if any(s in k for s in ['sliding','attention','sparse','layer','rope','head','context','block','quant','ftype','token']):
+        v=out[k]
+        print(k,'=',str(v)[:200])
+EOF
+gguf version 3 tensors 471 kv 46
+general.quantization_version = 2
+llama.attention.head_count = 56
+llama.attention.head_count_kv = 8
+llama.attention.key_length = 128
+llama.attention.layer_norm_rms_epsilon = 9.999999747378752e-06
+llama.attention.value_length = 128
+llama.block_count = 52
+llama.context_length = 524288
+llama.rope.dimension_count = 128
+llama.rope.freq_base = 120000000.0
+quantize.imatrix.chunks_count = 609
+quantize.imatrix.dataset = /models_out/Nanbeige4.3-33B-GGUF/Nanbeige_Nanbeige4.3-33B-calibration-v6.txt
+quantize.imatrix.entries_count = 364
+quantize.imatrix.file = /models_out/Nanbeige4.3-33B-GGUF/Nanbeige_Nanbeige4.3-33B-imatrix.gguf
+tokenizer.chat_template = 
+
+{%- macro visible_text(content) -%}
+    {%- if content is string -%}
+        {{- content }}
+    {%- elif content is iterable and content is not mapping -%}
+        {%- for item in content -%}
+      
+tokenizer.ggml.add_bos_token = True
+tokenizer.ggml.add_eos_token = False
+tokenizer.ggml.add_sep_token = False
+tokenizer.ggml.add_space_prefix = True
+tokenizer.ggml.bos_token_id = 166100
+tokenizer.ggml.clean_spaces = False
+tokenizer.ggml.eos_token_id = 166101
+tokenizer.ggml.metaspace.prepend_scheme = first
+tokenizer.ggml.model = llama
+tokenizer.ggml.padding_token_id = 0
+tokenizer.ggml.pre = default
+tokenizer.ggml.scores = [-1000.0, -1000.0, -1000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.
+tokenizer.ggml.token_type = [3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+tokenizer.ggml.tokens = ['<unk>', '<s>', '</s>', '<0x00>', '<0x01>', '<0x02>', '<0x03>', '<0x04>', '<0x05>', '<0x06>', '<0x07>', '<0x08>', '<0x09>', '<0x0A>', '<0x0B>', '<0x0C>', '<0x0D>', '<0x0E>', '<0x0F>', '<0x10>', '<0x1
+tokenizer.ggml.unknown_token_id = 0
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+n_tensors=struct.unpack('<Q',b[8:16])[0]; n_kv=struct.unpack('<Q',b[16:24])[0]
+o=24
+def rd_str(o):
+    n=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+    return b[o:o+n].decode('utf-8','replace'), o+n
+def rd_val(o,t):
+    if t==8: return rd_str(o)
+    fmt={0:'<B',1:'<b',2:'<H',3:'<h',4:'<I',5:'<i',6:'<f',7:'<?',10:'<Q',11:'<q',12:'<d'}[t]
+    sz=struct.calcsize(fmt); return struct.unpack(fmt,b[o:o+sz])[0], o+sz
+keys=[]
+for i in range(n_kv):
+    k,o=rd_str(o); t=struct.unpack('<I',b[o:o+4])[0]; o+=4
+    keys.append(k)
+    if t==9:
+        at=struct.unpack('<I',b[o:o+4])[0]; o+=4
+        n=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+        for _ in range(n): v,o=rd_val(o,at)
+    else: v,o=rd_val(o,t)
+print('slide keys:', [k for k in keys if 'slid' in k.lower()])
+print('attn keys:', [k for k in keys if 'attention' in k.lower()])
+print('sparse/mla:', [k for k in keys if any(s in k.lower() for s in ('sparse','mla','sink','latent'))])
+print('n keys', len(keys))
+# tensor infos
+tnames=[]
+for i in range(n_tensors):
+    name,o=rd_str(o); nd=struct.unpack('<I',b[o:o+4])[0]; o+=4
+    dims=[struct.unpack('<Q',b[o+8*j:o+8*j+8])[0] for j in range(nd)]; o+=8*nd
+    ttype=struct.unpack('<I',b[o:o+4])[0]; o+=4
+    off=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+    tnames.append((name,tuple(dims),ttype))
+import collections
+print('num tensors', len(tnames))
+print('sample', tnames[:2], tnames[-3:])
+sufs=collections.Counter(n.split('.',2)[2] if n.startswith('blk.') else n for n,_,_ in tnames)
+print('suffixes:', dict(sufs))
+print('attn tensor names sample:', [n for n,_,_ in tnames if 'attn' in n][:12])
+EOF
+slide keys: []
+attn keys: ['llama.attention.head_count', 'llama.attention.head_count_kv', 'llama.attention.layer_norm_rms_epsilon', 'llama.attention.key_length', 'llama.attention.value_length']
+sparse/mla: []
+n keys 46
+Traceback (most recent call last):
+  File "<stdin>", line 29, in <module>
+struct.error: unpack requires a buffer of 8 bytes
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/Nanbeige/Nanbeige4.3-33B/raw/c1093c501cc6460427c0ac634db7223d0450c0ee/README.md" -o nb_readme_cached.md && cmp nb_readme_cached.md nb_README.md && echo CACHED_README_SAME; curl -sL "https://huggingface.co/Nanbeige/Nanbeige4.3-33B/raw/c1093c501cc6460427c0ac634db7223d0450c0ee/config.json" -o nb_config_cached.json; diff nb_config_cached.json nb_config.json && echo CACHED_CONFIG_SAME
+nb_readme_cached.md nb_README.md differ: byte 2199, line 43
+CACHED_CONFIG_SAME
+[0m
+[0m$ [0mcd agents/scratch && diff -u nb_readme_cached.md nb_README.md | head -60
+--- nb_readme_cached.md	2026-11-03 16:34:21.970805634 -0800
++++ nb_README.md	2026-11-03 16:30:26.000195559 -0800
+@@ -40,7 +40,7 @@
+     <tr><td rowspan="8">Agentic Coding</td><td>Terminal-Bench 2.1<sup>2</sup></td><td><strong>80.9</strong></td><td>73.0</td><td>61.8</td><td>47.2</td></tr>
+     <tr><td>Terminal-Bench 4.0<sup>3</sup></td><td><strong>23.8</strong></td><td>6.3</td><td>1.6</td><td>0.0</td></tr>
+     <tr><td>DeepSWE<sup>3</sup></td><td><strong>65.5</strong></td><td>42.5</td><td>4.4</td><td>2.7</td></tr>
+-    <tr><td>SWE-Bench Pro<sup>3</sup></td><td>60.3</td><td><strong>61.7</strong></td><td>36.9</td><td>51.2</td></tr>
++    <tr><td>SWE-Bench Pro<sup>3</sup></td><td>60.3</td><td><strong>61.7</strong></td><td>51.2</td><td>36.9</td></tr>
+     <tr><td>SWE-Atlas-QnA<sup>4</sup></td><td><strong>50.8</strong></td><td>41.9</td><td>17.7</td><td>3.3</td></tr>
+     <tr><td>NL2Repo<sup>5</sup></td><td><strong>53.0</strong></td><td>48.3</td><td>27.4</td><td>33.8</td></tr>
+     <tr><td>Scicode</td><td><strong>52.6</strong></td><td>46.7</td><td>44.9</td><td>45.5</td></tr>
+[0m
+[0m$ [0mcd agents/scratch && curl -sL -r 0-40000000 "https://huggingface.co/bartowski/Nanbeige_Nanbeige4.3-33B-GGUF/resolve/main/Nanbeige_Nanbeige4.3-33B-Q4_K_M.gguf" -o gguf_head40.bin && python3 - <<'EOF'
+import struct, collections
+b=open('gguf_head40.bin','rb').read()
+n_tensors=struct.unpack('<Q',b[8:16])[0]; n_kv=struct.unpack('<Q',b[16:24])[0]
+o=24
+def rd_str(o):
+    n=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+    return b[o:o+n].decode('utf-8','replace'), o+n
+def rd_val(o,t):
+    if t==8: return rd_str(o)
+    fmt={0:'<B',1:'<b',2:'<H',3:'<h',4:'<I',5:'<i',6:'<f',7:'<?',10:'<Q',11:'<q',12:'<d'}[t]
+    sz=struct.calcsize(fmt); return struct.unpack(fmt,b[o:o+sz])[0], o+sz
+for i in range(n_kv):
+    k,o=rd_str(o); t=struct.unpack('<I',b[o:o+4])[0]; o+=4
+    if t==9:
+        at=struct.unpack('<I',b[o:o+4])[0]; o+=4
+        n=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+        for _ in range(n): v,o=rd_val(o,at)
+    else: v,o=rd_val(o,t)
+tnames=[]
+for i in range(n_tensors):
+    name,o=rd_str(o); nd=struct.unpack('<I',b[o:o+4])[0]; o+=4
+    dims=[struct.unpack('<Q',b[o+8*j:o+8*j+8])[0] for j in range(nd)]; o+=8*nd
+    ttype=struct.unpack('<I',b[o:o+4])[0]; o+=4
+    off=struct.unpack('<Q',b[o:o+8])[0]; o+=8
+    tnames.append((name,tuple(dims),ttype))
+print('num tensors', len(tnames), 'header end', o)
+print('blk.0 tensors:', [t for t in tnames if t[0].startswith('blk.0.')])
+print('blk.51 tensors:', [t for t in tnames if t[0].startswith('blk.51.')])
+print('non-blk:', [t for t in tnames if not t[0].startswith('blk.')])
+types=collections.Counter(t[2] for t in tnames)
+print('ggml type counts', dict(types))
+EOF
+num tensors 471 header end 4004972
+blk.0 tensors: [('blk.0.attn_k.weight', (7168, 1024), 8), ('blk.0.attn_norm.weight', (7168,), 0), ('blk.0.attn_output.weight', (7168, 7168), 14), ('blk.0.attn_q.weight', (7168, 7168), 12), ('blk.0.attn_v.weight', (7168, 1024), 8), ('blk.0.ffn_down.weight', (22016, 7168), 12), ('blk.0.ffn_gate.weight', (7168, 22016), 12), ('blk.0.ffn_norm.weight', (7168,), 0), ('blk.0.ffn_up.weight', (7168, 22016), 12)]
+blk.51 tensors: [('blk.51.attn_k.weight', (7168, 1024), 14), ('blk.51.attn_norm.weight', (7168,), 0), ('blk.51.attn_output.weight', (7168, 7168), 13), ('blk.51.attn_q.weight', (7168, 7168), 12), ('blk.51.attn_v.weight', (7168, 1024), 8), ('blk.51.ffn_down.weight', (22016, 7168), 14), ('blk.51.ffn_gate.weight', (7168, 22016), 12), ('blk.51.ffn_norm.weight', (7168,), 0), ('blk.51.ffn_up.weight', (7168, 22016), 14)]
+non-blk: [('output.weight', (7168, 166912), 14), ('output_norm.weight', (7168,), 0), ('token_embd.weight', (7168, 166912), 12)]
+ggml type counts {14: 51, 0: 105, 12: 195, 8: 107, 13: 13}
+[0m
+[0m$ [0mcd agents/scratch && for spec in "AtomicChat/Nanbeige4.3-33B-GGUF:$(python3 -c "print(1)")"; do :; done; curl -sL "https://huggingface.co/api/models/AtomicChat/Nanbeige4.3-33B-GGUF?blobs=true" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+for s in d['siblings']:
+  if s['rfilename'].endswith('.gguf'): print(s['rfilename'], s['size'])
+"
+Nanbeige4.3-33B-AD-IQ2_S.gguf 13716876288
+Nanbeige4.3-33B-AD-IQ3_S.gguf 17072360448
+Nanbeige4.3-33B-AD-IQ3_XXS.gguf 14944324608
+Nanbeige4.3-33B-AD-IQ4_XS.gguf 20347792384
+Nanbeige4.3-33B-AD-Q4_K_M.gguf 21161159680
+Nanbeige4.3-33B-AD-Q5_K_M-Q4_K_M.gguf 22609812480
+Nanbeige4.3-33B-AD-Q5_K_M.gguf 24683801600
+Nanbeige4.3-33B-AD-Q6_K-Q5_K.gguf 27931450368
+Nanbeige4.3-33B-AD-Q6_K.gguf 30076345344
+Nanbeige4.3-33B-Q5_K_M.gguf 23504980736
+Nanbeige4.3-33B-Q8_0.gguf 35195128576
+[0m
+[0m$ [0mcd agents/scratch && for r in ProCreations/Nanbeige4.3-33B-DFlash2 applepie69/Nanbeige4.3-33B-MTP-head-1026 shisa-ai/Nanbeige4.3-33B-DMS-2x PollardWeights/Nanbeige4.3-33B-Pollard; do echo "=== $r"; curl -sL "https://huggingface.co/$r/raw/main/config.json" | python3 -c "
+import sys,json
+try: d=json.load(sys.stdin)
+except Exception as e: print('no json',e); raise SystemExit
+print({k:d[k] for k in d if k in ('architectures','model_type','num_hidden_layers','layer_types','head_dim','num_attention_heads','num_key_value_heads','sliding_window','dflash_config','kv_lora_rank','q_lora_rank','text_config')})
+" 2>&1 | head -12; done
+=== ProCreations/Nanbeige4.3-33B-DFlash2
+{'architectures': ['DFlash2DraftModel'], 'dflash_config': {'block_size': 8, 'conv_group_size': 16, 'conv_kernel_size': 2, 'mask_token_id': 0, 'output_multiplier': 1.0, 'selector_rank': 128, 'selector_top_k': 32, 'target_layer_ids': [1, 25, 49]}, 'head_dim': 128, 'layer_types': ['full_attention', 'full_attention', 'full_attention'], 'model_type': 'qwen3', 'num_attention_heads': 28, 'num_hidden_layers': 3, 'num_key_value_heads': 4, 'sliding_window': None}
+=== applepie69/Nanbeige4.3-33B-MTP-head-1026
+{'architectures': ['LlamaForCausalLM'], 'num_hidden_layers': 52, 'num_attention_heads': 56, 'num_key_value_heads': 8, 'head_dim': 128, 'model_type': 'llama'}
+=== shisa-ai/Nanbeige4.3-33B-DMS-2x
+no json Expecting value: line 1 column 1 (char 0)
+=== PollardWeights/Nanbeige4.3-33B-Pollard
+no json Expecting value: line 1 column 1 (char 0)
+[0m
+[0m$ [0mcd agents/scratch && grep -n -E "def repeat_kv|repeat_kv\(|num_key_value_groups|scaling|softmax|is_causal|position_embeddings|past_key_value.update" modeling_llama_4.51.1.py | head -20; echo ---; sed -n '176,190p' modeling_llama_4.51.1.py; echo ---; grep -c "sliding_window" configuration_llama_4.51.1.py modeling_llama_4.51.1.py; grep -c "attention_sink\|sink" modeling_llama_4.51.1.py
+96:        if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
+97:            self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
+100:        self.max_seq_len_cached = config.max_position_embeddings
+101:        self.original_max_seq_len = config.max_position_embeddings
+106:        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
+120:            cos = emb.cos() * self.attention_scaling
+121:            sin = emb.sin() * self.attention_scaling
+176:def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+194:    scaling: float,
+198:    key_states = repeat_kv(key, module.num_key_value_groups)
+199:    value_states = repeat_kv(value, module.num_key_value_groups)
+201:    attn_weights = torch.matmul(query, key_states.transpose(2, 3)) * scaling
+206:    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
+222:        self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
+223:        self.scaling = self.head_dim**-0.5
+225:        self.is_causal = True
+243:        position_embeddings: Tuple[torch.Tensor, torch.Tensor],
+256:        cos, sin = position_embeddings
+262:            key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
+281:            scaling=self.scaling,
+---
+def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+    """
+    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
+    num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
+    """
+    batch, num_key_value_heads, slen, head_dim = hidden_states.shape
+    if n_rep == 1:
+        return hidden_states
+    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
+
+
+def eager_attention_forward(
+    module: nn.Module,
+    query: torch.Tensor,
+---
+configuration_llama_4.51.1.py:0
+modeling_llama_4.51.1.py:0
+0
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+L=52; H=8; D=128
+per_tok = L*H*D*2*2
+print('KV bytes/token', per_tok, 'KiB', per_tok/1024)
+for n in (4096, 32768, 131072, 524288):
+    print(n, f'{per_tok*n/1024**3:.3f} GiB')
+# param check
+p=33118977024
+print('bf16 params GiB', p*2/1024**3, 'GB', p*2/1e9)
+print('API total bytes 66238009168 GiB', 66238009168/1024**3)
+EOF
+KV bytes/token 212992 KiB 208.0
+4096 0.812 GiB
+32768 6.500 GiB
+131072 26.000 GiB
+524288 104.000 GiB
+bf16 params GiB 61.68890190124512 GB 66.237954048
+API total bytes 66238009168 GiB 61.68895323574543
+[0m
+[0m$ [0mcd agents/scratch && curl -sL "https://huggingface.co/api/models/Nanbeige/Nanbeige4.3-33B/commits/main" -o nb_commits.json && python3 -c "
+import json;d=json.load(open('nb_commits.json'));print(len(d))
+for c in d[:5]: print(c.get('id'), c.get('date'), c.get('title'))"
+13
+df919e1e2cf077a22204c78b6c826bf3db18bc08 2026-10-28T01:59:01.000Z Update README.md
+84c54883993f9053b058f95ddc8f591b203e92bf 2026-10-27T16:00:24.000Z Add evaluation results (#30)
+c1093c501cc6460427c0ac634db7223d0450c0ee 2026-10-25T11:11:17.000Z Update README.md
+d5f259ee61162ce79d5a6396556c148ab7237fc5 2026-10-25T10:32:50.000Z Update README.md
+183dcf8ed01f9931b19c1c91a6a7340a6dda7537 2026-10-25T10:31:24.000Z Update README.md
+[0m
+[0m$ [0mcd agents/scratch && for v in INT4 INT8 FP8; do curl -sL "https://huggingface.co/Nanbeige/Nanbeige4.3-33B-$v/resolve/main/config.json" -o "nbq_${v}_config.json"; echo "=== $v"; grep -n -E "quant_method|\"format\"|num_bits|group_size|strategy|symmetric|\"ignore\"|lm_head|embed_tokens|kv_cache_scheme|block_structure|dynamic" "nbq_${v}_config.json"; done
+=== INT4
+48:          "block_structure": null,
+49:          "dynamic": false,
+50:          "group_size": 32,
+51:          "num_bits": 4,
+54:          "strategy": "group",
+55:          "symmetric": false,
+61:    "format": "pack-quantized",
+62:    "ignore": [
+63:      "lm_head",
+64:      "model.embed_tokens"
+66:    "kv_cache_scheme": null,
+67:    "quant_method": "compressed-tensors",
+=== INT8
+29:        "format": "pack-quantized",
+37:          "block_structure": null,
+38:          "dynamic": false,
+39:          "group_size": 128,
+40:          "num_bits": 8,
+44:          "strategy": "group",
+45:          "symmetric": true,
+51:    "format": "pack-quantized",
+53:    "ignore": [
+54:      "lm_head"
+56:    "kv_cache_scheme": null,
+57:    "quant_method": "compressed-tensors",
+=== FP8
+29:        "format": "float-quantized",
+32:          "block_structure": null,
+33:          "dynamic": true,
+34:          "group_size": 128,
+35:          "num_bits": 8,
+39:          "strategy": "group",
+40:          "symmetric": true,
+50:          "block_structure": [
+54:          "dynamic": false,
+55:          "group_size": null,
+56:          "num_bits": 8,
+60:          "strategy": "block",
+61:          "symmetric": true,
+67:    "format": "float-quantized",
+69:    "ignore": [
+70:      "lm_head"
+72:    "kv_cache_scheme": null,
+73:    "quant_method": "compressed-tensors",
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && sed -n '214,290p' modeling_llama_4.51.1.py | head -20; echo ---; sed -n '48,58p' configuration_llama_4.51.1.py; echo ---; grep -n "attention_bias\|head_dim\|num_key_value_heads\|max_position_embeddings" configuration_llama_4.51.1.py | head
+class LlamaAttention(nn.Module):
+    """Multi-headed attention from 'Attention Is All You Need' paper"""
+
+    def __init__(self, config: LlamaConfig, layer_idx: int):
+        super().__init__()
+        self.config = config
+        self.layer_idx = layer_idx
+        self.head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
+        self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
+        self.scaling = self.head_dim**-0.5
+        self.attention_dropout = config.attention_dropout
+        self.is_causal = True
+
+        self.q_proj = nn.Linear(
+            config.hidden_size, config.num_attention_heads * self.head_dim, bias=config.attention_bias
+        )
+        self.k_proj = nn.Linear(
+            config.hidden_size, config.num_key_value_heads * self.head_dim, bias=config.attention_bias
+        )
+        self.v_proj = nn.Linear(
+---
+        num_key_value_heads (`int`, *optional*):
+            This is the number of key_value heads that should be used to implement Grouped Query Attention. If
+            `num_key_value_heads=num_attention_heads`, the model will use Multi Head Attention (MHA), if
+            `num_key_value_heads=1` the model will use Multi Query Attention (MQA) otherwise GQA is used. When
+            converting a multi-head checkpoint to a GQA checkpoint, each group key and value head should be constructed
+            by meanpooling all the original heads within that group. For more details checkout [this
+            paper](https://arxiv.org/pdf/2305.13245.pdf). If it is not specified, will default to
+            `num_attention_heads`.
+        hidden_act (`str` or `function`, *optional*, defaults to `"silu"`):
+            The non-linear activation function (function or string) in the decoder.
+        max_position_embeddings (`int`, *optional*, defaults to 2048):
+---
+48:        num_key_value_heads (`int`, *optional*):
+50:            `num_key_value_heads=num_attention_heads`, the model will use Multi Head Attention (MHA), if
+51:            `num_key_value_heads=1` the model will use Multi Query Attention (MQA) otherwise GQA is used. When
+58:        max_position_embeddings (`int`, *optional*, defaults to 2048):
+85:            and you expect the model to work on longer `max_position_embeddings`, we recommend you to update this value
+95:                `original_max_position_embeddings` (`int`, *optional*):
+110:                    `original_max_position_embeddings`). Must be a list of numbers with the same length as the hidden
+114:                    `original_max_position_embeddings`). Must be a list of numbers with the same length as the hidden
+120:        attention_bias (`bool`, *optional*, defaults to `False`):
+126:        head_dim (`int`, *optional*):
+[0m
+[0m$ [0mcd agents/scratch && python3 - <<'EOF'
+import json
+for n in ['nb_int4.json','nb_int8.json','nb_fp8.json']:
+    d=json.load(open(n))
+    print(d['id'], d['sha'], d['lastModified'], d.get('safetensors'))
+EOF
+echo ---
+# verify no extra attn tensors anywhere in index
+cd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_model.safetensors.index.json'))
+ks=set(k.split('.',3)[3] for k in d['weight_map'] if k.startswith('model.layers.'))
+print(sorted(ks))
+"
+Nanbeige/Nanbeige4.3-33B-INT4 d834b414cf1c47e42640de33c147b7cf8a9321ef 2026-10-31T09:41:23.000Z {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+Nanbeige/Nanbeige4.3-33B-INT8 879049b69c5f64384f3067095924b63e9125e84f 2026-10-31T09:25:06.000Z {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+Nanbeige/Nanbeige4.3-33B-FP8 0b1acaa19bae10fec482600ada7c9defcb7c4884 2026-10-31T09:27:59.000Z {'parameters': {'BF16': 2393603072, 'F8_E4M3': 30725373952}, 'total': 33118977024}
+---
+['input_layernorm.weight', 'mlp.down_proj.weight', 'mlp.gate_proj.weight', 'mlp.up_proj.weight', 'post_attention_layernorm.weight', 'self_attn.k_proj.weight', 'self_attn.o_proj.weight', 'self_attn.q_proj.weight', 'self_attn.v_proj.weight']
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && sha256sum nb_config.json nb_readme_cached.md nb_model.safetensors.index.json modeling_llama_4.51.1.py configuration_llama_4.51.1.py; git -C /ai/github/lsa-rocm status --short
+29e79eca831543bcfe3ed87c1f268d69ae346a0cd680ca48a11e01664f8fa87b  nb_config.json
+da8e17cc5a7bd1782fdc6c3127f6f5c4df45f5cc8bbc40aa5a13332fbf978a0a  nb_readme_cached.md
+410264db09a3d6b1637b9ecb8b26e64491667ad54a1a412ff829446f43440426  nb_model.safetensors.index.json
+9f7e93602e876a8f3f171e4911df5a5898ac407b8eb8982099e52b53daf0469e  modeling_llama_4.51.1.py
+c13469c62dc2c4fe76cc5bc50e6db2de21e302dae259945ef03308f0ac429ff6  configuration_llama_4.51.1.py
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+h=7168; i=22016; V=166912; L=52; H=56; KV=8; d=128
+per = H*d*h + 2*KV*d*h + H*d*h + 3*h*i + 2*h
+tot = per*L + 2*V*h + 2*h
+print('per layer', per)
+print('total', tot, 'expected 33118977024 diff', tot-33118977024)
+print('layer-no-embed', per*L)
+print('embed+lm_head', 2*V*h)
+EOF
+per layer 590886912
+total 33118984192 expected 33118977024 diff 7168
+layer-no-embed 30726119424
+embed+lm_head 2392850432
+[0m
+[91m[1mError: [0mEPROTO: The TLS handshake failed. Does the server speak TLS on this port?

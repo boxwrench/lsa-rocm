@@ -1,0 +1,3893 @@
+[0m
+> build · deepseek/deepseek-v4.1-flash-1017
+[0m
+[0m$ [0mcat /ai/github/lsa-rocm/docs/plan.md
+# Plan: Latent Sparse Attention retrieval on AMD ROCm
+
+Status: draft, 2026-11-03. Nothing below has been run yet.
+
+## Question
+
+Does LSA-style key retrieval (cluster the keys, search centroids, gather the top keys) find the keys
+a model actually attends to, on the full-attention layers of current models, and is it cheaper than
+exhaustive scoring on an AMD GPU (R9700)?
+
+Not in scope: porting upstream serving code, SGLang, CUDA/CUTLASS kernels, training or distillation.
+
+## Models
+
+| Role | Model | Why | Confirmed |
+|---|---|---|---|
+| Primary | `ibm-granite/granite-switch-4.1-8b` | 42 layers, every layer `full_attention`, 32/8 GQA, 131072 ctx, Oct 2026 | config only, B0a verifies the attention code |
+| Scale | `Nanbeige/Nanbeige4.3-33B` | 52 layers, 56/8 GQA, hd 128, Oct 2026, dense | no hybrid markers, B0b verifies |
+| Hybrid | Ornith 1.5 9B (local), later gpt-oss-20b, Qwen3.8-27B | only run if the full-attention result is positive | config read, 1 in 4 layers full |
+| Harness debugging | Qwen3.5-0.8B (local) | tiny, fast | not read |
+
+Rule: only models created after 2026-05-03 as primaries. gpt-oss-20b (Aug 2025) is allowed as a control only.
+Hybrid models are held back until the two full-attention models give a result.
+
+## Gates
+
+Thresholds are proposals. Confirm them after B0c shows what the paper reports.
+
+- **Gate 1 (after B2):** at a budget of 10% of keys scored, tree search captures >= 0.90 of the true
+  attention mass on a majority of full-attention layers at 32K. Otherwise stop and write up the negative result.
+- **Gate 2 (after B3):** centroid scoring plus gather is faster than exhaustive scoring on the R9700 at 32K or above.
+  Otherwise the method is accuracy-only on this hardware, and that is the finding.
+- **Gate 3:** only then run hybrids (B4) and the CPU-memory KV idea.
+
+## Rules for agents
+
+1. Work only inside the paths named in your task. Do not edit `docs/metrics.md` or `docs/plan.md`.
+2. Do not download anything over 1 GB. Write the command and size in your report instead.
+3. GPU jobs run on the R9700 only. B0d records the device index. Until then, no GPU jobs.
+4. Every run writes a JSON file under `results/` containing: git commit, model id and revision, torch and ROCm versions,
+   device name, seed, config. No hand-copied numbers.
+5. Write a report to `agents/reports/<task-id>.md`: what you did, exact commands, what passed or failed, open questions.
+   Report failures plainly. Do not claim a test passes without showing its output.
+6. Do not touch `third_party/` except to clone and pin (B0c).
+
+## Batches
+
+Run batches in order. Tasks inside a batch are independent and run in parallel.
+I review every report before the next batch starts.
+
+### B0 Verify and probe (read-only, no GPU)
+
+| ID | Task | Output |
+|---|---|---|
+| B0a | Read granite-switch-4.1-8b `config.json`, model card and modeling code. State: attention type per layer, softmax or not, sliding window, sinks, QK-norm, RoPE variant and scaling, whether the "switch" mechanism changes attention, KV cache layout. | `agents/reports/B0a.md` |
+| B0b | Same for Nanbeige4.3-33B. Also state size on disk at bf16 and which quants exist. | `agents/reports/B0b.md` |
+| B0c | Read the upstream LSA repo and paper. Report: models and context lengths they evaluated, exact `lsa.core` API, what the indexer takes as input (pre- or post-RoPE keys, per head or shared), and CPU-only install steps. Clone and pin it into `third_party/lsa` at a recorded commit. | `agents/reports/B0c.md`, `third_party/lsa` |
+| B0d | Probe the machine: ROCm and PyTorch versions, which GPU index is the R9700, free VRAM on each, transformers version, which of the models above are already in `/ai/huggingface`, and download sizes for those that are not. Do not download. | `docs/env.md`, `agents/reports/B0d.md` |
+
+### B1 Foundations (after B0)
+
+| ID | Task | Output |
+|---|---|---|
+| B1a | Implement the metrics in `docs/metrics.md` as pure functions with unit tests on hand-made tensors where the answer is known. | `src/lsa_rocm/metrics.py`, `tests/test_metrics.py` |
+| B1b | Wrap `lsa.core` as the CPU oracle. Tests: deterministic small inputs where flat search with a full budget returns exactly the exhaustive top-k. | `src/lsa_rocm/oracle.py`, `tests/test_oracle.py` |
+| B1c | Q/K dumper: forward hooks on full-attention layers only. For each such layer save keys as cached (state which side of RoPE) and the queries of the last N positions. Test on Qwen3.5-0.8B first, then granite at 4K. | `src/lsa_rocm/dump.py`, `results/dumps/` (gitignored) |
+| B1d | Evaluation prompts: real long text at 4K, 32K and 128K tokens from datasets already on disk, as a manifest with source, token count and a hash. | `experiments/data/manifest.json` |
+
+### B2 Real-KV recall, granite-switch-4.1-8b (after B1, Gate 1)
+
+| ID | Task | Output |
+|---|---|---|
+| B2a | At 4K then 32K: run exhaustive, flat cluster, and Ward-tree search on the dumped tensors. Sweep budget, cluster count and tree depth. Report metrics per layer and per KV head. | `experiments/002-real-kv-recall/`, results JSON |
+| B2b | Ablate: pre-RoPE versus post-RoPE keys, and queries from the last 1, 8 and 64 positions. | same folder |
+
+I write up the conclusion and decide Gate 1.
+
+### B3 GPU timing (after Gate 1 passes)
+
+| ID | Task | Output |
+|---|---|---|
+| B3a | Profile clustering, centroid scoring, selection and gather separately on the R9700 at 4K, 32K and 128K, against exhaustive GPU scoring. Include memory use. | `experiments/003-gpu-timing/` |
+
+### B4 Scale and hybrids (after Gate 2, or after Gate 1 if timing is skipped)
+
+| ID | Task | Output |
+|---|---|---|
+| B4a | Repeat B2 on Nanbeige4.3-33B (quantized, note the quant and check its effect on keys against a bf16 subset). | `experiments/004-scale/` |
+| B4b | Repeat B2 on Ornith 1.5 9B, full-attention layers only. | `experiments/005-hybrid/` |
+| B4c | Optional: gpt-oss-20b control, handling attention sinks in the metric. | `experiments/006-oss-control/` |
+
+### B5 Write-up
+
+`FINDINGS.md`: each claim linked to an experiment folder. Negative results included.
+
+## Open questions
+
+- Are cached keys compared before or after RoPE? B0c and B2b decide.
+- Does the metric use true post-softmax attention mass or top-k overlap? `docs/metrics.md` defines both. Mass is primary.
+- Granite-switch: does the adapter-switch mechanism alter attention? B0a answers it.
+[0m
+[0m$ [0mls -la /ai/github/lsa-rocm/agents/scratch/ /ai/github/lsa-rocm/agents/reports/ 2>&1 | head -80
+/ai/github/lsa-rocm/agents/reports/:
+total 484
+drwxrwxr-x 3 boxwrench boxwrench   4096 Nov  3 16:58 .
+drwxrwxr-x 4 boxwrench boxwrench   4096 Nov  3 16:30 ..
+-rw-rw-r-- 1 boxwrench boxwrench 242061 Nov  3 16:58 B0a.log
+-rw-rw-r-- 1 boxwrench boxwrench     55 Nov  3 16:58 B0b.log
+-rw-rw-r-- 1 boxwrench boxwrench 181044 Nov  3 16:58 B0c.log
+-rw-rw-r-- 1 boxwrench boxwrench   3836 Nov  3 16:57 B0c.md
+-rw-rw-r-- 1 boxwrench boxwrench  41384 Nov  3 16:58 B0d.log
+drwxrwxr-x 2 boxwrench boxwrench   4096 Nov  3 16:58 old
+
+/ai/github/lsa-rocm/agents/scratch/:
+total 43864
+drwxrwxr-x 4 boxwrench boxwrench     4096 Nov  3 16:58 .
+drwxrwxr-x 4 boxwrench boxwrench     4096 Nov  3 16:30 ..
+-rw-rw-r-- 1 boxwrench boxwrench      596 Nov  3 16:31 adapter_index.json
+-rw-rw-r-- 1 boxwrench boxwrench    13332 Nov  3 16:30 api.json
+-rw-rw-r-- 1 boxwrench boxwrench    42535 Nov  3 16:57 arxiv.html
+drwxrwxr-x 3 boxwrench boxwrench     4096 Nov  3 16:54 B0a
+drwxrwxr-x 5 boxwrench boxwrench     4096 Nov  3 16:58 b0c-venv
+-rw-rw-r-- 1 boxwrench boxwrench     1180 Nov  3 16:31 BUILD.md
+-rw-rw-r-- 1 boxwrench boxwrench     3174 Nov  3 16:30 config.json
+-rw-rw-r-- 1 boxwrench boxwrench    11986 Nov  3 16:31 configuration_llama_4.51.1.py
+-rw-rw-r-- 1 boxwrench boxwrench      231 Nov  3 16:31 generation_config.json
+-rw-rw-r-- 1 boxwrench boxwrench 40000001 Nov  3 16:34 gguf_head40.bin
+-rw-rw-r-- 1 boxwrench boxwrench  4000001 Nov  3 16:34 gguf_head.bin
+-rw-rw-r-- 1 boxwrench boxwrench    22677 Nov  3 16:57 gptoss.json
+-rw-rw-r-- 1 boxwrench boxwrench    13332 Nov  3 16:57 granite.json
+-rw-rw-r-- 1 boxwrench boxwrench    49284 Nov  3 16:31 modeling_llama_4.51.1.py
+-rw-rw-r-- 1 boxwrench boxwrench    11828 Nov  3 16:30 nanbeige_info.json
+-rw-rw-r-- 1 boxwrench boxwrench    11828 Nov  3 16:57 nanbeige.json
+-rw-rw-r-- 1 boxwrench boxwrench   217701 Nov  3 16:32 nb_all.json
+-rw-rw-r-- 1 boxwrench boxwrench    23066 Nov  3 16:33 nb_bar.json
+-rw-rw-r-- 1 boxwrench boxwrench    15861 Nov  3 16:30 nb_blobs.json
+-rw-rw-r-- 1 boxwrench boxwrench     3102 Nov  3 16:35 nb_commits.json
+-rw-rw-r-- 1 boxwrench boxwrench      883 Nov  3 16:34 nb_config_cached.json
+-rw-rw-r-- 1 boxwrench boxwrench      883 Nov  3 16:30 nb_config.json
+-rw-rw-r-- 1 boxwrench boxwrench    22812 Nov  3 16:30 nb_fp8.json
+-rw-rw-r-- 1 boxwrench boxwrench      164 Nov  3 16:30 nb_generation_config.json
+-rw-rw-r-- 1 boxwrench boxwrench    82506 Nov  3 16:33 nb_int4b.json
+-rw-rw-r-- 1 boxwrench boxwrench    82506 Nov  3 16:30 nb_int4.json
+-rw-rw-r-- 1 boxwrench boxwrench    22809 Nov  3 16:30 nb_int8.json
+-rw-rw-r-- 1 boxwrench boxwrench    38810 Nov  3 16:30 nb_model.safetensors.index.json
+-rw-rw-r-- 1 boxwrench boxwrench     8305 Nov  3 16:31 nb_org.json
+-rw-rw-r-- 1 boxwrench boxwrench     2229 Nov  3 16:35 nbq_FP8_config.json
+-rw-rw-r-- 1 boxwrench boxwrench     1706 Nov  3 16:35 nbq_INT4_config.json
+-rw-rw-r-- 1 boxwrench boxwrench     1825 Nov  3 16:35 nbq_INT8_config.json
+-rw-rw-r-- 1 boxwrench boxwrench     8884 Nov  3 16:34 nb_readme_cached.md
+-rw-rw-r-- 1 boxwrench boxwrench     8884 Nov  3 16:30 nb_README.md
+-rw-rw-r-- 1 boxwrench boxwrench    55285 Nov  3 16:30 nb_search.json
+-rw-rw-r-- 1 boxwrench boxwrench    22763 Nov  3 16:30 README.md
+-rw-rw-r-- 1 boxwrench boxwrench     3282 Nov  3 16:58 tree_ibm-granite_granite-switch-4.1-8b.json
+-rw-rw-r-- 1 boxwrench boxwrench     6934 Nov  3 16:58 tree_Nanbeige_Nanbeige4.3-33B.json
+-rw-rw-r-- 1 boxwrench boxwrench     3314 Nov  3 16:58 tree_openai_gpt-oss-20b.json
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && cat nb_config.json && echo "=== TREE ===" && cat tree_Nanbeige_Nanbeige4.3-33B.json
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}=== TREE ===
+[{"type":"directory","oid":"13ab424c7dbfaae61f3fa2f96f2c7c0e63925d6c","size":0,"path":".eval_results"},{"type":"directory","oid":"146d47b49ae1523c38e13b9df1ac3cd227dcfd25","size":0,"path":"figures"},{"type":"file","oid":"65a4ce64f43dc4a736ec8f101d374cdecd9ec3ee","size":2416,"path":".eval_results/Nanbeige4.3-33B.yaml"},{"type":"file","oid":"ffcf59baea062e44de8e842f3c5d600895ece23b","size":1699,"path":".gitattributes"},{"type":"file","oid":"44adde50678aaea84dd6864898c6698a6ad6e337","size":8884,"path":"README.md"},{"type":"file","oid":"8805f6dd0517ef0a74400d304c63bf176b3e28ed","size":174,"path":"added_tokens.json"},{"type":"file","oid":"adee1d1b766ca3dbaa104d07ba1a28b6a84fef85","size":883,"path":"config.json"},{"type":"file","oid":"9c1c3468ec8cc0a4081bb423990c38c1497158fa","size":137165,"lfs":{"oid":"cb98ba304c3e3d5a8432683241fd89157ff560b2ce9682a3f1b96ea6e022fd48","size":137165,"pointerSize":131},"xetHash":"7fb9447ae510eb3c33b1d9d6a4d060f7fbcd2fd4b431609ed129e331ad4b5267","path":"figures/nanbeige43-benchmarks.png"},{"type":"file","oid":"3466c5a7576bf8a142a80596cb73707fbc523d6c","size":15639,"path":"figures/nbg.png"},{"type":"file","oid":"5aaef0707c78688b2fa3fd7696c3693eab33cc78","size":609476,"lfs":{"oid":"90dce956d37e02f01d4150717eeb9167cd078255588091bd05128b7bdaf94aaf","size":609476,"pointerSize":131},"xetHash":"79b45b45f5599013ff9903743e17b74bc54a3163553c9c584fc9df27770d7001","path":"figures/occupation.png"},{"type":"file","oid":"a46c6565c7ccaca981a8d5f069da850827d6962b","size":164,"path":"generation_config.json"},{"type":"file","oid":"9ce940fa409bb41cd6a9cbee4cca7f8f684417a5","size":4051757592,"lfs":{"oid":"a70e695f1a8c9686158e791829e603833840e7a8ce7ece884eff6aeca561f9b2","size":4051757592,"pointerSize":135},"xetHash":"938e7d16ddcfb12a4c8627dcd62ca771d6be04775f45cd405c9cf8fbe9479c6f","path":"model-00001-of-00014.safetensors"},{"type":"file","oid":"c4eff89b134b5d90274a29a759633a871355c75b","size":4961951064,"lfs":{"oid":"36599c909e677a50cffd7715376a2e6eeb40097296e2bb1103cd6316ffe8af52","size":4961951064,"pointerSize":135},"xetHash":"b4617c891aff04293c2e39356d73e77f3f58cc1799f9b9f59200327569035a36","path":"model-00002-of-00014.safetensors"},{"type":"file","oid":"e51ee484c9d651cb6bed2d38657bc4e82ae58e23","size":4947270864,"lfs":{"oid":"228267c30873849f69149f09faf35f9e956bf5a50ddd0820ee33b5cd326eb66d","size":4947270864,"pointerSize":135},"xetHash":"4d445e80a34ba05d41198828edce89dcce2bf50ad32ce97fda55ceab59391b06","path":"model-00003-of-00014.safetensors"},{"type":"file","oid":"8036fd4c64e1d0f45f549219d4885b10d5beab52","size":4873856544,"lfs":{"oid":"e5654a03d7e9bfddfee1b8b051864d5b61a3f1aae282c1c5deed2117a9a8f94e","size":4873856544,"pointerSize":135},"xetHash":"e5b84064388daa17976237b47ce09c31caef4d3aa80ccc4c7669f9bd6b1e94d9","path":"model-00004-of-00014.safetensors"},{"type":"file","oid":"3995fe69d135f26d029216ca22d058ddf3446da9","size":4690428272,"lfs":{"oid":"055ef50375b8ce6342d5beaf971f59c67fbb1f358047511c0781564b7fcaf541","size":4690428272,"pointerSize":135},"xetHash":"a8a0fc51f15335e2eba1c3211a3e60b2c7a97fba583576d0f031fb4b98bd792d","path":"model-00005-of-00014.safetensors"},{"type":"file","oid":"4e65226f696958a986ecdb5e56fc0c7873f944ff","size":4793130400,"lfs":{"oid":"5d0fb320fd4161bb901f7869f67d2e3459a2c2699040818b6349c6021bfe3ddb","size":4793130400,"pointerSize":135},"xetHash":"47d5d90bda4e593b50502cf7630de3c05cfa6f9dc4bf51da63a80e0d8eed1b22","path":"model-00006-of-00014.safetensors"},{"type":"file","oid":"56021b749573707d680583252bd7dbea51de82cd","size":4727128376,"lfs":{"oid":"8b2203d94427d8b5e64805ccec17c14b1ca3f12baffb542ed396424e03c474df","size":4727128376,"pointerSize":135},"xetHash":"9852f769a79d986244c67f0274a5aafd2fe3aaff42eaba8619920d064059cd30","path":"model-00007-of-00014.safetensors"},{"type":"file","oid":"ced8e0803b50eb89b2bfaa3ccce8a0d208684c20","size":4998767864,"lfs":{"oid":"4e7b957640e52ee183ebe0f8f1f23d65c94075dd0aff0b22176e3f44abb3102b","size":4998767864,"pointerSize":135},"xetHash":"3195294da100329907f61fd9923d3c067de17aa0c3befb3b9929fc9c336466d0","path":"model-00008-of-00014.safetensors"},{"type":"file","oid":"15f95cb61f767b75844f4745e6a2340ee0e8fe75","size":4954597256,"lfs":{"oid":"5e90fe70ad8f88bf5ccd9ca3a3f38b384960689d26a05f45d1b135afba6a749e","size":4954597256,"pointerSize":135},"xetHash":"790c44aa2d141a8325ee3bec3963a73f12479c4b6e1f628482ccfb5769037aa3","path":"model-00009-of-00014.safetensors"},{"type":"file","oid":"af520cc41376ad44e10897f15f7d89d91ea79ee5","size":4793131024,"lfs":{"oid":"19bb937ef55014945b7ac20b0b0ca039c75756679da28b6bc949bf6cdfd92b1e","size":4793131024,"pointerSize":135},"xetHash":"8a1e8ace49939a7a7a710421f3968e257eb5586634ed691cb4c7379ef3917ada","path":"model-00010-of-00014.safetensors"},{"type":"file","oid":"cfed86d75160873f459e0830a9f96f57ebcdc589","size":4895919880,"lfs":{"oid":"09909f3730fe888a83518c88e67b44d6d1aa45a2ffd411ddefe767f510e6e72f","size":4895919880,"pointerSize":135},"xetHash":"8f501b62d3c667072949f71c7f60d244d7b68ef893f26d22385f5ad16d1aff7f","path":"model-00011-of-00014.safetensors"},{"type":"file","oid":"8bcc48c2bfe8e6315a53d31cff065e4a63b22b57","size":4727056152,"lfs":{"oid":"2cdb2749eb589bf5e89290d457609d0461169e115bfa9549b0755f5b48dd716c","size":4727056152,"pointerSize":135},"xetHash":"97dfed1c791c559582028dd422c125cc631ba97c21ebef6c0a4605549f1a639d","path":"model-00012-of-00014.safetensors"},{"type":"file","oid":"1b8f6f409723210fdfd2697093e9c31881d71a00","size":4984073248,"lfs":{"oid":"a1babb6d7bef3d4a31f071e590ec58fc96ac084584b8d55f632d9a44b2647df5","size":4984073248,"pointerSize":135},"xetHash":"145e07e88ed74570bdd13dca5226dd6985b9035832c36c91e63d4d49ac0deaa9","path":"model-00013-of-00014.safetensors"},{"type":"file","oid":"729fde9d193286777c8923fa5cad19c0f016678b","size":3838940632,"lfs":{"oid":"b23adaf4c6e6d62e7e93a76bdcb55dbd5a47f6870a5713200e6627b6b291ebdc","size":3838940632,"pointerSize":135},"xetHash":"9448ee11a10676fdd41a160c84a977995098ff7f007ea40ddba0d4489c0dcb96","path":"model-00014-of-00014.safetensors"},{"type":"file","oid":"c45ed46c3ca5a40fa8f6fcfd76d48429b5e8d430","size":38810,"path":"model.safetensors.index.json"},{"type":"file","oid":"fb83292a14c95f398736acae643c48c152b9eb71","size":623,"path":"special_tokens_map.json"},{"type":"file","oid":"39a8c90df827f163105c35c11c00b0936f2f437c","size":18450979,"lfs":{"oid":"1d858a0fc007f22af6ae18bfa1ae52d30e398aa9cd1ea06e7777176869346a3f","size":18450979,"pointerSize":133},"xetHash":"92aed58edd0cfaa5aadc18be7eba43ab2ba75a7655067b8612618cc99a741167","path":"tokenizer.json"},{"type":"file","oid":"5dc56ceef972dd0a233ce8c8100316ac1bdc089e","size":2782298,"lfs":{"oid":"fb41d04798b714520a9b075727b0226538b7330254299062742c50ec8374bc36","size":2782298,"pointerSize":132},"xetHash":"bacc5b30be0cd45a00b977ed564771cbee21d8b4176790f0854f62834b7ff203","path":"tokenizer.model"},{"type":"file","oid":"00946f0ef9517230d7db61f70b4ae1212936f30c","size":11033,"path":"tokenizer_config.json"}]
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_all.json'))
+print(type(d), list(d)[:20] if isinstance(d,dict) else len(d))
+" 
+<class 'list'> 138
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && cat nb_README.md
+---
+license: apache-2.0
+language:
+- en
+- zh
+library_name: transformers
+pipeline_tag: text-generation
+tags:
+- llm
+- nanbeige
+base_model:
+- Nanbeige/Nanbeige4.3-33B-Base
+---
+
+<div align="center">
+<img src="figures/nbg.png" width="200" alt="Nanbeige Logo">
+</div>
+
+# <span id="Introduction">1. Introduction</span>
+
+In Nanbeige4.3, we take a foundational step toward pushing the boundaries of lightweight agents. Our strategy centers on building a high-capacity teacher agent first, which will subsequently anchor the distillation of advanced agentic capabilities into smaller models.
+
+To this end, we first introduce Nanbeige4.3-33B, designed as the flagship teacher model for the Nanbeige4.3 series. Delivering state-of-the-art agentic performance among open models in the ~30B parameter class, Nanbeige4.3-33B excels at complex coding and professional cowork tasks. It not only offers a powerful, cost-effective option for immediate real-world deployment, but also lays the necessary foundation to power our upcoming small model distillation pipeline (e.g., for Nanbeige4.3-3B).
+
+
+<div align="center">
+<img src="figures/nanbeige43-benchmarks.png" width="1000">
+</div>
+
+# <span id="Model-Performance">2. Model Performance</span>
+
+We compare Nanbeige4.3-33B with recently released frontier models at around the 30B-parameter scale: Qwen3.8-27B, Muse-Glimmer-30B, and Gemma4-31B. All models are evaluated at their highest thinking effort. For each benchmark, we use the same inference hyperparameters and harness across models.
+<table>
+  <thead>
+    <tr>
+      <th>Category</th><th>Benchmark</th><th>Nanbeige4.3-33B<sup>1</sup></th><th>Qwen3.8-27B</th><th>Muse-Glimmer-30B</th><th>Gemma4-31B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td rowspan="8">Agentic Coding</td><td>Terminal-Bench 2.1<sup>2</sup></td><td><strong>80.9</strong></td><td>73.0</td><td>61.8</td><td>47.2</td></tr>
+    <tr><td>Terminal-Bench 4.0<sup>3</sup></td><td><strong>23.8</strong></td><td>6.3</td><td>1.6</td><td>0.0</td></tr>
+    <tr><td>DeepSWE<sup>3</sup></td><td><strong>65.5</strong></td><td>42.5</td><td>4.4</td><td>2.7</td></tr>
+    <tr><td>SWE-Bench Pro<sup>3</sup></td><td>60.3</td><td><strong>61.7</strong></td><td>51.2</td><td>36.9</td></tr>
+    <tr><td>SWE-Atlas-QnA<sup>4</sup></td><td><strong>50.8</strong></td><td>41.9</td><td>17.7</td><td>3.3</td></tr>
+    <tr><td>NL2Repo<sup>5</sup></td><td><strong>53.0</strong></td><td>48.3</td><td>27.4</td><td>33.8</td></tr>
+    <tr><td>Scicode</td><td><strong>52.6</strong></td><td>46.7</td><td>44.9</td><td>45.5</td></tr>
+    <tr><td>SkillsBench</td><td><strong>61.1</strong></td><td>56.4</td><td>39.7</td><td>28.9</td></tr>
+    <tr><td rowspan="9">Agentic Cowork</td><td>Automation Bench<sup>6</sup></td><td><strong>54.2</strong></td><td>38.3</td><td>15.2</td><td>9.7</td></tr>
+    <tr><td>JobBench<sup>7</sup></td><td><strong>44.8</strong></td><td>34.5</td><td>16.6</td><td>9.0</td></tr>
+    <tr><td>GDPval<sup>8</sup></td><td>84.8</td><td><strong>86.4</strong></td><td>75.8</td><td>71.4</td></tr>
+    <tr><td>Claw-Eval<sub>pass^3</sub><sup>9</sup></td><td><strong>78.3</strong></td><td>75.2</td><td>57.3</td><td>44.2</td></tr>
+    <tr><td>Toolathlon-Verified<sup>10</sup></td><td><strong>70.4</strong></td><td>68.5</td><td>47.2</td><td>27.8</td></tr>
+    <tr><td>DeepPlanning<sup>12</sup></td><td><strong>63.3</strong></td><td>49.2</td><td>21.4</td><td>19.4</td></tr>
+    <tr><td>EnterpriseOps-Gym<sup>12</sup></td><td><strong>41.0</strong></td><td>40.2</td><td>30.5</td><td>27.3</td></tr>
+    <tr><td>YC-bench<sup>11</sup></td><td><strong>$1,025,437</strong></td><td>$641,290</td><td>$513,978</td><td>$265,152</td></tr>
+    <tr><td>Tau3-Bench<sup>12</sup></td><td><strong>48.8</strong></td><td>48.5</td><td>33.7</td><td>18.6</td></tr>
+    <tr><td rowspan="3">Reasoning</td><td>GPQA Diamond</td><td>89.5</td><td>89.2</td><td>83.5</td><td><strong>91.3</strong></td></tr>
+    <tr><td>AIME 2026</td><td><strong>95.2</strong></td><td>94.5</td><td>94.7</td><td>89.2</td></tr>
+    <tr><td>AA-LCR</td><td><strong>84.0</strong></td><td>82.0</td><td>83.3</td><td>72.0</td></tr>
+  </tbody>
+</table>
+
+<small>
+<sup>1</sup> Nanbeige4.3-33B is evaluated with <code>preserve_thinking=true</code> in the chat template.<br>
+<sup>2</sup> Terminal-Bench 2.1 is evaluated using Terminus 2.<br>
+<sup>3</sup> Terminal-Bench 4 and DeepSWE are evaluated using mini-swe-agent v2.4.6.<br>
+<sup>4</sup> SWE-Atlas-QnA is evaluated using mini-swe-agent v2.4.6. Answers are evaluated against 1,304 task-specific rubrics using GPT-6 Sol as the judge, with medium reasoning effort.<br>
+<sup>5</sup> NL2Repo is evaluated using Claude Code.<br>
+<sup>6</sup> Automation Bench v1.0.6 includes 600 publicly released tasks.<br>
+<sup>7</sup> JobBench is evaluated with the Claude Code harness equipped with a search tool.<br>
+<sup>8</sup> GDPval is scored using revised rubrics.<br>
+<sup>9</sup> Claw-Eval is evaluated exclusively on the Claw-Eval General subset (comprising 157 single-turn user interaction tasks).<br>
+<sup>10</sup> Toolathlon-Verified sets no max_tokens limit for individual model requests.<br>
+<sup>11</sup> YC-bench retains only the most recent 10 turns of user dialogue as historical context before each model call.<br>
+<sup>12</sup> DeepPlanning, EnterpriseOps-Gym, Tau3-Bench are evaluated using their official repositories.<br>
+</small>
+
+Nanbeige4.3-33B leads on most of the benchmarks, showing strong performance in both agentic coding and cowork tasks. 
+Beyond its breadth across benchmarks, Nanbeige4.3-33B shows strong performance on **agent tasks across a wide range of professions and industries**. For example, on JobBench, it outperforms the baseline in most of the 35 occupations evaluated.
+
+<div align="center">
+  <img src="figures/occupation.png" width="1000" alt="occupation">
+</div>
+
+
+
+
+# <span id="Quickstart">3. Quickstart</span>
+
+The tokenizer provides a configurable chat template for reasoning and tool-use scenarios:
+
+- `enable_thinking` controls whether the model generates reasoning for the current response. It is enabled by default; set it to `False` for non-thinking mode.
+- `preserve_thinking` controls whether reasoning from previous assistant turns is retained in a multi-turn conversation. We recommend `False` for general chat and question answering, and `True` for multi-turn tool use, office tasks, and code-agent workflows.
+- Passing `tools` enables the tool-use template. We recommend `tool_call_format="xml"` for the best tool-calling performance; `json` is also supported for compatibility.
+
+The model supports a context length of up to 524,288 tokens (512K).
+
+We recommend adjusting the inference settings according to the target scenario:
+
+| Scenario | Temperature | Top_p | Max New Tokens |
+|---|---:|---:|---:|
+| Agentic and tool-use tasks | 1.0 | 0.95 | 65,536 |
+| Reasoning and chat tasks | 0.6 | 0.95 | 262,144 |
+
+
+You can run the model with Transformers, SGLang, or vLLM:
+
+## Transformers
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_id = 'Nanbeige/Nanbeige4.3-33B'
+tokenizer = AutoTokenizer.from_pretrained(
+  model_id,
+  use_fast=False,
+  trust_remote_code=True
+)
+model = AutoModelForCausalLM.from_pretrained(
+  model_id,
+  torch_dtype='auto',
+  device_map='auto',
+  trust_remote_code=True
+)
+
+messages = [{'role': 'user', 'content': 'Which number is bigger, 9.11 or 9.8?'}]
+inputs = tokenizer.apply_chat_template(
+  messages,
+  add_generation_prompt=True,
+  return_tensors='pt'
+).to(model.device)
+output_ids = model.generate(inputs, max_new_tokens=1024)
+response = tokenizer.decode(output_ids[0][inputs.shape[-1]:], skip_special_tokens=True)
+print(response)
+```
+
+## SGLang
+
+```bash
+MODEL_PATH=/path/to/your/Nanbeige4.3-33B
+python -m sglang.launch_server \
+  --model-path ${MODEL_PATH} \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --tp-size 4 \
+  --mem-fraction-static 0.8 \
+  --reasoning-parser qwen3 \
+  --tool-call-parser qwen3_coder
+```
+
+## vLLM
+
+```bash
+MODEL_PATH=/path/to/your/Nanbeige4.3-33B
+vllm serve ${MODEL_PATH} \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --tensor-parallel-size 4 \
+  --gpu-memory-utilization 0.8 \
+  --enable-auto-tool-choice \
+  --reasoning-parser qwen3 \
+  --tool-call-parser qwen3_coder
+```
+
+# <span id="Contact">4. Contact</span>
+
+If you have any questions, please open an issue in this repository or contact us at nanbeige@kanzhun.com.
+
+We also welcome collaborations to build domain-specific and industry-focused agents, including joint work on data and training.
+
+# <span id="Citation">5. Citation</span>
+
+If you find our model useful or would like to use it in your own work, please cite this Hugging Face project:
+
+```bibtex
+@misc{nanbeige43chat2026,
+  title        = {Nanbeige4.3-33B},
+  author       = {Nanbeige Team},
+  year         = {2026},
+  publisher    = {Hugging Face},
+  howpublished = {\url{https://huggingface.co/Nanbeige/Nanbeige4.3-33B}}
+}
+```
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_all.json'))
+print(json.dumps(d[:3],indent=1))
+print('...')
+import collections
+print(collections.Counter(x.get('path','').split('.')[-1] for x in d))
+"
+[
+ {
+  "_id": "6adc1caea171e3197498083f",
+  "id": "Nanbeige/Nanbeige4.3-33B",
+  "author": "Nanbeige",
+  "gated": false,
+  "lastModified": "2026-10-28T01:59:01.000Z",
+  "likes": 1027,
+  "trendingScore": 229,
+  "private": false,
+  "sha": "df919e1e2cf077a22204c78b6c826bf3db18bc08",
+  "downloads": 17839,
+  "tags": [
+   "transformers",
+   "safetensors",
+   "llama",
+   "text-generation",
+   "llm",
+   "nanbeige",
+   "conversational",
+   "en",
+   "zh",
+   "base_model:Nanbeige/Nanbeige4.3-33B-Base",
+   "base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base",
+   "license:apache-2.0",
+   "eval-results",
+   "text-generation-inference",
+   "endpoints_compatible",
+   "region:us"
+  ],
+  "pipeline_tag": "text-generation",
+  "library_name": "transformers",
+  "createdAt": "2026-10-24T02:49:18.000Z",
+  "modelId": "Nanbeige/Nanbeige4.3-33B",
+  "siblings": [
+   {
+    "rfilename": ".eval_results/Nanbeige4.3-33B.yaml"
+   },
+   {
+    "rfilename": ".gitattributes"
+   },
+   {
+    "rfilename": "README.md"
+   },
+   {
+    "rfilename": "added_tokens.json"
+   },
+   {
+    "rfilename": "config.json"
+   },
+   {
+    "rfilename": "figures/nanbeige43-benchmarks.png"
+   },
+   {
+    "rfilename": "figures/nbg.png"
+   },
+   {
+    "rfilename": "figures/occupation.png"
+   },
+   {
+    "rfilename": "generation_config.json"
+   },
+   {
+    "rfilename": "model-00001-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00002-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00003-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00004-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00005-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00006-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00007-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00008-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00009-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00010-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00011-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00012-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00013-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model-00014-of-00014.safetensors"
+   },
+   {
+    "rfilename": "model.safetensors.index.json"
+   },
+   {
+    "rfilename": "special_tokens_map.json"
+   },
+   {
+    "rfilename": "tokenizer.json"
+   },
+   {
+    "rfilename": "tokenizer.model"
+   },
+   {
+    "rfilename": "tokenizer_config.json"
+   }
+  ]
+ },
+ {
+  "_id": "6ade689226d7d158c7a35f93",
+  "id": "dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF",
+  "author": "dealignai",
+  "gated": false,
+  "lastModified": "2026-10-25T23:06:11.000Z",
+  "likes": 48,
+  "trendingScore": 13,
+  "private": false,
+  "sha": "48e83e05611ef35d343ae5232f0078d85ff516e3",
+  "downloads": 35938,
+  "tags": [
+   "gguf",
+   "nanbeige",
+   "nanbeige4.3",
+   "uncensored",
+   "abliterated",
+   "imatrix",
+   "reasoning",
+   "512k-context",
+   "agentic",
+   "coding",
+   "tool-use",
+   "teacher-model",
+   "text-generation",
+   "en",
+   "zh",
+   "base_model:Nanbeige/Nanbeige4.3-33B",
+   "base_model:finetune:Nanbeige/Nanbeige4.3-33B",
+   "license:other",
+   "endpoints_compatible",
+   "region:us",
+   "conversational"
+  ],
+  "pipeline_tag": "text-generation",
+  "createdAt": "2026-10-25T20:37:38.000Z",
+  "modelId": "dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF",
+  "siblings": [
+   {
+    "rfilename": ".gitattributes"
+   },
+   {
+    "rfilename": "LICENSE.md"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-UNCENSORED-IQ2_XXS.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-UNCENSORED-Q4_K_M.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-UNCENSORED-Q6_K.gguf"
+   },
+   {
+    "rfilename": "README.md"
+   },
+   {
+    "rfilename": "dealign_mascot.png"
+   }
+  ]
+ },
+ {
+  "_id": "6ade2187bd2a6c8a7f69fae1",
+  "id": "abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF",
+  "author": "abenzerps",
+  "gated": false,
+  "lastModified": "2026-10-27T11:41:24.000Z",
+  "likes": 44,
+  "trendingScore": 11,
+  "private": false,
+  "sha": "76c254c0f736c65acdf9444ce9e15d8d654ad9c0",
+  "downloads": 20548,
+  "tags": [
+   "gguf",
+   "text-generation",
+   "gsq",
+   "rco",
+   "llama.cpp",
+   "quantized",
+   "reasoning",
+   "nanbeige",
+   "mixed-precision",
+   "en",
+   "zh",
+   "base_model:Nanbeige/Nanbeige4.3-33B",
+   "base_model:quantized:Nanbeige/Nanbeige4.3-33B",
+   "license:apache-2.0",
+   "endpoints_compatible",
+   "region:us",
+   "imatrix",
+   "conversational"
+  ],
+  "pipeline_tag": "text-generation",
+  "library_name": "gguf",
+  "createdAt": "2026-10-25T15:34:31.000Z",
+  "modelId": "abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF",
+  "siblings": [
+   {
+    "rfilename": ".gitattributes"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-GSQ-RCO-IQ2_M.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-GSQ-RCO-IQ2_XS.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-GSQ-RCO-IQ2_XXS.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-GSQ-RCO-IQ3_M.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-GSQ-RCO-IQ3_XS.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-GSQ-RCO-IQ4_XS.gguf"
+   },
+   {
+    "rfilename": "Nanbeige4.3-33B-GSQ-RCO-Q5_K_M.gguf"
+   },
+   {
+    "rfilename": "README.md"
+   },
+   {
+    "rfilename": "SHA256SUMS.txt"
+   },
+   {
+    "rfilename": "assets/benchmark.png"
+   }
+  ]
+ }
+]
+...
+Counter({'': 138})
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -nE "layer_types|sliding|window|sink|qk_norm|q_norm|k_norm|mla|latent|sparse|attention" nb_config.json nb_config_cached.json nbq_*.json || echo "no matches"; echo "=== diff configs ==="; diff nb_config.json nb_config_cached.json; echo "=== gen ==="; cat nb_generation_config.json
+nb_config.json:5:  "attention_bias": false,
+nb_config.json:6:  "attention_dropout": 0.0,
+nb_config.json:20:  "num_attention_heads": 56,
+nb_config_cached.json:5:  "attention_bias": false,
+nb_config_cached.json:6:  "attention_dropout": 0.0,
+nb_config_cached.json:20:  "num_attention_heads": 56,
+nbq_FP8_config.json:5:  "attention_bias": false,
+nbq_FP8_config.json:6:  "attention_dropout": 0.0,
+nbq_FP8_config.json:20:  "num_attention_heads": 56,
+nbq_INT4_config.json:6:  "attention_bias": false,
+nbq_INT4_config.json:7:  "attention_dropout": 0.0,
+nbq_INT4_config.json:21:  "num_attention_heads": 56,
+nbq_INT8_config.json:5:  "attention_bias": false,
+nbq_INT8_config.json:6:  "attention_dropout": 0.0,
+nbq_INT8_config.json:20:  "num_attention_heads": 56,
+=== diff configs ===
+=== gen ===
+{
+  "_from_model_config": true,
+  "bos_token_id": 166100,
+  "eos_token_id": 166101,
+  "pad_token_id": 0,
+  "transformers_version": "4.51.1",
+  "use_cache": false
+}
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_blobs.json'))
+print(json.dumps(d,indent=1)[:3000])
+"
+{
+ "_id": "6adc1caea171e3197498083f",
+ "id": "Nanbeige/Nanbeige4.3-33B",
+ "private": false,
+ "pipeline_tag": "text-generation",
+ "library_name": "transformers",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "llama",
+  "text-generation",
+  "llm",
+  "nanbeige",
+  "conversational",
+  "en",
+  "zh",
+  "base_model:Nanbeige/Nanbeige4.3-33B-Base",
+  "base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base",
+  "license:apache-2.0",
+  "eval-results",
+  "text-generation-inference",
+  "endpoints_compatible",
+  "region:us"
+ ],
+ "downloads": 17839,
+ "likes": 1027,
+ "modelId": "Nanbeige/Nanbeige4.3-33B",
+ "author": "Nanbeige",
+ "sha": "df919e1e2cf077a22204c78b6c826bf3db18bc08",
+ "lastModified": "2026-10-28T01:59:01.000Z",
+ "gated": false,
+ "disabled": false,
+ "widgetData": [
+  {
+   "text": "Hi, what can you help me with?"
+  },
+  {
+   "text": "What is 84 * 3 / 2?"
+  },
+  {
+   "text": "Tell me an interesting fact about the universe!"
+  },
+  {
+   "text": "Explain quantum computing in simple terms."
+  }
+ ],
+ "model-index": null,
+ "config": {
+  "architectures": [
+   "LlamaForCausalLM"
+  ],
+  "model_type": "llama",
+  "tokenizer_config": {
+   "use_default_system_prompt": false,
+   "bos_token": "<|im_start|>",
+   "eos_token": "<|im_end|>",
+   "unk_token": "<unk>",
+   "pad_token": "<unk>",
+   "chat_template": "\n\n{%- macro visible_text(content) -%}\n    {%- if content is string -%}\n        {{- content }}\n    {%- elif content is iterable and content is not mapping -%}\n        {%- for item in content -%}\n            {%- if item is mapping and item.type == 'text' -%}\n                {{- item.text }}\n            {%- elif item is string -%}\n                {{- item }}\n            {%- elif item is mapping and item.type in ['image', 'image_url', 'video', 'video_url', 'audio', 'audio_url', 'input_audio'] -%}\n                {%- set media_type = item.type | replace('_url', '') | replace('input_', '') -%}\n                {{- \"<reminder>You are unable to process this \" ~ media_type ~ \" because you don't have multi-modal input ability. Try different methods.</reminder>\" }}\n            {%- endif -%}\n        {%- endfor -%}\n    {%- else -%}\n        {{- content }}\n    {%- endif -%}\n{%- endmacro -%}\n\n\n{%- set tool_call_format = tool_call_format if tool_call_format is defined else 'xml' %}\n{%- if tools %}\n    {{- '<|im_start|>system\\n' }}    \n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- visible_text(messages[0].content) + '\\n\\n' }}\n    {%- else %} \n        {{- '\u4f60\u662f\u4e00\u4f4d\u5de5\u5177\u51fd\u6570\u8c03\u7528\u4e13\u5bb6\uff0c\u4f60\u4f1a\u5f97\u5230\u4e00\u4e2a\u95ee\u9898\u548c\u4e00\u7ec4\u53ef\u80fd\u7684\u5de5\u5177\u51fd\u6570\u3002\u6839\u636e\u95ee\u9898\uff0c\u4f60\u9700\u8981\u8fdb\u884c\u4e00\u4e2a\u6216\u591a\u4e2a\u51fd\u6570/\u5de5\u5177\u8c03\u7528\u4ee5\u5b9e\u73b0\u76ee\u7684\uff0c\u8bf7\u5c3d\u91cf\u5c1d\u8bd5\u63a2\u7d22\u901a\u8fc7\u5de5\u5177\u89e3\u51b3\u95ee\u9898\u3002\\n\u5982\u
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && for f in nbq_FP8_config.json nbq_INT4_config.json nbq_INT8_config.json; do echo "=== $f"; cat $f; echo; done
+=== nbq_FP8_config.json
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "quantization_config": {
+    "config_groups": {
+      "group_0": {
+        "format": "float-quantized",
+        "input_activations": {
+          "actorder": null,
+          "block_structure": null,
+          "dynamic": true,
+          "group_size": 128,
+          "num_bits": 8,
+          "observer": null,
+          "observer_kwargs": {},
+          "scale_dtype": null,
+          "strategy": "group",
+          "symmetric": true,
+          "type": "float",
+          "zp_dtype": null
+        },
+        "output_activations": null,
+        "targets": [
+          "Linear"
+        ],
+        "weights": {
+          "actorder": null,
+          "block_structure": [
+            128,
+            128
+          ],
+          "dynamic": false,
+          "group_size": null,
+          "num_bits": 8,
+          "observer": "memoryless_minmax",
+          "observer_kwargs": {},
+          "scale_dtype": null,
+          "strategy": "block",
+          "symmetric": true,
+          "type": "float",
+          "zp_dtype": null
+        }
+      }
+    },
+    "format": "float-quantized",
+    "global_compression_ratio": null,
+    "ignore": [
+      "lm_head"
+    ],
+    "kv_cache_scheme": null,
+    "quant_method": "compressed-tensors",
+    "quantization_status": "compressed",
+    "sparsity_config": {},
+    "transform_config": {},
+    "version": "0.19.0"
+  },
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}
+=== nbq_INT4_config.json
+{
+  "_attn_implementation_autoset": true,
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912,
+  "quantization_config": {
+    "config_groups": {
+      "group_0": {
+        "input_activations": null,
+        "output_activations": null,
+        "targets": [
+          "Linear"
+        ],
+        "weights": {
+          "actorder": null,
+          "block_structure": null,
+          "dynamic": false,
+          "group_size": 32,
+          "num_bits": 4,
+          "observer": "minmax",
+          "observer_kwargs": {},
+          "strategy": "group",
+          "symmetric": false,
+          "type": "int",
+          "zp_dtype": "torch.int8"
+        }
+      }
+    },
+    "format": "pack-quantized",
+    "ignore": [
+      "lm_head",
+      "model.embed_tokens"
+    ],
+    "kv_cache_scheme": null,
+    "quant_method": "compressed-tensors",
+    "quantization_status": "compressed"
+  }
+}
+
+=== nbq_INT8_config.json
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "quantization_config": {
+    "config_groups": {
+      "group_0": {
+        "format": "pack-quantized",
+        "input_activations": null,
+        "output_activations": null,
+        "targets": [
+          "Linear"
+        ],
+        "weights": {
+          "actorder": null,
+          "block_structure": null,
+          "dynamic": false,
+          "group_size": 128,
+          "num_bits": 8,
+          "observer": "memoryless_minmax",
+          "observer_kwargs": {},
+          "scale_dtype": null,
+          "strategy": "group",
+          "symmetric": true,
+          "type": "int",
+          "zp_dtype": null
+        }
+      }
+    },
+    "format": "pack-quantized",
+    "global_compression_ratio": null,
+    "ignore": [
+      "lm_head"
+    ],
+    "kv_cache_scheme": null,
+    "quant_method": "compressed-tensors",
+    "quantization_status": "compressed",
+    "sparsity_config": {},
+    "transform_config": {},
+    "version": "0.19.0"
+  },
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json,collections,re
+d=json.load(open('nb_model.safetensors.index.json'))
+print('total_size',d['metadata'])
+names=list(d['weight_map'])
+print('n tensors',len(names))
+pats=collections.Counter()
+for n in names:
+    key=re.sub(r'\.\d+\.','.N.',n)
+    pats[key]+=1
+for k,v in sorted(pats.items()):
+    print(v,k)
+"
+total_size {'total_size': 66237954048}
+n tensors 471
+1 lm_head.weight
+1 model.embed_tokens.weight
+52 model.layers.N.input_layernorm.weight
+52 model.layers.N.mlp.down_proj.weight
+52 model.layers.N.mlp.gate_proj.weight
+52 model.layers.N.mlp.up_proj.weight
+52 model.layers.N.post_attention_layernorm.weight
+52 model.layers.N.self_attn.k_proj.weight
+52 model.layers.N.self_attn.o_proj.weight
+52 model.layers.N.self_attn.q_proj.weight
+52 model.layers.N.self_attn.v_proj.weight
+1 model.norm.weight
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_search.json'))
+print(type(d), list(d)[:10] if isinstance(d,dict) else len(d))
+s=json.dumps(d)[:1500]; print(s)
+"
+<class 'list'> 100
+[{"_id": "6adc1caea171e3197498083f", "id": "Nanbeige/Nanbeige4.3-33B", "likes": 1027, "trendingScore": 229, "private": false, "downloads": 17839, "tags": ["transformers", "safetensors", "llama", "text-generation", "llm", "nanbeige", "conversational", "en", "zh", "base_model:Nanbeige/Nanbeige4.3-33B-Base", "base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base", "license:apache-2.0", "eval-results", "text-generation-inference", "endpoints_compatible", "region:us"], "pipeline_tag": "text-generation", "library_name": "transformers", "createdAt": "2026-10-24T02:49:18.000Z", "modelId": "Nanbeige/Nanbeige4.3-33B"}, {"_id": "6ade689226d7d158c7a35f93", "id": "dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF", "likes": 48, "trendingScore": 13, "private": false, "downloads": 35938, "tags": ["gguf", "nanbeige", "nanbeige4.3", "uncensored", "abliterated", "imatrix", "reasoning", "512k-context", "agentic", "coding", "tool-use", "teacher-model", "text-generation", "en", "zh", "base_model:Nanbeige/Nanbeige4.3-33B", "base_model:finetune:Nanbeige/Nanbeige4.3-33B", "license:other", "endpoints_compatible", "region:us", "conversational"], "pipeline_tag": "text-generation", "createdAt": "2026-10-25T20:37:38.000Z", "modelId": "dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF"}, {"_id": "6ade2187bd2a6c8a7f69fae1", "id": "abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF", "likes": 44, "trendingScore": 11, "private": false, "downloads": 20548, "tags": ["gguf", "text-generation", "gsq", "rco", "llama.cpp", "quantized", "reasonin
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+for f in ['nb_fp8.json','nb_int4.json','nb_int8.json','nb_bar.json','nb_blobs.json','nb_commits.json','nanbeige_info.json','nanbeige.json','nb_org.json']:
+    try:
+        d=json.load(open(f))
+        print('===',f,type(d).__name__)
+        if isinstance(d,dict): print(' keys:',list(d)[:30])
+        else: print(' len',len(d), 'first:', json.dumps(d[0])[:200] if d else None)
+    except Exception as e: print(f,'ERR',e)
+"
+=== nb_fp8.json dict
+ keys: ['_id', 'id', 'private', 'pipeline_tag', 'library_name', 'tags', 'downloads', 'likes', 'modelId', 'author', 'sha', 'lastModified', 'gated', 'disabled', 'widgetData', 'model-index', 'config', 'cardData', 'transformersInfo', 'siblings', 'spaces', 'createdAt', 'safetensors', 'usedStorage']
+=== nb_int4.json dict
+ keys: ['_id', 'id', 'private', 'pipeline_tag', 'library_name', 'tags', 'downloads', 'likes', 'modelId', 'author', 'sha', 'lastModified', 'gated', 'disabled', 'widgetData', 'model-index', 'config', 'cardData', 'transformersInfo', 'siblings', 'spaces', 'createdAt', 'safetensors', 'usedStorage']
+=== nb_int8.json dict
+ keys: ['_id', 'id', 'private', 'pipeline_tag', 'library_name', 'tags', 'downloads', 'likes', 'modelId', 'author', 'sha', 'lastModified', 'gated', 'disabled', 'widgetData', 'model-index', 'config', 'cardData', 'transformersInfo', 'siblings', 'spaces', 'createdAt', 'safetensors', 'usedStorage']
+=== nb_bar.json dict
+ keys: ['_id', 'id', 'private', 'pipeline_tag', 'tags', 'downloads', 'likes', 'modelId', 'author', 'sha', 'lastModified', 'gated', 'disabled', 'widgetData', 'model-index', 'config', 'cardData', 'gguf', 'siblings', 'spaces', 'createdAt', 'usedStorage']
+=== nb_blobs.json dict
+ keys: ['_id', 'id', 'private', 'pipeline_tag', 'library_name', 'tags', 'downloads', 'likes', 'modelId', 'author', 'sha', 'lastModified', 'gated', 'disabled', 'widgetData', 'model-index', 'config', 'cardData', 'transformersInfo', 'siblings', 'spaces', 'createdAt', 'safetensors', 'usedStorage']
+=== nb_commits.json list
+ len 13 first: {"id": "df919e1e2cf077a22204c78b6c826bf3db18bc08", "title": "Update README.md", "message": "", "authors": [{"user": "flust", "avatar": "/avatars/564658b54f5bbd91230be840f9ee3e61.svg"}], "date": "2026-
+=== nanbeige_info.json dict
+ keys: ['_id', 'id', 'private', 'pipeline_tag', 'library_name', 'tags', 'downloads', 'likes', 'modelId', 'author', 'sha', 'lastModified', 'gated', 'disabled', 'widgetData', 'model-index', 'config', 'cardData', 'transformersInfo', 'siblings', 'spaces', 'createdAt', 'safetensors', 'usedStorage']
+=== nanbeige.json dict
+ keys: ['_id', 'id', 'private', 'pipeline_tag', 'library_name', 'tags', 'downloads', 'likes', 'modelId', 'author', 'sha', 'lastModified', 'gated', 'disabled', 'widgetData', 'model-index', 'config', 'cardData', 'transformersInfo', 'siblings', 'spaces', 'createdAt', 'safetensors', 'usedStorage']
+=== nb_org.json list
+ len 16 first: {"_id": "6adc1caea171e3197498083f", "id": "Nanbeige/Nanbeige4.3-33B", "likes": 1027, "trendingScore": 229, "private": false, "downloads": 17839, "tags": ["transformers", "safetensors", "llama", "text-
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+for f in ['nb_fp8.json','nb_int4.json','nb_int8.json','nb_bar.json','nb_blobs.json']:
+    d=json.load(open(f))
+    print('===',f,d['id'],d.get('sha'),d.get('lastModified'))
+    print('  tags:', [t for t in d.get('tags',[]) if any(k in t for k in ['fp8','int','4bit','8bit','quant','gguf','awq','gptq','compressed'])])
+    print('  safetensors:', d.get('safetensors'))
+    dl=d.get('siblings',[])
+    print('  n files',len(dl))
+    for s in dl[:40]:
+        print('   ',s.get('rfilename'), s.get('size'))
+" 2>&1 | head -120
+=== nb_fp8.json Nanbeige/Nanbeige4.3-33B-FP8 0b1acaa19bae10fec482600ada7c9defcb7c4884 2026-10-31T09:27:59.000Z
+  tags: ['base_model:quantized:Nanbeige/Nanbeige4.3-33B', 'endpoints_compatible', 'compressed-tensors']
+  safetensors: {'parameters': {'BF16': 2393603072, 'F8_E4M3': 30725373952}, 'total': 33118977024}
+  n files 21
+    .gitattributes 1570
+    README.md 7805
+    added_tokens.json 174
+    chat_template.jinja 8417
+    config.json 2229
+    generation_config.json 164
+    model-00001-of-00009.safetensors 4481451200
+    model-00002-of-00009.safetensors 4412141280
+    model-00003-of-00009.safetensors 4452486792
+    model-00004-of-00009.safetensors 4412131712
+    model-00005-of-00009.safetensors 2206056136
+    model-00006-of-00009.safetensors 4481460744
+    model-00007-of-00009.safetensors 4459842408
+    model-00008-of-00009.safetensors 4404785672
+    model-00009-of-00009.safetensors 2206070616
+    model.safetensors.index.json 70563
+    recipe.yaml 213
+    special_tokens_map.json 623
+    tokenizer.json 18450979
+    tokenizer.model 2782298
+    tokenizer_config.json 11033
+=== nb_int4.json Nanbeige/Nanbeige4.3-33B-INT4 d834b414cf1c47e42640de33c147b7cf8a9321ef 2026-10-31T09:41:23.000Z
+  tags: ['base_model:quantized:Nanbeige/Nanbeige4.3-33B', 'endpoints_compatible', 'compressed-tensors']
+  safetensors: {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+  n files 326
+    .gitattributes 1570
+    FULL_MANIFEST.json 558233
+    README.md 8035
+    added_tokens.json 174
+    config.json 1706
+    generation_config.json 164
+    model-00001.safetensors 29704704
+    model-00002.safetensors 14480
+    model-00003.safetensors 38192560
+    model-00004.safetensors 14488
+    model-00005.safetensors 182469576
+    model-00006.safetensors 91234808
+    model-00007.safetensors 29704704
+    model-00008.safetensors 14480
+    model-00009.safetensors 38192560
+    model-00010.safetensors 14488
+    model-00011.safetensors 182469576
+    model-00012.safetensors 91234808
+    model-00013.safetensors 29704704
+    model-00014.safetensors 14480
+    model-00015.safetensors 38192560
+    model-00016.safetensors 14488
+    model-00017.safetensors 182469576
+    model-00018.safetensors 91234808
+    model-00019.safetensors 29704704
+    model-00020.safetensors 14480
+    model-00021.safetensors 38192560
+    model-00022.safetensors 14488
+    model-00023.safetensors 182469576
+    model-00024.safetensors 91234808
+    model-00025.safetensors 29704704
+    model-00026.safetensors 14480
+    model-00027.safetensors 38192560
+    model-00028.safetensors 14488
+    model-00029.safetensors 182469576
+    model-00030.safetensors 91234808
+    model-00031.safetensors 29704704
+    model-00032.safetensors 14480
+    model-00033.safetensors 38192560
+    model-00034.safetensors 14488
+=== nb_int8.json Nanbeige/Nanbeige4.3-33B-INT8 879049b69c5f64384f3067095924b63e9125e84f 2026-10-31T09:25:06.000Z
+  tags: ['base_model:quantized:Nanbeige/Nanbeige4.3-33B', 'endpoints_compatible', 'compressed-tensors']
+  safetensors: {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+  n files 21
+    .gitattributes 1570
+    README.md 7812
+    added_tokens.json 174
+    chat_template.jinja 8417
+    config.json 1825
+    generation_config.json 164
+    model-00001-of-00009.safetensors 4353550912
+    model-00002-of-00009.safetensors 4361231480
+    model-00003-of-00009.safetensors 4480537328
+    model-00004-of-00009.safetensors 4482974296
+    model-00005-of-00009.safetensors 2240254144
+    model-00006-of-00009.safetensors 4392084904
+    model-00007-of-00009.safetensors 4480537352
+    model-00008-of-00009.safetensors 4361231488
+    model-00009-of-00009.safetensors 2840405032
+    model.safetensors.index.json 104865
+    recipe.yaml 209
+    special_tokens_map.json 623
+    tokenizer.json 18450979
+    tokenizer.model 2782298
+    tokenizer_config.json 11033
+=== nb_bar.json bartowski/Nanbeige_Nanbeige4.3-33B-GGUF 9beb68421fdf7be095093a6888325fa2c83ddd38 2026-10-25T15:32:07.000Z
+  tags: ['gguf', 'base_model:quantized:Nanbeige/Nanbeige4.3-33B', 'endpoints_compatible']
+  safetensors: None
+  n files 72
+    .gitattributes 3566
+    Nanbeige_Nanbeige4.3-33B-IQ2_M.gguf 12187167872
+    Nanbeige_Nanbeige4.3-33B-IQ2_S.gguf 11150560384
+    Nanbeige_Nanbeige4.3-33B-IQ2_XS.gguf 10634407040
+    Nanbeige_Nanbeige4.3-33B-IQ2_XXS.gguf 10071403648
+    Nanbeige_Nanbeige4.3-33B-IQ3_M.gguf 17802005632
+    Nanbeige_Nanbeige4.3-33B-IQ3_XS.gguf 15212665984
+    Nanbeige_Nanbeige4.3-33B-IQ3_XXS.gguf 14489959552
+    Nanbeige_Nanbeige4.3-33B-IQ4_NL.gguf 20871343232
+    Nanbeige_Nanbeige4.3-33B-IQ4_XS.gguf 18635041920
+    Nanbeige_Nanbeige4.3-33B-Q2_K.gguf 13528816768
+    Nanbeige_Nanbeige4.3-33B-Q3_K_L.gguf 17270484096
+    Nanbeige_Nanbeige4.3-33B-Q3_K_M.gguf 15919746176
+    Nanbeige_Nanbeige4.3-33B-Q3_K_S.gguf 15211261056
+    Nanbeige_Nanbeige4.3-33B-Q4_0.gguf 19348057216
+    Nanbeige_Nanbeige4.3-33B-Q4_1.gguf 21200497792
+    Nanbeige_Nanbeige4.3-33B-Q4_K_L.gguf 22344395904
+    Nanbeige_Nanbeige4.3-33B-Q4_K_M.gguf 20788825216
+    Nanbeige_Nanbeige4.3-33B-Q4_K_S.gguf 19740519552
+    Nanbeige_Nanbeige4.3-33B-Q5_K_M.gguf 25073368192
+    Nanbeige_Nanbeige4.3-33B-Q5_K_S.gguf 23664311424
+    Nanbeige_Nanbeige4.3-33B-Q6_K.gguf 29016857728
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -nE "num_key_value_heads|num_attention_heads|head_dim|hidden_size|layer_types|sliding_window|attention_bias|attention_dropout|rope_theta|rope_scaling|max_position_embeddings" configuration_llama_4.51.1.py | head -60
+40:        hidden_size (`int`, *optional*, defaults to 4096):
+46:        num_attention_heads (`int`, *optional*, defaults to 32):
+48:        num_key_value_heads (`int`, *optional*):
+50:            `num_key_value_heads=num_attention_heads`, the model will use Multi Head Attention (MHA), if
+51:            `num_key_value_heads=1` the model will use Multi Query Attention (MQA) otherwise GQA is used. When
+55:            `num_attention_heads`.
+58:        max_position_embeddings (`int`, *optional*, defaults to 2048):
+81:        rope_theta (`float`, *optional*, defaults to 10000.0):
+83:        rope_scaling (`Dict`, *optional*):
+85:            and you expect the model to work on longer `max_position_embeddings`, we recommend you to update this value
+95:                `original_max_position_embeddings` (`int`, *optional*):
+110:                    `original_max_position_embeddings`). Must be a list of numbers with the same length as the hidden
+114:                    `original_max_position_embeddings`). Must be a list of numbers with the same length as the hidden
+120:        attention_bias (`bool`, *optional*, defaults to `False`):
+122:        attention_dropout (`float`, *optional*, defaults to 0.0):
+126:        head_dim (`int`, *optional*):
+127:            The attention head dimension. If None, it will default to hidden_size // num_attention_heads
+163:        hidden_size=4096,
+166:        num_attention_heads=32,
+167:        num_key_value_heads=None,
+169:        max_position_embeddings=2048,
+178:        rope_theta=10000.0,
+179:        rope_scaling=None,
+180:        attention_bias=False,
+181:        attention_dropout=0.0,
+183:        head_dim=None,
+187:        self.max_position_embeddings = max_position_embeddings
+188:        self.hidden_size = hidden_size
+191:        self.num_attention_heads = num_attention_heads
+194:        if num_key_value_heads is None:
+195:            num_key_value_heads = num_attention_heads
+197:        self.num_key_value_heads = num_key_value_heads
+203:        self.rope_theta = rope_theta
+204:        self.rope_scaling = rope_scaling
+205:        self.attention_bias = attention_bias
+206:        self.attention_dropout = attention_dropout
+208:        self.head_dim = head_dim if head_dim is not None else self.hidden_size // self.num_attention_heads
+211:        if self.rope_scaling is not None and "type" in self.rope_scaling:
+212:            self.rope_scaling["rope_type"] = self.rope_scaling["type"]
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -nE "class LlamaAttention|def forward|q_proj|k_proj|v_proj|o_proj|q_norm|k_norm|repeat_kv|scaled_dot_product|eager_attention_forward|sliding_window|attention_dropout|softmax|class LlamaRotaryEmbedding|def apply_rotary_pos_emb|rope_scaling|class LlamaSdpaAttention|class LlamaFlashAttention|is_causal" modeling_llama_4.51.1.py | head -80
+78:    def forward(self, hidden_states):
+92:class LlamaRotaryEmbedding(nn.Module):
+96:        if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
+97:            self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
+112:    def forward(self, x, position_ids):
+133:def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
+171:    def forward(self, x):
+176:def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+188:def eager_attention_forward(
+198:    key_states = repeat_kv(key, module.num_key_value_groups)
+199:    value_states = repeat_kv(value, module.num_key_value_groups)
+206:    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
+214:class LlamaAttention(nn.Module):
+224:        self.attention_dropout = config.attention_dropout
+225:        self.is_causal = True
+227:        self.q_proj = nn.Linear(
+230:        self.k_proj = nn.Linear(
+233:        self.v_proj = nn.Linear(
+236:        self.o_proj = nn.Linear(
+240:    def forward(
+252:        query_states = self.q_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+253:        key_states = self.k_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+254:        value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+264:        attention_interface: Callable = eager_attention_forward
+268:                    "`torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True`. Falling back to "
+280:            dropout=0.0 if not self.training else self.attention_dropout,
+286:        attn_output = self.o_proj(attn_output)
+301:    def forward(
+494:    def forward(
+619:        # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
+664:            # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
+769:    def forward(
+885:    def forward(
+980:    def forward(
+1071:    def forward(
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && sed -n '88,300p' modeling_llama_4.51.1.py
+ALL_LAYERNORM_LAYERS.append(LlamaRMSNorm)
+
+
+class LlamaRotaryEmbedding(nn.Module):
+    def __init__(self, config: LlamaConfig, device=None):
+        super().__init__()
+        # BC: "rope_type" was originally "type"
+        if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
+            self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
+        else:
+            self.rope_type = "default"
+        self.max_seq_len_cached = config.max_position_embeddings
+        self.original_max_seq_len = config.max_position_embeddings
+
+        self.config = config
+        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
+
+        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
+        self.original_inv_freq = self.inv_freq
+
+    @torch.no_grad()
+    @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
+    def forward(self, x, position_ids):
+        inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
+        position_ids_expanded = position_ids[:, None, :].float()
+
+        device_type = x.device.type if isinstance(x.device.type, str) and x.device.type != "mps" else "cpu"
+        with torch.autocast(device_type=device_type, enabled=False):  # Force float32
+            freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(1, 2)
+            emb = torch.cat((freqs, freqs), dim=-1)
+            cos = emb.cos() * self.attention_scaling
+            sin = emb.sin() * self.attention_scaling
+
+        return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
+
+
+def rotate_half(x):
+    """Rotates half the hidden dims of the input."""
+    x1 = x[..., : x.shape[-1] // 2]
+    x2 = x[..., x.shape[-1] // 2 :]
+    return torch.cat((-x2, x1), dim=-1)
+
+
+def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
+    """Applies Rotary Position Embedding to the query and key tensors.
+
+    Args:
+        q (`torch.Tensor`): The query tensor.
+        k (`torch.Tensor`): The key tensor.
+        cos (`torch.Tensor`): The cosine part of the rotary embedding.
+        sin (`torch.Tensor`): The sine part of the rotary embedding.
+        position_ids (`torch.Tensor`, *optional*):
+            Deprecated and unused.
+        unsqueeze_dim (`int`, *optional*, defaults to 1):
+            The 'unsqueeze_dim' argument specifies the dimension along which to unsqueeze cos[position_ids] and
+            sin[position_ids] so that they can be properly broadcasted to the dimensions of q and k. For example, note
+            that cos[position_ids] and sin[position_ids] have the shape [batch_size, seq_len, head_dim]. Then, if q and
+            k have the shape [batch_size, heads, seq_len, head_dim], then setting unsqueeze_dim=1 makes
+            cos[position_ids] and sin[position_ids] broadcastable to the shapes of q and k. Similarly, if q and k have
+            the shape [batch_size, seq_len, heads, head_dim], then set unsqueeze_dim=2.
+    Returns:
+        `tuple(torch.Tensor)` comprising of the query and key tensors rotated using the Rotary Position Embedding.
+    """
+    cos = cos.unsqueeze(unsqueeze_dim)
+    sin = sin.unsqueeze(unsqueeze_dim)
+    q_embed = (q * cos) + (rotate_half(q) * sin)
+    k_embed = (k * cos) + (rotate_half(k) * sin)
+    return q_embed, k_embed
+
+
+class LlamaMLP(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.hidden_size = config.hidden_size
+        self.intermediate_size = config.intermediate_size
+        self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=config.mlp_bias)
+        self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=config.mlp_bias)
+        self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.mlp_bias)
+        self.act_fn = ACT2FN[config.hidden_act]
+
+    def forward(self, x):
+        down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+        return down_proj
+
+
+def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
+    """
+    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
+    num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
+    """
+    batch, num_key_value_heads, slen, head_dim = hidden_states.shape
+    if n_rep == 1:
+        return hidden_states
+    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
+
+
+def eager_attention_forward(
+    module: nn.Module,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    attention_mask: Optional[torch.Tensor],
+    scaling: float,
+    dropout: float = 0.0,
+    **kwargs,
+):
+    key_states = repeat_kv(key, module.num_key_value_groups)
+    value_states = repeat_kv(value, module.num_key_value_groups)
+
+    attn_weights = torch.matmul(query, key_states.transpose(2, 3)) * scaling
+    if attention_mask is not None:
+        causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+        attn_weights = attn_weights + causal_mask
+
+    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
+    attn_weights = nn.functional.dropout(attn_weights, p=dropout, training=module.training)
+    attn_output = torch.matmul(attn_weights, value_states)
+    attn_output = attn_output.transpose(1, 2).contiguous()
+
+    return attn_output, attn_weights
+
+
+class LlamaAttention(nn.Module):
+    """Multi-headed attention from 'Attention Is All You Need' paper"""
+
+    def __init__(self, config: LlamaConfig, layer_idx: int):
+        super().__init__()
+        self.config = config
+        self.layer_idx = layer_idx
+        self.head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
+        self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
+        self.scaling = self.head_dim**-0.5
+        self.attention_dropout = config.attention_dropout
+        self.is_causal = True
+
+        self.q_proj = nn.Linear(
+            config.hidden_size, config.num_attention_heads * self.head_dim, bias=config.attention_bias
+        )
+        self.k_proj = nn.Linear(
+            config.hidden_size, config.num_key_value_heads * self.head_dim, bias=config.attention_bias
+        )
+        self.v_proj = nn.Linear(
+            config.hidden_size, config.num_key_value_heads * self.head_dim, bias=config.attention_bias
+        )
+        self.o_proj = nn.Linear(
+            config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.attention_bias
+        )
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        position_embeddings: Tuple[torch.Tensor, torch.Tensor],
+        attention_mask: Optional[torch.Tensor],
+        past_key_value: Optional[Cache] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        **kwargs: Unpack[FlashAttentionKwargs],
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
+        input_shape = hidden_states.shape[:-1]
+        hidden_shape = (*input_shape, -1, self.head_dim)
+
+        query_states = self.q_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+        key_states = self.k_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+        value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+
+        cos, sin = position_embeddings
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+
+        if past_key_value is not None:
+            # sin and cos are specific to RoPE models; cache_position needed for the static cache
+            cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
+            key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
+
+        attention_interface: Callable = eager_attention_forward
+        if self.config._attn_implementation != "eager":
+            if self.config._attn_implementation == "sdpa" and kwargs.get("output_attentions", False):
+                logger.warning_once(
+                    "`torch.nn.functional.scaled_dot_product_attention` does not support `output_attentions=True`. Falling back to "
+                    'eager attention. This warning can be removed using the argument `attn_implementation="eager"` when loading the model.'
+                )
+            else:
+                attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
+
+        attn_output, attn_weights = attention_interface(
+            self,
+            query_states,
+            key_states,
+            value_states,
+            attention_mask,
+            dropout=0.0 if not self.training else self.attention_dropout,
+            scaling=self.scaling,
+            **kwargs,
+        )
+
+        attn_output = attn_output.reshape(*input_shape, -1).contiguous()
+        attn_output = self.o_proj(attn_output)
+        return attn_output, attn_weights
+
+
+class LlamaDecoderLayer(nn.Module):
+    def __init__(self, config: LlamaConfig, layer_idx: int):
+        super().__init__()
+        self.hidden_size = config.hidden_size
+
+        self.self_attn = LlamaAttention(config=config, layer_idx=layer_idx)
+
+        self.mlp = LlamaMLP(config)
+        self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_search.json'))
+for x in d:
+    i=x['id']
+    if '4.3-33B' in i or '4.3_33B' in i:
+        print(i, '|', x.get('pipeline_tag'), '|', ','.join(t for t in x.get('tags',[]) if t in ['gguf','fp8','awq','gptq','mlx','exl2','compressed-tensors','quantized']))
+"
+Nanbeige/Nanbeige4.3-33B | text-generation | 
+dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF | text-generation | gguf
+abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF | text-generation | gguf,quantized
+Nanbeige/Nanbeige4.3-33B-Base | text-generation | 
+AtomicChat/Nanbeige4.3-33B-GGUF | text-generation | gguf,quantized
+bartowski/Nanbeige_Nanbeige4.3-33B-GGUF | text-generation | gguf
+FRENCHFAKER/Nanbeige4.3-33B-cybersec-abliterated-GGUF | text-generation | gguf
+Nanbeige/Nanbeige4.3-33B-INT4 | text-generation | compressed-tensors
+webbrain-one/Nanbeige4.3-33B-NVFP4 | text-generation | compressed-tensors
+Luni/Nanbeige-4.3-33B-Heretic | text-generation | 
+Nanbeige/Nanbeige4.3-33B-FP8 | text-generation | compressed-tensors
+Nanbeige/Nanbeige4.3-33B-INT8 | text-generation | compressed-tensors
+sakamakismile/Nanbeige4.3-33B-Heretic-NVFP4 | text-generation | compressed-tensors
+Harsha001/Nanbeige4.3-33B-ROCmFPX | text-generation | gguf,quantized
+prithivMLmods/Nanbeige4.3-33B-NVFP4-GGUF | text-generation | gguf
+Luni/Nanbeige-4.3-33B-Heretic-GSQ-RCO-GGUF | text-generation | gguf,quantized
+mradermacher/Nanbeige4.3-33B-i1-GGUF | None | gguf
+DogukanUrker/Nanbeige4.3-33B-GGUF | text-generation | gguf
+primitive-ai/Nanbeige4.3-33B-NVFP4 | text-generation | compressed-tensors,quantized
+Nurymanau/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+pyros-vault/Nanbeige4.3-33B-oQ4e | text-generation | mlx,quantized
+fcmeyer/Nanbeige4.3-33B-MLX-6bit | text-generation | mlx
+pratikgx/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+pyros-vault/Nanbeige4.3-33B-oQ8e | text-generation | mlx,quantized
+Tech2wild/Nanbeige4.3-33B-W4A16-AutoRound | text-generation | gptq
+ProCreations/Nanbeige4.3-33B-DFlash2 | text-generation | 
+ProCreations/Nanbeige4.3-33B-NVFP4-A16 | text-generation | quantized
+wasifb/Nanbeige4.3-33B-AutoRound-W4A16 | text-generation | 
+shisa-ai/Nanbeige4.3-33B-DMS-2x | None | 
+PollardWeights/Nanbeige4.3-33B-Pollard | text-generation | gguf,quantized
+0bserverx/Nanbeige4.3-33B-RVN-Uncensored-Heretic-Abliterated-RCO-GGUF | text-generation | gguf
+axteam/Nanbeige4.3-33B-NVFP4A16 | text-generation | compressed-tensors,quantized
+axteam/Nanbeige4.3-33B-AWQ-4bit | text-generation | compressed-tensors,quantized,awq
+axteam/Nanbeige4.3-33B-NVFP4 | text-generation | compressed-tensors,quantized
+axteam/Nanbeige4.3-33B-GGUF | text-generation | gguf,quantized
+junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-4bit | text-generation | mlx
+SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic | text-generation | 
+eepos/Nanbeige4.3-33B-Q4_K_S-GGUF | text-generation | gguf
+KnutJaegersberg/Nanbeige4.3-33B-Q8_0-GGUF | text-generation | gguf
+CVLTAI/Nanbeige4.3-33B-GGUF | text-generation | gguf
+KnutJaegersberg/Nanbeige4.3-33B-Base-Q8_0-GGUF | text-generation | gguf
+blallo27/Nanbeige4.3-33B-Q6_K-GGUF | text-generation | gguf
+moeshawky/Nanbeige4.3-33B-GGUF | text-generation | gguf,quantized
+eyes-ml/Nanbeige4.3-33B | text-generation | 
+eyes-ml/Nanbeige4.3-33B-Base | text-generation | 
+Duckets/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+XTer123/Nanbeige4.3-33B-GGUF | text-generation | gguf
+moeshawky/Nanbeige4.3-33B-INT8-safetensors | text-generation | quantized,compressed-tensors
+nesymerp1/Nanbeige4.3-33B-Base-Q4_K_M-GGUF | text-generation | gguf
+primitive-ai/Nanbeige4.3-33B-FP8 | text-generation | compressed-tensors,fp8,quantized
+DJLougen/Nanbeige4.3-33B-MLX | text-generation | mlx,quantized
+moeshawky/Nanbeige4.3-33B-FP8-safetensors | text-generation | 
+stuchapin/Nanbeige4.3-33B-Base-W4A16-AutoRound | text-generation | quantized,gptq
+killen8/Nanbeige4.3-33B-MLX-4bit | None | mlx
+hamuz/Nanbeige4.3-33B-MLX | text-generation | mlx,quantized
+fcmeyer/Nanbeige4.3-33B-MLX-bf16 | text-generation | mlx
+fcmeyer/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+fcmeyer/Nanbeige4.3-33B-MLX-8bit | text-generation | mlx
+primitive-ai/Nanbeige4.3-33B-mixed-NVFP4-FP8 | text-generation | compressed-tensors,fp8,quantized
+fcmeyer/Nanbeige4.3-33B-MLX-4bit-g128 | text-generation | mlx
+fcmeyer/Nanbeige4.3-33B-MLX-mixed-4-6-g64 | text-generation | mlx
+Razor3D/Nanbeige4.3-33B-Q4_K_M-GGUF | text-generation | gguf
+Luni/Nanbeige-4.3-33B-EXL3 | text-generation | 
+Luni/Nanbeige-4.3-33B-Heretic-EXL3 | text-generation | 
+a-gordo/Nanbeige4.3-33B-oQ8e | text-generation | mlx,quantized
+a-gordo/Nanbeige4.3-33B-oQ6e | text-generation | mlx,quantized
+a-gordo/Nanbeige4.3-33B-oQ4e | text-generation | mlx,quantized
+stuchapin/Nanbeige4.3-33B-Base-W3A16-AutoRound | text-generation | quantized,gptq
+kapitsaprime/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx,awq
+kapitsaprime/Nanbeige4.3-33B-MLX-8bit | text-generation | mlx
+lxe/Nanbeige4.3-33B-EXL3-2.5bpw | text-generation | quantized
+chriswessels/Nanbeige4.3-33B-oQ8e | None | mlx,quantized
+pyros-vault/Nanbeige4.3-33B-oQ6e | text-generation | mlx,quantized
+stuchapin/Nanbeige4.3-33B-Base-W8A16-AutoRound | text-generation | quantized,gptq
+OsaurusAI/Nanbeige4.3-33B-JANG_4D | text-generation | mlx,quantized
+OsaurusAI/Nanbeige4.3-33B-JANG_6M | text-generation | mlx,quantized
+ProCreations/Nanbeige4.3-33B-FP8 | text-generation | quantized,fp8,compressed-tensors
+OsaurusAI/Nanbeige4.3-33B-JANG_2D | text-generation | mlx,quantized
+nonkronk/Nanbeige4.3-33B-EXL3-4.0bpw | text-generation | quantized
+jeonghyeon00/Nanbeige4.3-33B-w8a16-compressed-tensors | text-generation | compressed-tensors
+jeonghyeon00/Nanbeige4.3-33B-w4a16-gptq-compressed-tensors | text-generation | compressed-tensors,gptq
+Luni/Nanbeige-4.3-33B-Heretic-GGUF | text-generation | gguf
+ProCreations/Nanbeige4.3-33B-EXL3 | text-generation | quantized
+XTer123/Nanbeige4.3-33B-Uncensored-GGUF | text-generation | gguf
+jeonghyeon00/Nanbeige4.3-33B-W4A16-AutoRound | text-generation | compressed-tensors
+alexwengg/Nanbeige4.3-33B-MLX-mixed-3-4-6bit | text-generation | mlx
+alexwengg/Nanbeige4.3-33B-MLX-3bit | text-generation | mlx
+mph/Nanbeige4.3-33B-MXFP8 | text-generation | fp8,quantized
+Luni/Nanbeige-4.3-33B-Heretic-EXL3-SC | text-generation | 
+danyalmalik/Nanbeige4.3-33B-IQ2_M-ONNX-WebGPU | None | gguf
+vcruz305/Nanbeige4.3-33B-SAGE-EXL3-4.50bpw | text-generation | 
+danyalmalik/Nanbeige4.3-33B-Q4_K_M-ONNX-WebGPU | None | gguf
+yamz-labs/Nanbeige4.3-33B-EXL3-Yamz | text-generation | quantized
+3hs4n/Nanbeige4.3-33B-mlx-JANG_2D-compact | text-generation | mlx,quantized
+mradermacher/Nanbeige4.3-33B-Base-GGUF | None | gguf
+heliophage/Nanbeige4.3-33B-W4A16-GPTQ | text-generation | compressed-tensors,gptq,quantized
+akhtyamovpavel/Nanbeige4.3-33B-Hyper-GGUF | text-generation | gguf
+stoyani/Nanbeige4.3-33B-FP8-KVcal | text-generation | fp8,compressed-tensors
+mradermacher/Nanbeige4.3-33B-Base-i1-GGUF | None | gguf
+Luni/Nanbeige-4.3-33B-DFlash2 | text-generation |
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+for fn in ['gguf_head.bin','gguf_head40.bin']:
+    b=open(fn,'rb').read(2_000_000)
+    print('===',fn, b[:4])
+    off=4
+    ver,=struct.unpack_from('<I',b,off); off+=4
+    nt,=struct.unpack_from('<Q',b,off); off+=8
+    nkv,=struct.unpack_from('<Q',b,off); off+=8
+    print('ver',ver,'tensors',nt,'kv',nkv)
+    # GGUF string
+    def s():
+        global off
+        n,=struct.unpack_from('<Q',b,off); off+=8
+        v=b[off:off+n].decode('utf-8','replace'); off+=n
+        return v
+    types={0:'B',1:'b',2:'H',3:'h',4:'I',5:'i',6:'f',7:'?',8:'s',9:'arr',10:'u64',11:'i64',12:'f64'}
+    want=('general.architecture','general.name','llama.context_length','llama.rope','llama.attention','llama.block_count','llama.head_count','llama.embedding_length','llama.expert','tokenizer.ggml.model')
+    seen={}
+    for _ in range(min(nkv,1000)):
+        k=s(); t,=struct.unpack_from('<I',b,off); off+=4
+        if t==8: v=s()
+        elif t==9:
+            et,=struct.unpack_from('<I',b,off); off+=4
+            n,=struct.unpack_from('<Q',b,off); off+=8
+            if et==8:
+                v=[s() for _ in range(min(n,3))]
+                if n>3: v.append('...')
+            else:
+                sz={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}.get(et,1)
+                off+=sz*n; v='<%d items>'%n
+        elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+        elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+        elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+        elif t==10: v,=struct.unpack_from('<Q',b,off); off+=8
+        elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+        elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+        else: print('unknown type',t,k); break
+        if any(w in k for w in ('architecture','name','context_length','rope','attention','block_count','head_count','embedding_length','expert','sliding','softcap','tokenizer.ggml.model','quantization')):
+            seen[k]=v
+    for k,v in seen.items(): print(' ',k,'=',v)
+EOF
+=== gguf_head.bin b'GGUF'
+ver 3 tensors 471 kv 46
+Traceback (most recent call last):
+  File "<stdin>", line 20, in <module>
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 2000000)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && cat config.json | head -40; echo "=== has remote code? ==="; python3 -c "
+import json
+t=json.load(open('tree_Nanbeige_Nanbeige4.3-33B.json'))
+for x in t: print(x['path'])
+"
+{
+  "adapter_names": [
+    "guardian-core",
+    "decision"
+  ],
+  "adapter_ranks": [
+    16,
+    64
+  ],
+  "adapter_substitute_token_ids": [
+    27,
+    14711
+  ],
+  "adapter_token_ids": [
+    100352,
+    100353
+  ],
+  "architectures": [
+    "GraniteSwitchForCausalLM"
+  ],
+  "asr_chunk_length_s": 120.0,
+  "asr_chunk_overlap_s": 5.0,
+  "asr_device": "cuda",
+  "asr_dtype": null,
+  "asr_enabled": true,
+  "asr_generate_kwargs": null,
+  "asr_max_audio_clips": 32,
+  "asr_model_id": null,
+  "asr_pipeline_kwargs": null,
+  "asr_self_chunks": false,
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "attention_multiplier": 0.0078125,
+  "bos_token_id": 100257,
+  "control_token_gain": 15.0,
+  "cross_stream_rank": null,
+  "dtype": "bfloat16",
+  "dual_stream": false,
+  "embedding_multiplier": 12.0,
+  "eos_token_id": 100257,
+=== has remote code? ===
+.eval_results
+figures
+.eval_results/Nanbeige4.3-33B.yaml
+.gitattributes
+README.md
+added_tokens.json
+config.json
+figures/nanbeige43-benchmarks.png
+figures/nbg.png
+figures/occupation.png
+generation_config.json
+model-00001-of-00014.safetensors
+model-00002-of-00014.safetensors
+model-00003-of-00014.safetensors
+model-00004-of-00014.safetensors
+model-00005-of-00014.safetensors
+model-00006-of-00014.safetensors
+model-00007-of-00014.safetensors
+model-00008-of-00014.safetensors
+model-00009-of-00014.safetensors
+model-00010-of-00014.safetensors
+model-00011-of-00014.safetensors
+model-00012-of-00014.safetensors
+model-00013-of-00014.safetensors
+model-00014-of-00014.safetensors
+model.safetensors.index.json
+special_tokens_map.json
+tokenizer.json
+tokenizer.model
+tokenizer_config.json
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+print('ver',ver,'nt',nt,'nkv',nkv)
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for _ in range(nkv):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8:
+            arr=[stri() for _ in range(n)]
+            v=arr if len(arr)<=8 else arr[:8]+['...(%d)'%n]
+        else:
+            off+=sizes[et]*n; v='<%d elems type %d>'%(n,et)
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    else: raise SystemExit('type %d key %s'%(t,k))
+    out[k]=v
+for k,v in out.items(): print(k,'=',v)
+EOF
+ver 3 nt 471 nkv 46
+Traceback (most recent call last):
+  File "<stdin>", line 18, in <module>
+  File "<stdin>", line 6, in u32
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 4000001)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && xxd -l 128 gguf_head.bin
+00000000: 4747 5546 0300 0000 d701 0000 0000 0000  GGUF............
+00000010: 2e00 0000 0000 0000 1400 0000 0000 0000  ................
+00000020: 6765 6e65 7261 6c2e 6172 6368 6974 6563  general.architec
+00000030: 7475 7265 0800 0000 0500 0000 0000 0000  ture............
+00000040: 6c6c 616d 610c 0000 0000 0000 0067 656e  llama........gen
+00000050: 6572 616c 2e74 7970 6508 0000 0005 0000  eral.type.......
+00000060: 0000 0000 006d 6f64 656c 0c00 0000 0000  .....model......
+00000070: 0000 6765 6e65 7261 6c2e 6e61 6d65 0800  ..general.name..
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+print('ver',ver,'nt',nt,'nkv',nkv,'off',off)
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+for i in range(nkv):
+    k=stri(); t=u32()
+    print(i,k,'type',t,'off',off)
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64(); print('   arr et',et,'n',n)
+        if et==8:
+            for _ in range(n): stri()
+        else:
+            off+=sizes[et]*n
+    else: off+=sizes[t]
+EOF
+ver 3 nt 471 nkv 46 off 24
+0 general.architecture type 8 off 56
+1 general.type type 8 off 93
+2 general.name type 8 off 130
+3 general.basename type 8 off 181
+4 general.size_label type 8 off 230
+5 general.license type 8 off 268
+6 general.base_model.count type 4 off 322
+7 general.base_model.0.name type 8 off 363
+8 general.base_model.0.organization type 8 off 436
+9 general.base_model.0.repo_url type 8 off 493
+10 general.tags type 9 off 577
+   arr et 8 n 3
+11 general.languages type 9 off 668
+   arr et 8 n 2
+12 llama.block_count type 4 off 729
+13 llama.context_length type 4 off 765
+14 llama.embedding_length type 4 off 803
+15 llama.feed_forward_length type 4 off 844
+16 llama.attention.head_count type 4 off 886
+17 llama.attention.head_count_kv type 4 off 931
+18 llama.rope.freq_base type 6 off 967
+19 llama.attention.layer_norm_rms_epsilon type 6 off 1021
+20 llama.attention.key_length type 4 off 1063
+21 llama.attention.value_length type 4 off 1107
+22 llama.vocab_size type 4 off 1139
+23 llama.rope.dimension_count type 4 off 1181
+24 tokenizer.ggml.add_space_prefix type 7 off 1228
+25 tokenizer.ggml.model type 8 off 1261
+26 tokenizer.ggml.pre type 8 off 1304
+27 tokenizer.ggml.tokens type 9 off 1352
+   arr et 8 n 166912
+28 tokenizer.ggml.scores type 9 off 2632303
+   arr et 6 n 166912
+29 tokenizer.ggml.token_type type 9 off 3300000
+   arr et 5 n 166912
+30 tokenizer.ggml.bos_token_id type 4 off 3967699
+31 tokenizer.ggml.eos_token_id type 4 off 3967742
+32 tokenizer.ggml.unknown_token_id type 4 off 3967789
+33 tokenizer.ggml.padding_token_id type 4 off 3967836
+34 tokenizer.ggml.add_bos_token type 7 off 3967880
+35 tokenizer.ggml.add_sep_token type 7 off 3967921
+36 tokenizer.ggml.add_eos_token type 7 off 3967962
+37 tokenizer.chat_template type 8 off 3967998
+38 tokenizer.ggml.clean_spaces type 7 off 3976462
+39 tokenizer.ggml.metaspace.prepend_scheme type 8 off 3976514
+40 general.quantization_version type 4 off 3976567
+41 general.file_type type 4 off 3976600
+42 quantize.imatrix.file type 8 off 3976637
+43 quantize.imatrix.dataset type 8 off 3976751
+44 quantize.imatrix.entries_count type 4 off 3976877
+45 quantize.imatrix.chunks_count type 4 off 3976922
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(nkv):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8:
+            arr=[stri() for _ in range(n)]
+            v=arr if len(arr)<=6 else arr[:6]+['...(%d)'%n]
+        else:
+            off+=sizes[et]*n; v='<%d elems type %d>'%(n,et)
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    out[k]=v
+for k,v in out.items():
+    if k.startswith('tokenizer.ggml.scores') or k.startswith('tokenizer.ggml.tokens'): continue
+    print(k,'=',v)
+EOF
+Traceback (most recent call last):
+  File "<stdin>", line 17, in <module>
+  File "<stdin>", line 6, in u32
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 4000001)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(27):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8: v='<str arr %d>'%n; [stri() for _ in range(n)]
+        else: v='<%d elems type %d>'%(n,et); off+=sizes[et]*n
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    out[k]=v
+for k,v in out.items(): print(k,'=',v)
+EOF
+Traceback (most recent call last):
+  File "<stdin>", line 17, in <module>
+  File "<stdin>", line 6, in u32
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 4000001)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64()
+    if n>10_000_000: raise ValueError('bad strlen %d at %d'%(n,off))
+    v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+print(ver,nt,nkv)
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(nkv):
+    try:
+        k=stri(); t=u32()
+    except Exception as e:
+        print('FAIL at',i,off,e); break
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8: v='<str arr %d>'%n; [stri() for _ in range(n)]
+        else: v='<%d elems type %d>'%(n,et); off+=sizes[et]*n
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    else: v='UNKNOWN TYPE %d'%t
+    out[k]=v
+    print(i,k,t,repr(v)[:80],'off',off)
+EOF
+3 471 46
+0 general.architecture 8 'llama' off 69
+1 general.type 8 'model' off 106
+2 general.name 8 'Nanbeige4.3 33B' off 153
+3 general.basename 8 'Nanbeige4.3' off 200
+4 general.size_label 8 '33B' off 241
+5 general.license 8 'apache-2.0' off 286
+6 general.base_model.count 4 1 off 326
+7 general.base_model.0.name 8 'Nanbeige4.3 33B Base' off 391
+8 general.base_model.0.organization 8 'Nanbeige' off 452
+9 general.base_model.0.repo_url 8 'https://huggingface.co/Nanbeige/Nanbeige4.3-33B-Base' off 553
+10 general.tags 9 '<str arr 3>' off 639
+11 general.languages 9 '<str arr 2>' off 700
+12 llama.block_count 4 52 off 733
+13 llama.context_length 4 524288 off 769
+14 llama.embedding_length 4 7168 off 807
+15 llama.feed_forward_length 4 22016 off 848
+16 llama.attention.head_count 4 56 off 890
+17 llama.attention.head_count_kv 4 8 off 935
+18 llama.rope.freq_base 6 1290068416 off 971
+19 llama.attention.layer_norm_rms_epsilon 6 925353388 off 1025
+20 llama.attention.key_length 4 128 off 1067
+21 llama.attention.value_length 4 128 off 1111
+22 llama.vocab_size 4 166912 off 1143
+23 llama.rope.dimension_count 4 128 off 1185
+24 tokenizer.ggml.add_space_prefix 7 5121 off 1232
+FAIL at 25 1240 bad strlen 7741533827821993984 at 1240
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(nkv):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8: v='<str arr %d>'%n; [stri() for _ in range(n)]
+        else: v='<%d elems type %d>'%(n,et); off+=sizes[et]*n
+    elif t==7: v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    else: v='UNKNOWN %d'%t
+    out[k]=v
+for k,v in out.items():
+    if 'tokens' in k or 'scores' in k or 'token_type' in k: continue
+    print(k,'=',v)
+EOF
+general.architecture = llama
+general.type = model
+general.name = Nanbeige4.3 33B
+general.basename = Nanbeige4.3
+general.size_label = 33B
+general.license = apache-2.0
+general.base_model.count = 1
+general.base_model.0.name = Nanbeige4.3 33B Base
+general.base_model.0.organization = Nanbeige
+general.base_model.0.repo_url = https://huggingface.co/Nanbeige/Nanbeige4.3-33B-Base
+general.tags = <str arr 3>
+general.languages = <str arr 2>
+llama.block_count = 52
+llama.context_length = 524288
+llama.embedding_length = 7168
+llama.feed_forward_length = 22016
+llama.attention.head_count = 56
+llama.attention.head_count_kv = 8
+llama.rope.freq_base = 1290068416
+llama.attention.layer_norm_rms_epsilon = 925353388
+llama.attention.key_length = 128
+llama.attention.value_length = 128
+llama.vocab_size = 166912
+llama.rope.dimension_count = 128
+tokenizer.ggml.add_space_prefix = 1
+tokenizer.ggml.model = llama
+tokenizer.ggml.pre = default
+tokenizer.ggml.bos_token_id = 166100
+tokenizer.ggml.eos_token_id = 166101
+tokenizer.ggml.unknown_token_id = 0
+tokenizer.ggml.padding_token_id = 0
+tokenizer.ggml.add_bos_token = 1
+tokenizer.ggml.add_sep_token = 0
+tokenizer.ggml.add_eos_token = 0
+tokenizer.chat_template = 
+
+{%- macro visible_text(content) -%}
+    {%- if content is string -%}
+        {{- content }}
+    {%- elif content is iterable and content is not mapping -%}
+        {%- for item in content -%}
+            {%- if item is mapping and item.type == 'text' -%}
+                {{- item.text }}
+            {%- elif item is string -%}
+                {{- item }}
+            {%- elif item is mapping and item.type in ['image', 'image_url', 'video', 'video_url', 'audio', 'audio_url', 'input_audio'] -%}
+                {%- set media_type = item.type | replace('_url', '') | replace('input_', '') -%}
+                {{- "<reminder>You are unable to process this " ~ media_type ~ " because you don't have multi-modal input ability. Try different methods.</reminder>" }}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- else -%}
+        {{- content }}
+    {%- endif -%}
+{%- endmacro -%}
+
+
+{%- set tool_call_format = tool_call_format if tool_call_format is defined else 'xml' %}
+{%- if tools %}
+    {{- '<|im_start|>system\n' }}    
+    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}
+        {{- visible_text(messages[0].content) + '\n\n' }}
+    {%- else %} 
+        {{- '你是一位工具函数调用专家，你会得到一个问题和一组可能的工具函数。根据问题，你需要进行一个或多个函数/工具调用以实现目的，请尽量尝试探索通过工具解决问题。\n如果没有一个函数可以使用，请直接使用自然语言回复用户。\n如果给定的问题缺少函数所需的参数，请使用自然语言进行提问，向用户询问必要信息。\n如果调用结果已经足够回答用户问题，请对历史结果进行总结，使用自然语言回复用户。' }} 
+    {%- endif %}
+
+    {{- "# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+    {%- for tool in tools %}
+        {{- "\n" }}
+        {{- tool | tojson }}
+    {%- endfor %}
+    
+    {%- if tool_call_format == 'json' %}
+        {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n" }}
+        {{- '<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n' }}
+    {%- else %}
+        {{- "\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n" }}
+        {{- '<tool_call>
+<function=example_function_name>
+<parameter=example_parameter_1>
+value_1
+</parameter>
+<parameter=example_parameter_2>
+This is the value for the second parameter
+that can span
+multiple lines
+</parameter>
+</function>
+</tool_call><|im_end|>\n' }}
+    {%- endif %}
+    
+{%- else %}
+    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}
+        {{- '<|im_start|>system\n' + visible_text(messages[0].content) + '<|im_end|>\n' }}
+    {%- else %} 
+        {{- '<|im_start|>system\n你是南北阁，一款由BOSS直聘自主研发并训练的专业大语言模型。<|im_end|>\n' }} 
+    {%- endif %}
+{%- endif %}
+
+{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}
+{%- for message in messages[::-1] %}
+    {%- set index = (messages|length - 1) - loop.index0 %}
+    {%- if ns.multi_step_tool and message.get('role', '') == "user" and visible_text(message.content) is string and not(visible_text(message.content).startswith('<tool_response>') and visible_text(message.content).endswith('</tool_response>')) %}
+        {%- set ns.multi_step_tool = false %}
+        {%- set ns.last_query_index = index %}
+    {%- endif %}
+{%- endfor %}
+
+{%- for message in messages %}
+    {%- if visible_text(message.content) is string %}
+        {%- set content = visible_text(message.content) %}
+    {%- else %}
+        {%- set content = '' %}
+    {%- endif %}
+    
+    {%- if message.get('role', '') == "system" %}
+        {%- if not loop.first %}
+            {{- raise_exception('System message must be at the beginning.') }}
+        {%- endif %}
+        
+    {%- elif message.get('role', '') == "assistant" %}
+        {%- set reasoning_content = '' %}
+        {%- if message.reasoning_content is string %}
+            {%- set reasoning_content = message.reasoning_content %}
+        {%- else %}
+            {%- if '</think>' in content %}
+                {%- set reasoning_content = content.split('</think>')[0].rstrip('\n').split('<think>')[-1].lstrip('\n') %}
+                {%- set content = content.split('</think>')[-1].lstrip('\n').rstrip('\n') %}
+            {%- endif %}
+        {%- endif %}
+        {%- set content = content|trim %}
+        {%- set reasoning_content = reasoning_content|trim %}
+        
+        {%- if (preserve_thinking is defined and preserve_thinking is false) and (loop.index0 < ns.last_query_index) %}
+            {{- '<|im_start|>' + message.get('role', '') + '\n<think>\n\n</think>\n\n' + content }}
+        {%- else %}
+            {{- '<|im_start|>' + message.get('role', '') + '\n<think>\n' + reasoning_content + '\n</think>\n\n' + content }}
+        {%- endif %}
+        
+        {%- if message.tool_calls and message.tool_calls is iterable and message.tool_calls is not mapping %}
+            {%- if tool_call_format == 'json' %}
+                {%- for tool_call in message.tool_calls %}
+                    {%- if (loop.first and content) or (not loop.first) %}
+                        {{- '\n' }}
+                    {%- endif %}
+                    {%- if tool_call.function %}
+                        {%- set tool_call = tool_call.function %}
+                    {%- endif %}
+                    {{- '<tool_call>\n{"name": "' }}
+                    {{- tool_call.name }}
+                    {{- '", "arguments": ' }}
+                    {%- if tool_call.arguments is string %}
+                        {{- tool_call.arguments }}
+                    {%- else %}
+                        {{- tool_call.arguments | tojson }}
+                    {%- endif %}
+                    {{- '}\n</tool_call>' }}
+                {%- endfor %}
+            {%- else %}
+                {%- for tool_call in message.tool_calls %}
+                    {%- if tool_call.function is defined %}
+                        {%- set tool_call = tool_call.function %}
+                    {%- endif %}
+                    
+                    {%- if loop.first %}
+                        {%- if content|trim %}
+                            {{- '
+
+<tool_call>
+<function=' + tool_call.name + '>
+' }}
+                        {%- else %}
+                            {{- '<tool_call>
+<function=' + tool_call.name + '>
+' }}
+                        {%- endif %}
+                    {%- else %}
+                        {{- '
+<tool_call>
+<function=' + tool_call.name + '>
+' }}
+                    {%- endif %}
+                    
+                    {%- if tool_call.arguments is defined %}
+                        {%- for args_name, args_value in tool_call.arguments|items %}
+                            {{- '<parameter=' + args_name + '>
+' }}
+                            {%- set args_value = args_value | string if args_value is string else args_value | tojson | safe %}
+                            {{- args_value }}
+                            {{- '
+</parameter>
+' }}
+                        {%- endfor %}
+                    {%- endif %}
+                    {{- '</function>
+</tool_call>' }}
+                {%- endfor %}
+            {%- endif %}
+        {%- endif %}
+        {{- '<|im_end|>\n' }}
+        
+    {%- elif message.get('role', '') == "tool" %}
+        {%- if loop.previtem and loop.previtem.get('role', '') != "tool" %}
+            {{- '<|im_start|>user' }}
+        {%- endif %}
+        {{- '\n<tool_response>\n' }}
+        {{- content }}
+        {{- '\n</tool_response>' }}
+        {%- if loop.last or loop.nextitem.get('role', '') != "tool" %}
+            {{- '<|im_end|>\n' }}
+        {%- endif %}
+    {%- elif message.get('role', '') != '' %}
+        {{- '<|im_start|>' + message.get('role', '') + '\n' + content + '<|im_end|>' + '\n' }}
+    {%- endif %}
+{%- endfor %}
+
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+    
+    {%- if enable_thinking is defined and enable_thinking is false %}
+        {{- '<think>
+
+</think>
+
+' }}
+    {%- else %}
+        {{- '<think>
+' }}
+    {%- endif %}
+    
+{%- endif %}
+
+tokenizer.ggml.clean_spaces = 0
+tokenizer.ggml.metaspace.prepend_scheme = first
+general.quantization_version = 2
+general.file_type = 15
+quantize.imatrix.file = /models_out/Nanbeige4.3-33B-GGUF/Nanbeige_Nanbeige4.3-33B-imatrix.gguf
+quantize.imatrix.dataset = /models_out/Nanbeige4.3-33B-GGUF/Nanbeige_Nanbeige4.3-33B-calibration-v6.txt
+quantize.imatrix.entries_count = 364
+quantize.imatrix.chunks_count = 609
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import json
+d=json.load(open('nb_org.json'))
+for x in d: print(x['id'], x.get('downloads'), x.get('lastModified'))
+EOF
+echo "=== config fields ==="; grep -n "auto_map\|layer_types\|sliding\|use_cache\|rope\|head_dim\|num_key_value_heads\|attention_bias" /ai/github/lsa-rocm/agents/scratch/nb_config.json
+Nanbeige/Nanbeige4.3-33B 17839 None
+Nanbeige/Nanbeige4.3-33B-Base 1532 None
+Nanbeige/Nanbeige4.2-3B 120317 None
+Nanbeige/Nanbeige4.3-33B-INT4 194 None
+Nanbeige/Nanbeige4.3-33B-FP8 203 None
+Nanbeige/Nanbeige4.3-33B-INT8 115 None
+Nanbeige/Nanbeige4.2-3B-DSpark 443 None
+Nanbeige/Nanbeige4-3B-Thinking-2510 1039 None
+Nanbeige/Nanbeige4-3B-Thinking-2511 1755 None
+Nanbeige/Nanbeige4.1-3B 5249 None
+Nanbeige/Nanbeige4.2-3B-GPTQ-Int8 142 None
+Nanbeige/CoSineVerifier-Tool-4B 830 None
+Nanbeige/Nanbeige4-3B-Base 366 None
+Nanbeige/ToolMind-Web-3B 1022 None
+Nanbeige/Nanbeige4.2-3B-Base 1210 None
+Nanbeige/Nanbeige4.2-3B-FP8 341 None
+=== config fields ===
+5:  "attention_bias": false,
+11:  "head_dim": 128,
+22:  "num_key_value_heads": 8,
+28:  "rope_scaling": null,
+29:  "rope_theta": 120000000,
+35:  "use_cache": false,
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import json
+t=json.load(open('tree_Nanbeige_Nanbeige4.3-33B.json'))
+s=sum(x.get('size',0) for x in t if x['type']=='file')
+print('sum all files',s, s/2**30,'GiB')
+st=[x for x in t if x['path'].endswith('.safetensors')]
+print('sum safetensors',sum(x['size'] for x in st), sum(x['size'] for x in st)/2**30)
+print('index total', json.load(open('nb_model.safetensors.index.json'))['metadata'])
+for f in ['nb_fp8.json','nb_int8.json','nb_int4.json','nb_blobs.json','nb_bar.json']:
+    d=json.load(open(f))
+    print(f, d['id'], 'sum siblings', sum(x.get('size',0) for x in d['siblings']), 'params', d.get('safetensors'))
+EOF
+sum all files 66260069411 61.70949843805283 GiB
+sum safetensors 66238009168 61.68895323574543
+index total {'total_size': 66237954048}
+nb_fp8.json Nanbeige/Nanbeige4.3-33B-FP8 sum siblings 35537762628 params {'parameters': {'BF16': 2393603072, 'F8_E4M3': 30725373952}, 'total': 33118977024}
+nb_int8.json Nanbeige/Nanbeige4.3-33B-INT8 sum siblings 36014176905 params {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+nb_int4.json Nanbeige/Nanbeige4.3-33B-INT4 sum siblings 22572447484 params {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+nb_blobs.json Nanbeige/Nanbeige4.3-33B sum siblings 66260069411 params {'parameters': {'BF16': 33118977024}, 'total': 33118977024}
+nb_bar.json bartowski/Nanbeige_Nanbeige4.3-33B-GGUF sum siblings 533783620946 params None
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+for x in [1290068416,925353388]:
+    print(x, struct.unpack('<f',struct.pack('<I',x))[0])
+EOF
+head -30 /ai/github/lsa-rocm/agents/scratch/modeling_llama_4.51.1.py
+echo "=== version strings ==="; grep -nE "__version__|transformers version|4\.5" /ai/github/lsa-rocm/agents/scratch/modeling_llama_4.51.1.py | head
+1290068416 120000000.0
+925353388 9.999999747378752e-06
+# coding=utf-8
+# Copyright 2022 EleutherAI and the HuggingFace Inc. team. All rights reserved.
+#
+# This code is based on EleutherAI's GPT-NeoX library and the GPT-NeoX
+# and OPT implementations in this library. It has been modified from its
+# original forms to accommodate minor architectural differences compared
+# to GPT-NeoX and OPT used by the Meta AI team that trained the model.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+from functools import partial
+from typing import Callable, Optional, Tuple, Union
+
+import torch
+import torch.utils.checkpoint
+from torch import nn
+
+from ...activations import ACT2FN
+from ...cache_utils import Cache, DynamicCache, StaticCache
+from ...generation import GenerationMixin
+from ...modeling_attn_mask_utils import AttentionMaskConverter
+=== version strings ===
+522:        # TODO (joao): remove this exception in v4.56 -- it exists for users that try to pass a legacy cache
+766:    @deprecate_kwarg("num_logits_to_keep", version="4.50", new_name="logits_to_keep")
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && nl -ba nb_config.json | sed -n '1,40p'; echo "=== modeling 600-680 ==="; sed -n '600,680p' modeling_llama_4.51.1.py
+1	{
+     2	  "architectures": [
+     3	    "LlamaForCausalLM"
+     4	  ],
+     5	  "attention_bias": false,
+     6	  "attention_dropout": 0.0,
+     7	  "bos_token_id": 166100,
+     8	  "embd_pdrop": 0.0,
+     9	  "eos_token_id": 166101,
+    10	  "ffn_hidden_size": 22016,
+    11	  "head_dim": 128,
+    12	  "hidden_act": "silu",
+    13	  "hidden_size": 7168,
+    14	  "initializer_range": 0.02,
+    15	  "intermediate_size": 22016,
+    16	  "kv_channels": 128,
+    17	  "max_position_embeddings": 524288,
+    18	  "mlp_bias": false,
+    19	  "model_type": "llama",
+    20	  "num_attention_heads": 56,
+    21	  "num_hidden_layers": 52,
+    22	  "num_key_value_heads": 8,
+    23	  "num_query_groups": 8,
+    24	  "pad_token_id": 0,
+    25	  "pretraining_tp": 1,
+    26	  "resid_pdrop": 0.0,
+    27	  "rms_norm_eps": 1e-05,
+    28	  "rope_scaling": null,
+    29	  "rope_theta": 120000000,
+    30	  "rotary_base": 120000000,
+    31	  "seq_length": 524288,
+    32	  "tie_word_embeddings": false,
+    33	  "torch_dtype": "bfloat16",
+    34	  "transformers_version": "4.51.1",
+    35	  "use_cache": false,
+    36	  "vocab_size": 166912
+    37	}
+=== modeling 600-680 ===
+
+    def _update_causal_mask(
+        self,
+        attention_mask: torch.Tensor,
+        input_tensor: torch.Tensor,
+        cache_position: torch.Tensor,
+        past_key_values: Cache,
+        output_attentions: bool = False,
+    ):
+        if self.config._attn_implementation == "flash_attention_2":
+            if attention_mask is not None and (attention_mask == 0.0).any():
+                return attention_mask
+            return None
+        if self.config._attn_implementation == "flex_attention":
+            if isinstance(attention_mask, torch.Tensor):
+                attention_mask = make_flex_block_causal_mask(attention_mask)
+            if isinstance(attention_mask, BlockMask):
+                return attention_mask
+
+        # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
+        # order to dispatch on Flash Attention 2. This feature is not compatible with static cache, as SDPA will fail
+        # to infer the attention mask.
+        past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+        using_static_cache = isinstance(past_key_values, StaticCache)
+
+        # When output attentions is True, sdpa implementation's forward method calls the eager implementation's forward
+        if self.config._attn_implementation == "sdpa" and not using_static_cache and not output_attentions:
+            if AttentionMaskConverter._ignore_causal_mask_sdpa(
+                attention_mask,
+                inputs_embeds=input_tensor,
+                past_key_values_length=past_seen_tokens,
+                is_training=self.training,
+            ):
+                return None
+
+        dtype, device = input_tensor.dtype, input_tensor.device
+        sequence_length = input_tensor.shape[1]
+        if using_static_cache:
+            target_length = past_key_values.get_max_cache_shape()
+        else:
+            target_length = (
+                attention_mask.shape[-1]
+                if isinstance(attention_mask, torch.Tensor)
+                else past_seen_tokens + sequence_length + 1
+            )
+
+        # In case the provided `attention` mask is 2D, we generate a causal mask here (4D).
+        causal_mask = self._prepare_4d_causal_attention_mask_with_cache_position(
+            attention_mask,
+            sequence_length=sequence_length,
+            target_length=target_length,
+            dtype=dtype,
+            device=device,
+            cache_position=cache_position,
+            batch_size=input_tensor.shape[0],
+        )
+
+        if (
+            self.config._attn_implementation == "sdpa"
+            and attention_mask is not None
+            and attention_mask.device.type in ["cuda", "xpu"]
+            and not output_attentions
+        ):
+            # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
+            # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
+            # Details: https://github.com/pytorch/pytorch/issues/110213
+            min_dtype = torch.finfo(dtype).min
+            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
+
+        return causal_mask
+
+    @staticmethod
+    def _prepare_4d_causal_attention_mask_with_cache_position(
+        attention_mask: torch.Tensor,
+        sequence_length: int,
+        target_length: int,
+        dtype: torch.dtype,
+        device: torch.device,
+        cache_position: torch.Tensor,
+        batch_size: int,
+        **kwargs,
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -n "DynamicCache\|StaticCache\|class LlamaModel\|supports_gradient_checkpointing\|_supports_sdpa\|_supports_flash" modeling_llama_4.51.1.py | head -20; echo "=== 490-520 ==="; sed -n '480,520p' modeling_llama_4.51.1.py
+28:from ...cache_utils import Cache, DynamicCache, StaticCache
+368:    supports_gradient_checkpointing = True
+371:    _supports_flash_attn_2 = True
+372:    _supports_sdpa = True
+462:class LlamaModel(LlamaPreTrainedModel):
+530:            past_key_values = DynamicCache()
+623:        using_static_cache = isinstance(past_key_values, StaticCache)
+=== 490-520 ===
+        self.rotary_emb = LlamaRotaryEmbedding(config=config)
+        self.gradient_checkpointing = False
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.embed_tokens
+
+    def set_input_embeddings(self, value):
+        self.embed_tokens = value
+
+    @can_return_tuple
+    @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
+    def forward(
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Cache] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        **flash_attn_kwargs: Unpack[FlashAttentionKwargs],
+    ) -> BaseModelOutputWithPast:
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        use_cache = use_cache if use_cache is not None else self.config.use_cache
+
+        if (input_ids is None) ^ (inputs_embeds is not None):
+            raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
+
+        if self.gradient_checkpointing and self.training and use_cache:
+            logger.warning_once(
+                "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`."
+            )
+            use_cache = False
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -n "self.scaling\|apply_rotary_pos_emb(query_states\|self.q_proj = \|self.k_proj = \|self.v_proj = \|self.o_proj = \|softmax\|ROPE_INIT_FUNCTIONS\|attention_scaling\|self.is_causal = True\|num_key_value_groups" modeling_llama_4.51.1.py | head -30; echo "=== config lines ==="; grep -n "head_dim if head_dim is not None\|self.head_dim" configuration_llama_4.51.1.py
+39:from ...modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
+104:        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
+106:        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
+120:            cos = emb.cos() * self.attention_scaling
+121:            sin = emb.sin() * self.attention_scaling
+198:    key_states = repeat_kv(key, module.num_key_value_groups)
+199:    value_states = repeat_kv(value, module.num_key_value_groups)
+206:    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
+222:        self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
+223:        self.scaling = self.head_dim**-0.5
+225:        self.is_causal = True
+227:        self.q_proj = nn.Linear(
+230:        self.k_proj = nn.Linear(
+233:        self.v_proj = nn.Linear(
+236:        self.o_proj = nn.Linear(
+257:        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+281:            scaling=self.scaling,
+=== config lines ===
+208:        self.head_dim = head_dim if head_dim is not None else self.hidden_size // self.num_attention_heads
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import json
+d=json.load(open('nb_commits.json'))
+for c in d: print(c['id'][:12], c['date'], c['title'][:70])
+EOF
+df919e1e2cf0 2026-10-28T01:59:01.000Z Update README.md
+84c54883993f 2026-10-27T16:00:24.000Z Add evaluation results (#30)
+c1093c501cc6 2026-10-25T11:11:17.000Z Update README.md
+d5f259ee6116 2026-10-25T10:32:50.000Z Update README.md
+183dcf8ed01f 2026-10-25T10:31:24.000Z Update README.md
+f1117ebd908e 2026-10-25T10:29:29.000Z Update README.md
+5195ee504efb 2026-10-25T10:19:35.000Z Delete figures/1
+cff1226677f8 2026-10-25T10:19:28.000Z Upload 3 files
+3d7e4cfbe7fd 2026-10-25T10:19:01.000Z Create figures/1
+f27a0c1ac591 2026-10-25T02:44:27.000Z Update config.json
+f4a32f1776d6 2026-10-24T11:58:57.000Z Update config.json
+0dacc64718ab 2026-10-24T11:57:14.000Z Upload folder using huggingface_hub
+1e900382bce4 2026-10-24T02:49:18.000Z initial commit
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -n "ModuleList\|for layer_idx in range\|class LlamaDecoderLayer\|self.self_attn = LlamaAttention\|self.input_layernorm\|self.post_attention_layernorm\|self.rotary_emb\|self.layers" modeling_llama_4.51.1.py | head -20; echo "=== 462-495 ==="; sed -n '462,492p' modeling_llama_4.51.1.py
+290:class LlamaDecoderLayer(nn.Module):
+295:        self.self_attn = LlamaAttention(config=config, layer_idx=layer_idx)
+298:        self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+299:        self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+315:        hidden_states = self.input_layernorm(hidden_states)
+333:        hidden_states = self.post_attention_layernorm(hidden_states)
+476:        self.layers = nn.ModuleList(
+477:            [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+480:        self.rotary_emb = LlamaRotaryEmbedding(config=config)
+548:        position_embeddings = self.rotary_emb(hidden_states, position_ids)
+554:        for decoder_layer in self.layers[: self.config.num_hidden_layers]:
+=== 462-495 ===
+class LlamaModel(LlamaPreTrainedModel):
+    """
+    Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`LlamaDecoderLayer`]
+
+    Args:
+        config: LlamaConfig
+    """
+
+    def __init__(self, config: LlamaConfig):
+        super().__init__(config)
+        self.padding_idx = config.pad_token_id
+        self.vocab_size = config.vocab_size
+
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.layers = nn.ModuleList(
+            [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+        )
+        self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.rotary_emb = LlamaRotaryEmbedding(config=config)
+        self.gradient_checkpointing = False
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.embed_tokens
+
+    def set_input_embeddings(self, value):
+        self.embed_tokens = value
+
+    @can_return_tuple
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -niE "attention|sparse|window|sink|mla|latent|rope|gqa|kv cache|kv-cache" nb_README.md | head -20; echo "=== fp8 readme ==="; python3 -c "
+import json
+d=json.load(open('nb_fp8.json'))
+print(d.get('cardData',{}).get('quantization_config') or 'no cardData quant')
+"
+=== fp8 readme ===
+no cardData quant
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_fp8.json'))
+print([s['rfilename'] for s in d['siblings']])
+print('---readme snippet---')
+" ; ls /ai/github/lsa-rocm/agents/scratch | head -50; echo; date
+['.gitattributes', 'README.md', 'added_tokens.json', 'chat_template.jinja', 'config.json', 'generation_config.json', 'model-00001-of-00009.safetensors', 'model-00002-of-00009.safetensors', 'model-00003-of-00009.safetensors', 'model-00004-of-00009.safetensors', 'model-00005-of-00009.safetensors', 'model-00006-of-00009.safetensors', 'model-00007-of-00009.safetensors', 'model-00008-of-00009.safetensors', 'model-00009-of-00009.safetensors', 'model.safetensors.index.json', 'recipe.yaml', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer.model', 'tokenizer_config.json']
+---readme snippet---
+adapter_index.json
+api.json
+arxiv-full.html
+arxiv.html
+B0a
+b0c-venv
+BUILD.md
+config.json
+configuration_llama_4.51.1.py
+generation_config.json
+gguf_head40.bin
+gguf_head.bin
+gptoss.json
+granite.json
+modeling_llama_4.51.1.py
+nanbeige_info.json
+nanbeige.json
+nb_all.json
+nb_bar.json
+nb_blobs.json
+nb_commits.json
+nb_config_cached.json
+nb_config.json
+nb_fp8.json
+nb_generation_config.json
+nb_int4b.json
+nb_int4.json
+nb_int8.json
+nb_model.safetensors.index.json
+nb_org.json
+nbq_FP8_config.json
+nbq_INT4_config.json
+nbq_INT8_config.json
+nb_readme_cached.md
+nb_README.md
+nb_search.json
+paper.txt
+README.md
+tree_ibm-granite_granite-switch-4.1-8b.json
+tree_Nanbeige_Nanbeige4.3-33B.json
+tree_openai_gpt-oss-20b.json
+tree_unsloth_bf16.json
+
+Tue Nov  3 05:00:15 PM PST 2026
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && ls -la old 2>/dev/null; ls /ai/github/lsa-rocm/agents/reports/old; echo "=== B0b.log ==="; cat /ai/github/lsa-rocm/agents/reports/B0b.log; echo "=== tree_unsloth ==="; head -c 600 tree_unsloth_bf16.json
+...output truncated...
+
+Full output saved to: /home/boxwrench/.local/share/opencode/tool-output/tool_1a412322a001H3TaCXX9XIquNW
+
+Nanbeige/Nanbeige4.3-33B-INT4 | text-generation | compressed-tensors
+webbrain-one/Nanbeige4.3-33B-NVFP4 | text-generation | compressed-tensors
+Luni/Nanbeige-4.3-33B-Heretic | text-generation | 
+Nanbeige/Nanbeige4.3-33B-FP8 | text-generation | compressed-tensors
+Nanbeige/Nanbeige4.3-33B-INT8 | text-generation | compressed-tensors
+sakamakismile/Nanbeige4.3-33B-Heretic-NVFP4 | text-generation | compressed-tensors
+Harsha001/Nanbeige4.3-33B-ROCmFPX | text-generation | gguf,quantized
+prithivMLmods/Nanbeige4.3-33B-NVFP4-GGUF | text-generation | gguf
+Luni/Nanbeige-4.3-33B-Heretic-GSQ-RCO-GGUF | text-generation | gguf,quantized
+mradermacher/Nanbeige4.3-33B-i1-GGUF | None | gguf
+DogukanUrker/Nanbeige4.3-33B-GGUF | text-generation | gguf
+primitive-ai/Nanbeige4.3-33B-NVFP4 | text-generation | compressed-tensors,quantized
+Nurymanau/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+pyros-vault/Nanbeige4.3-33B-oQ4e | text-generation | mlx,quantized
+fcmeyer/Nanbeige4.3-33B-MLX-6bit | text-generation | mlx
+pratikgx/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+pyros-vault/Nanbeige4.3-33B-oQ8e | text-generation | mlx,quantized
+Tech2wild/Nanbeige4.3-33B-W4A16-AutoRound | text-generation | gptq
+ProCreations/Nanbeige4.3-33B-DFlash2 | text-generation | 
+ProCreations/Nanbeige4.3-33B-NVFP4-A16 | text-generation | quantized
+wasifb/Nanbeige4.3-33B-AutoRound-W4A16 | text-generation | 
+shisa-ai/Nanbeige4.3-33B-DMS-2x | None | 
+PollardWeights/Nanbeige4.3-33B-Pollard | text-generation | gguf,quantized
+0bserverx/Nanbeige4.3-33B-RVN-Uncensored-Heretic-Abliterated-RCO-GGUF | text-generation | gguf
+axteam/Nanbeige4.3-33B-NVFP4A16 | text-generation | compressed-tensors,quantized
+axteam/Nanbeige4.3-33B-AWQ-4bit | text-generation | compressed-tensors,quantized,awq
+axteam/Nanbeige4.3-33B-NVFP4 | text-generation | compressed-tensors,quantized
+axteam/Nanbeige4.3-33B-GGUF | text-generation | gguf,quantized
+junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-4bit | text-generation | mlx
+SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic | text-generation | 
+eepos/Nanbeige4.3-33B-Q4_K_S-GGUF | text-generation | gguf
+KnutJaegersberg/Nanbeige4.3-33B-Q8_0-GGUF | text-generation | gguf
+CVLTAI/Nanbeige4.3-33B-GGUF | text-generation | gguf
+KnutJaegersberg/Nanbeige4.3-33B-Base-Q8_0-GGUF | text-generation | gguf
+blallo27/Nanbeige4.3-33B-Q6_K-GGUF | text-generation | gguf
+moeshawky/Nanbeige4.3-33B-GGUF | text-generation | gguf,quantized
+eyes-ml/Nanbeige4.3-33B | text-generation | 
+eyes-ml/Nanbeige4.3-33B-Base | text-generation | 
+Duckets/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+XTer123/Nanbeige4.3-33B-GGUF | text-generation | gguf
+moeshawky/Nanbeige4.3-33B-INT8-safetensors | text-generation | quantized,compressed-tensors
+nesymerp1/Nanbeige4.3-33B-Base-Q4_K_M-GGUF | text-generation | gguf
+primitive-ai/Nanbeige4.3-33B-FP8 | text-generation | compressed-tensors,fp8,quantized
+DJLougen/Nanbeige4.3-33B-MLX | text-generation | mlx,quantized
+moeshawky/Nanbeige4.3-33B-FP8-safetensors | text-generation | 
+stuchapin/Nanbeige4.3-33B-Base-W4A16-AutoRound | text-generation | quantized,gptq
+killen8/Nanbeige4.3-33B-MLX-4bit | None | mlx
+hamuz/Nanbeige4.3-33B-MLX | text-generation | mlx,quantized
+fcmeyer/Nanbeige4.3-33B-MLX-bf16 | text-generation | mlx
+fcmeyer/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx
+fcmeyer/Nanbeige4.3-33B-MLX-8bit | text-generation | mlx
+primitive-ai/Nanbeige4.3-33B-mixed-NVFP4-FP8 | text-generation | compressed-tensors,fp8,quantized
+fcmeyer/Nanbeige4.3-33B-MLX-4bit-g128 | text-generation | mlx
+fcmeyer/Nanbeige4.3-33B-MLX-mixed-4-6-g64 | text-generation | mlx
+Razor3D/Nanbeige4.3-33B-Q4_K_M-GGUF | text-generation | gguf
+Luni/Nanbeige-4.3-33B-EXL3 | text-generation | 
+Luni/Nanbeige-4.3-33B-Heretic-EXL3 | text-generation | 
+a-gordo/Nanbeige4.3-33B-oQ8e | text-generation | mlx,quantized
+a-gordo/Nanbeige4.3-33B-oQ6e | text-generation | mlx,quantized
+a-gordo/Nanbeige4.3-33B-oQ4e | text-generation | mlx,quantized
+stuchapin/Nanbeige4.3-33B-Base-W3A16-AutoRound | text-generation | quantized,gptq
+kapitsaprime/Nanbeige4.3-33B-MLX-4bit | text-generation | mlx,awq
+kapitsaprime/Nanbeige4.3-33B-MLX-8bit | text-generation | mlx
+lxe/Nanbeige4.3-33B-EXL3-2.5bpw | text-generation | quantized
+chriswessels/Nanbeige4.3-33B-oQ8e | None | mlx,quantized
+pyros-vault/Nanbeige4.3-33B-oQ6e | text-generation | mlx,quantized
+stuchapin/Nanbeige4.3-33B-Base-W8A16-AutoRound | text-generation | quantized,gptq
+OsaurusAI/Nanbeige4.3-33B-JANG_4D | text-generation | mlx,quantized
+OsaurusAI/Nanbeige4.3-33B-JANG_6M | text-generation | mlx,quantized
+ProCreations/Nanbeige4.3-33B-FP8 | text-generation | quantized,fp8,compressed-tensors
+OsaurusAI/Nanbeige4.3-33B-JANG_2D | text-generation | mlx,quantized
+nonkronk/Nanbeige4.3-33B-EXL3-4.0bpw | text-generation | quantized
+jeonghyeon00/Nanbeige4.3-33B-w8a16-compressed-tensors | text-generation | compressed-tensors
+jeonghyeon00/Nanbeige4.3-33B-w4a16-gptq-compressed-tensors | text-generation | compressed-tensors,gptq
+Luni/Nanbeige-4.3-33B-Heretic-GGUF | text-generation | gguf
+ProCreations/Nanbeige4.3-33B-EXL3 | text-generation | quantized
+XTer123/Nanbeige4.3-33B-Uncensored-GGUF | text-generation | gguf
+jeonghyeon00/Nanbeige4.3-33B-W4A16-AutoRound | text-generation | compressed-tensors
+alexwengg/Nanbeige4.3-33B-MLX-mixed-3-4-6bit | text-generation | mlx
+alexwengg/Nanbeige4.3-33B-MLX-3bit | text-generation | mlx
+mph/Nanbeige4.3-33B-MXFP8 | text-generation | fp8,quantized
+Luni/Nanbeige-4.3-33B-Heretic-EXL3-SC | text-generation | 
+danyalmalik/Nanbeige4.3-33B-IQ2_M-ONNX-WebGPU | None | gguf
+vcruz305/Nanbeige4.3-33B-SAGE-EXL3-4.50bpw | text-generation | 
+danyalmalik/Nanbeige4.3-33B-Q4_K_M-ONNX-WebGPU | None | gguf
+yamz-labs/Nanbeige4.3-33B-EXL3-Yamz | text-generation | quantized
+3hs4n/Nanbeige4.3-33B-mlx-JANG_2D-compact | text-generation | mlx,quantized
+mradermacher/Nanbeige4.3-33B-Base-GGUF | None | gguf
+heliophage/Nanbeige4.3-33B-W4A16-GPTQ | text-generation | compressed-tensors,gptq,quantized
+akhtyamovpavel/Nanbeige4.3-33B-Hyper-GGUF | text-generation | gguf
+stoyani/Nanbeige4.3-33B-FP8-KVcal | text-generation | fp8,compressed-tensors
+mradermacher/Nanbeige4.3-33B-Base-i1-GGUF | None | gguf
+Luni/Nanbeige-4.3-33B-DFlash2 | text-generation |
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+for fn in ['gguf_head.bin','gguf_head40.bin']:
+    b=open(fn,'rb').read(2_000_000)
+    print('===',fn, b[:4])
+    off=4
+    ver,=struct.unpack_from('<I',b,off); off+=4
+    nt,=struct.unpack_from('<Q',b,off); off+=8
+    nkv,=struct.unpack_from('<Q',b,off); off+=8
+    print('ver',ver,'tensors',nt,'kv',nkv)
+    # GGUF string
+    def s():
+        global off
+        n,=struct.unpack_from('<Q',b,off); off+=8
+        v=b[off:off+n].decode('utf-8','replace'); off+=n
+        return v
+    types={0:'B',1:'b',2:'H',3:'h',4:'I',5:'i',6:'f',7:'?',8:'s',9:'arr',10:'u64',11:'i64',12:'f64'}
+    want=('general.architecture','general.name','llama.context_length','llama.rope','llama.attention','llama.block_count','llama.head_count','llama.embedding_length','llama.expert','tokenizer.ggml.model')
+    seen={}
+    for _ in range(min(nkv,1000)):
+        k=s(); t,=struct.unpack_from('<I',b,off); off+=4
+        if t==8: v=s()
+        elif t==9:
+            et,=struct.unpack_from('<I',b,off); off+=4
+            n,=struct.unpack_from('<Q',b,off); off+=8
+            if et==8:
+                v=[s() for _ in range(min(n,3))]
+                if n>3: v.append('...')
+            else:
+                sz={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}.get(et,1)
+                off+=sz*n; v='<%d items>'%n
+        elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+        elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+        elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+        elif t==10: v,=struct.unpack_from('<Q',b,off); off+=8
+        elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+        elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+        else: print('unknown type',t,k); break
+        if any(w in k for w in ('architecture','name','context_length','rope','attention','block_count','head_count','embedding_length','expert','sliding','softcap','tokenizer.ggml.model','quantization')):
+            seen[k]=v
+    for k,v in seen.items(): print(' ',k,'=',v)
+EOF
+=== gguf_head.bin b'GGUF'
+ver 3 tensors 471 kv 46
+Traceback (most recent call last):
+  File "<stdin>", line 20, in <module>
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 2000000)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && cat config.json | head -40; echo "=== has remote code? ==="; python3 -c "
+import json
+t=json.load(open('tree_Nanbeige_Nanbeige4.3-33B.json'))
+for x in t: print(x['path'])
+"
+{
+  "adapter_names": [
+    "guardian-core",
+    "decision"
+  ],
+  "adapter_ranks": [
+    16,
+    64
+  ],
+  "adapter_substitute_token_ids": [
+    27,
+    14711
+  ],
+  "adapter_token_ids": [
+    100352,
+    100353
+  ],
+  "architectures": [
+    "GraniteSwitchForCausalLM"
+  ],
+  "asr_chunk_length_s": 120.0,
+  "asr_chunk_overlap_s": 5.0,
+  "asr_device": "cuda",
+  "asr_dtype": null,
+  "asr_enabled": true,
+  "asr_generate_kwargs": null,
+  "asr_max_audio_clips": 32,
+  "asr_model_id": null,
+  "asr_pipeline_kwargs": null,
+  "asr_self_chunks": false,
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "attention_multiplier": 0.0078125,
+  "bos_token_id": 100257,
+  "control_token_gain": 15.0,
+  "cross_stream_rank": null,
+  "dtype": "bfloat16",
+  "dual_stream": false,
+  "embedding_multiplier": 12.0,
+  "eos_token_id": 100257,
+=== has remote code? ===
+.eval_results
+figures
+.eval_results/Nanbeige4.3-33B.yaml
+.gitattributes
+README.md
+added_tokens.json
+config.json
+figures/nanbeige43-benchmarks.png
+figures/nbg.png
+figures/occupation.png
+generation_config.json
+model-00001-of-00014.safetensors
+model-00002-of-00014.safetensors
+model-00003-of-00014.safetensors
+model-00004-of-00014.safetensors
+model-00005-of-00014.safetensors
+model-00006-of-00014.safetensors
+model-00007-of-00014.safetensors
+model-00008-of-00014.safetensors
+model-00009-of-00014.safetensors
+model-00010-of-00014.safetensors
+model-00011-of-00014.safetensors
+model-00012-of-00014.safetensors
+model-00013-of-00014.safetensors
+model-00014-of-00014.safetensors
+model.safetensors.index.json
+special_tokens_map.json
+tokenizer.json
+tokenizer.model
+tokenizer_config.json
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+print('ver',ver,'nt',nt,'nkv',nkv)
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for _ in range(nkv):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8:
+            arr=[stri() for _ in range(n)]
+            v=arr if len(arr)<=8 else arr[:8]+['...(%d)'%n]
+        else:
+            off+=sizes[et]*n; v='<%d elems type %d>'%(n,et)
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    else: raise SystemExit('type %d key %s'%(t,k))
+    out[k]=v
+for k,v in out.items(): print(k,'=',v)
+EOF
+ver 3 nt 471 nkv 46
+Traceback (most recent call last):
+  File "<stdin>", line 18, in <module>
+  File "<stdin>", line 6, in u32
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 4000001)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && xxd -l 128 gguf_head.bin
+00000000: 4747 5546 0300 0000 d701 0000 0000 0000  GGUF............
+00000010: 2e00 0000 0000 0000 1400 0000 0000 0000  ................
+00000020: 6765 6e65 7261 6c2e 6172 6368 6974 6563  general.architec
+00000030: 7475 7265 0800 0000 0500 0000 0000 0000  ture............
+00000040: 6c6c 616d 610c 0000 0000 0000 0067 656e  llama........gen
+00000050: 6572 616c 2e74 7970 6508 0000 0005 0000  eral.type.......
+00000060: 0000 0000 006d 6f64 656c 0c00 0000 0000  .....model......
+00000070: 0000 6765 6e65 7261 6c2e 6e61 6d65 0800  ..general.name..
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+print('ver',ver,'nt',nt,'nkv',nkv,'off',off)
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+for i in range(nkv):
+    k=stri(); t=u32()
+    print(i,k,'type',t,'off',off)
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64(); print('   arr et',et,'n',n)
+        if et==8:
+            for _ in range(n): stri()
+        else:
+            off+=sizes[et]*n
+    else: off+=sizes[t]
+EOF
+ver 3 nt 471 nkv 46 off 24
+0 general.architecture type 8 off 56
+1 general.type type 8 off 93
+2 general.name type 8 off 130
+3 general.basename type 8 off 181
+4 general.size_label type 8 off 230
+5 general.license type 8 off 268
+6 general.base_model.count type 4 off 322
+7 general.base_model.0.name type 8 off 363
+8 general.base_model.0.organization type 8 off 436
+9 general.base_model.0.repo_url type 8 off 493
+10 general.tags type 9 off 577
+   arr et 8 n 3
+11 general.languages type 9 off 668
+   arr et 8 n 2
+12 llama.block_count type 4 off 729
+13 llama.context_length type 4 off 765
+14 llama.embedding_length type 4 off 803
+15 llama.feed_forward_length type 4 off 844
+16 llama.attention.head_count type 4 off 886
+17 llama.attention.head_count_kv type 4 off 931
+18 llama.rope.freq_base type 6 off 967
+19 llama.attention.layer_norm_rms_epsilon type 6 off 1021
+20 llama.attention.key_length type 4 off 1063
+21 llama.attention.value_length type 4 off 1107
+22 llama.vocab_size type 4 off 1139
+23 llama.rope.dimension_count type 4 off 1181
+24 tokenizer.ggml.add_space_prefix type 7 off 1228
+25 tokenizer.ggml.model type 8 off 1261
+26 tokenizer.ggml.pre type 8 off 1304
+27 tokenizer.ggml.tokens type 9 off 1352
+   arr et 8 n 166912
+28 tokenizer.ggml.scores type 9 off 2632303
+   arr et 6 n 166912
+29 tokenizer.ggml.token_type type 9 off 3300000
+   arr et 5 n 166912
+30 tokenizer.ggml.bos_token_id type 4 off 3967699
+31 tokenizer.ggml.eos_token_id type 4 off 3967742
+32 tokenizer.ggml.unknown_token_id type 4 off 3967789
+33 tokenizer.ggml.padding_token_id type 4 off 3967836
+34 tokenizer.ggml.add_bos_token type 7 off 3967880
+35 tokenizer.ggml.add_sep_token type 7 off 3967921
+36 tokenizer.ggml.add_eos_token type 7 off 3967962
+37 tokenizer.chat_template type 8 off 3967998
+38 tokenizer.ggml.clean_spaces type 7 off 3976462
+39 tokenizer.ggml.metaspace.prepend_scheme type 8 off 3976514
+40 general.quantization_version type 4 off 3976567
+41 general.file_type type 4 off 3976600
+42 quantize.imatrix.file type 8 off 3976637
+43 quantize.imatrix.dataset type 8 off 3976751
+44 quantize.imatrix.entries_count type 4 off 3976877
+45 quantize.imatrix.chunks_count type 4 off 3976922
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(nkv):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8:
+            arr=[stri() for _ in range(n)]
+            v=arr if len(arr)<=6 else arr[:6]+['...(%d)'%n]
+        else:
+            off+=sizes[et]*n; v='<%d elems type %d>'%(n,et)
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    out[k]=v
+for k,v in out.items():
+    if k.startswith('tokenizer.ggml.scores') or k.startswith('tokenizer.ggml.tokens'): continue
+    print(k,'=',v)
+EOF
+Traceback (most recent call last):
+  File "<stdin>", line 17, in <module>
+  File "<stdin>", line 6, in u32
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 4000001)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(27):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8: v='<str arr %d>'%n; [stri() for _ in range(n)]
+        else: v='<%d elems type %d>'%(n,et); off+=sizes[et]*n
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    out[k]=v
+for k,v in out.items(): print(k,'=',v)
+EOF
+Traceback (most recent call last):
+  File "<stdin>", line 17, in <module>
+  File "<stdin>", line 6, in u32
+struct.error: unpack_from requires a buffer of at least 7741533827821995228 bytes for unpacking 4 bytes at offset 7741533827821995224 (actual buffer size is 4000001)
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64()
+    if n>10_000_000: raise ValueError('bad strlen %d at %d'%(n,off))
+    v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+print(ver,nt,nkv)
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(nkv):
+    try:
+        k=stri(); t=u32()
+    except Exception as e:
+        print('FAIL at',i,off,e); break
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8: v='<str arr %d>'%n; [stri() for _ in range(n)]
+        else: v='<%d elems type %d>'%(n,et); off+=sizes[et]*n
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6,7): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    else: v='UNKNOWN TYPE %d'%t
+    out[k]=v
+    print(i,k,t,repr(v)[:80],'off',off)
+EOF
+3 471 46
+0 general.architecture 8 'llama' off 69
+1 general.type 8 'model' off 106
+2 general.name 8 'Nanbeige4.3 33B' off 153
+3 general.basename 8 'Nanbeige4.3' off 200
+4 general.size_label 8 '33B' off 241
+5 general.license 8 'apache-2.0' off 286
+6 general.base_model.count 4 1 off 326
+7 general.base_model.0.name 8 'Nanbeige4.3 33B Base' off 391
+8 general.base_model.0.organization 8 'Nanbeige' off 452
+9 general.base_model.0.repo_url 8 'https://huggingface.co/Nanbeige/Nanbeige4.3-33B-Base' off 553
+10 general.tags 9 '<str arr 3>' off 639
+11 general.languages 9 '<str arr 2>' off 700
+12 llama.block_count 4 52 off 733
+13 llama.context_length 4 524288 off 769
+14 llama.embedding_length 4 7168 off 807
+15 llama.feed_forward_length 4 22016 off 848
+16 llama.attention.head_count 4 56 off 890
+17 llama.attention.head_count_kv 4 8 off 935
+18 llama.rope.freq_base 6 1290068416 off 971
+19 llama.attention.layer_norm_rms_epsilon 6 925353388 off 1025
+20 llama.attention.key_length 4 128 off 1067
+21 llama.attention.value_length 4 128 off 1111
+22 llama.vocab_size 4 166912 off 1143
+23 llama.rope.dimension_count 4 128 off 1185
+24 tokenizer.ggml.add_space_prefix 7 5121 off 1232
+FAIL at 25 1240 bad strlen 7741533827821993984 at 1240
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+b=open('gguf_head.bin','rb').read()
+off=4
+def u32():
+    global off
+    v,=struct.unpack_from('<I',b,off); off+=4; return v
+def u64():
+    global off
+    v,=struct.unpack_from('<Q',b,off); off+=8; return v
+def stri():
+    global off
+    n=u64(); v=b[off:off+n].decode('utf-8','replace'); off+=n; return v
+ver=u32(); nt=u64(); nkv=u64()
+sizes={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+out={}
+for i in range(nkv):
+    k=stri(); t=u32()
+    if t==8: v=stri()
+    elif t==9:
+        et=u32(); n=u64()
+        if et==8: v='<str arr %d>'%n; [stri() for _ in range(n)]
+        else: v='<%d elems type %d>'%(n,et); off+=sizes[et]*n
+    elif t==7: v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (0,1): v,=struct.unpack_from('<B',b,off); off+=1
+    elif t in (2,3): v,=struct.unpack_from('<H',b,off); off+=2
+    elif t in (4,5,6): v,=struct.unpack_from('<I',b,off); off+=4
+    elif t==10: v=u64()
+    elif t==11: v,=struct.unpack_from('<q',b,off); off+=8
+    elif t==12: v,=struct.unpack_from('<d',b,off); off+=8
+    else: v='UNKNOWN %d'%t
+    out[k]=v
+for k,v in out.items():
+    if 'tokens' in k or 'scores' in k or 'token_type' in k: continue
+    print(k,'=',v)
+EOF
+general.architecture = llama
+general.type = model
+general.name = Nanbeige4.3 33B
+general.basename = Nanbeige4.3
+general.size_label = 33B
+general.license = apache-2.0
+general.base_model.count = 1
+general.base_model.0.name = Nanbeige4.3 33B Base
+general.base_model.0.organization = Nanbeige
+general.base_model.0.repo_url = https://huggingface.co/Nanbeige/Nanbeige4.3-33B-Base
+general.tags = <str arr 3>
+general.languages = <str arr 2>
+llama.block_count = 52
+llama.context_length = 524288
+llama.embedding_length = 7168
+llama.feed_forward_length = 22016
+llama.attention.head_count = 56
+llama.attention.head_count_kv = 8
+llama.rope.freq_base = 1290068416
+llama.attention.layer_norm_rms_epsilon = 925353388
+llama.attention.key_length = 128
+llama.attention.value_length = 128
+llama.vocab_size = 166912
+llama.rope.dimension_count = 128
+tokenizer.ggml.add_space_prefix = 1
+tokenizer.ggml.model = llama
+tokenizer.ggml.pre = default
+tokenizer.ggml.bos_token_id = 166100
+tokenizer.ggml.eos_token_id = 166101
+tokenizer.ggml.unknown_token_id = 0
+tokenizer.ggml.padding_token_id = 0
+tokenizer.ggml.add_bos_token = 1
+tokenizer.ggml.add_sep_token = 0
+tokenizer.ggml.add_eos_token = 0
+tokenizer.chat_template = 
+
+{%- macro visible_text(content) -%}
+    {%- if content is string -%}
+        {{- content }}
+    {%- elif content is iterable and content is not mapping -%}
+        {%- for item in content -%}
+            {%- if item is mapping and item.type == 'text' -%}
+                {{- item.text }}
+            {%- elif item is string -%}
+                {{- item }}
+            {%- elif item is mapping and item.type in ['image', 'image_url', 'video', 'video_url', 'audio', 'audio_url', 'input_audio'] -%}
+                {%- set media_type = item.type | replace('_url', '') | replace('input_', '') -%}
+                {{- "<reminder>You are unable to process this " ~ media_type ~ " because you don't have multi-modal input ability. Try different methods.</reminder>" }}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- else -%}
+        {{- content }}
+    {%- endif -%}
+{%- endmacro -%}
+
+
+{%- set tool_call_format = tool_call_format if tool_call_format is defined else 'xml' %}
+{%- if tools %}
+    {{- '<|im_start|>system\n' }}    
+    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}
+        {{- visible_text(messages[0].content) + '\n\n' }}
+    {%- else %} 
+        {{- '你是一位工具函数调用专家，你会得到一个问题和一组可能的工具函数。根据问题，你需要进行一个或多个函数/工具调用以实现目的，请尽量尝试探索通过工具解决问题。\n如果没有一个函数可以使用，请直接使用自然语言回复用户。\n如果给定的问题缺少函数所需的参数，请使用自然语言进行提问，向用户询问必要信息。\n如果调用结果已经足够回答用户问题，请对历史结果进行总结，使用自然语言回复用户。' }} 
+    {%- endif %}
+
+    {{- "# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+    {%- for tool in tools %}
+        {{- "\n" }}
+        {{- tool | tojson }}
+    {%- endfor %}
+    
+    {%- if tool_call_format == 'json' %}
+        {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n" }}
+        {{- '<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n' }}
+    {%- else %}
+        {{- "\n</tools>\n\nFor each function call, output the function name and arguments within the following XML format:\n" }}
+        {{- '<tool_call>
+<function=example_function_name>
+<parameter=example_parameter_1>
+value_1
+</parameter>
+<parameter=example_parameter_2>
+This is the value for the second parameter
+that can span
+multiple lines
+</parameter>
+</function>
+</tool_call><|im_end|>\n' }}
+    {%- endif %}
+    
+{%- else %}
+    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}
+        {{- '<|im_start|>system\n' + visible_text(messages[0].content) + '<|im_end|>\n' }}
+    {%- else %} 
+        {{- '<|im_start|>system\n你是南北阁，一款由BOSS直聘自主研发并训练的专业大语言模型。<|im_end|>\n' }} 
+    {%- endif %}
+{%- endif %}
+
+{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}
+{%- for message in messages[::-1] %}
+    {%- set index = (messages|length - 1) - loop.index0 %}
+    {%- if ns.multi_step_tool and message.get('role', '') == "user" and visible_text(message.content) is string and not(visible_text(message.content).startswith('<tool_response>') and visible_text(message.content).endswith('</tool_response>')) %}
+        {%- set ns.multi_step_tool = false %}
+        {%- set ns.last_query_index = index %}
+    {%- endif %}
+{%- endfor %}
+
+{%- for message in messages %}
+    {%- if visible_text(message.content) is string %}
+        {%- set content = visible_text(message.content) %}
+    {%- else %}
+        {%- set content = '' %}
+    {%- endif %}
+    
+    {%- if message.get('role', '') == "system" %}
+        {%- if not loop.first %}
+            {{- raise_exception('System message must be at the beginning.') }}
+        {%- endif %}
+        
+    {%- elif message.get('role', '') == "assistant" %}
+        {%- set reasoning_content = '' %}
+        {%- if message.reasoning_content is string %}
+            {%- set reasoning_content = message.reasoning_content %}
+        {%- else %}
+            {%- if '</think>' in content %}
+                {%- set reasoning_content = content.split('</think>')[0].rstrip('\n').split('<think>')[-1].lstrip('\n') %}
+                {%- set content = content.split('</think>')[-1].lstrip('\n').rstrip('\n') %}
+            {%- endif %}
+        {%- endif %}
+        {%- set content = content|trim %}
+        {%- set reasoning_content = reasoning_content|trim %}
+        
+        {%- if (preserve_thinking is defined and preserve_thinking is false) and (loop.index0 < ns.last_query_index) %}
+            {{- '<|im_start|>' + message.get('role', '') + '\n<think>\n\n</think>\n\n' + content }}
+        {%- else %}
+            {{- '<|im_start|>' + message.get('role', '') + '\n<think>\n' + reasoning_content + '\n</think>\n\n' + content }}
+        {%- endif %}
+        
+        {%- if message.tool_calls and message.tool_calls is iterable and message.tool_calls is not mapping %}
+            {%- if tool_call_format == 'json' %}
+                {%- for tool_call in message.tool_calls %}
+                    {%- if (loop.first and content) or (not loop.first) %}
+                        {{- '\n' }}
+                    {%- endif %}
+                    {%- if tool_call.function %}
+                        {%- set tool_call = tool_call.function %}
+                    {%- endif %}
+                    {{- '<tool_call>\n{"name": "' }}
+                    {{- tool_call.name }}
+                    {{- '", "arguments": ' }}
+                    {%- if tool_call.arguments is string %}
+                        {{- tool_call.arguments }}
+                    {%- else %}
+                        {{- tool_call.arguments | tojson }}
+                    {%- endif %}
+                    {{- '}\n</tool_call>' }}
+                {%- endfor %}
+            {%- else %}
+                {%- for tool_call in message.tool_calls %}
+                    {%- if tool_call.function is defined %}
+                        {%- set tool_call = tool_call.function %}
+                    {%- endif %}
+                    
+                    {%- if loop.first %}
+                        {%- if content|trim %}
+                            {{- '
+
+<tool_call>
+<function=' + tool_call.name + '>
+' }}
+                        {%- else %}
+                            {{- '<tool_call>
+<function=' + tool_call.name + '>
+' }}
+                        {%- endif %}
+                    {%- else %}
+                        {{- '
+<tool_call>
+<function=' + tool_call.name + '>
+' }}
+                    {%- endif %}
+                    
+                    {%- if tool_call.arguments is defined %}
+                        {%- for args_name, args_value in tool_call.arguments|items %}
+                            {{- '<parameter=' + args_name + '>
+' }}
+                            {%- set args_value = args_value | string if args_value is string else args_value | tojson | safe %}
+                            {{- args_value }}
+                            {{- '
+</parameter>
+' }}
+                        {%- endfor %}
+                    {%- endif %}
+                    {{- '</function>
+</tool_call>' }}
+                {%- endfor %}
+            {%- endif %}
+        {%- endif %}
+        {{- '<|im_end|>\n' }}
+        
+    {%- elif message.get('role', '') == "tool" %}
+        {%- if loop.previtem and loop.previtem.get('role', '') != "tool" %}
+            {{- '<|im_start|>user' }}
+        {%- endif %}
+        {{- '\n<tool_response>\n' }}
+        {{- content }}
+        {{- '\n</tool_response>' }}
+        {%- if loop.last or loop.nextitem.get('role', '') != "tool" %}
+            {{- '<|im_end|>\n' }}
+        {%- endif %}
+    {%- elif message.get('role', '') != '' %}
+        {{- '<|im_start|>' + message.get('role', '') + '\n' + content + '<|im_end|>' + '\n' }}
+    {%- endif %}
+{%- endfor %}
+
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+    
+    {%- if enable_thinking is defined and enable_thinking is false %}
+        {{- '<think>
+
+</think>
+
+' }}
+    {%- else %}
+        {{- '<think>
+' }}
+    {%- endif %}
+    
+{%- endif %}
+
+tokenizer.ggml.clean_spaces = 0
+tokenizer.ggml.metaspace.prepend_scheme = first
+general.quantization_version = 2
+general.file_type = 15
+quantize.imatrix.file = /models_out/Nanbeige4.3-33B-GGUF/Nanbeige_Nanbeige4.3-33B-imatrix.gguf
+quantize.imatrix.dataset = /models_out/Nanbeige4.3-33B-GGUF/Nanbeige_Nanbeige4.3-33B-calibration-v6.txt
+quantize.imatrix.entries_count = 364
+quantize.imatrix.chunks_count = 609
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import json
+d=json.load(open('nb_org.json'))
+for x in d: print(x['id'], x.get('downloads'), x.get('lastModified'))
+EOF
+echo "=== config fields ==="; grep -n "auto_map\|layer_types\|sliding\|use_cache\|rope\|head_dim\|num_key_value_heads\|attention_bias" /ai/github/lsa-rocm/agents/scratch/nb_config.json
+Nanbeige/Nanbeige4.3-33B 17839 None
+Nanbeige/Nanbeige4.3-33B-Base 1532 None
+Nanbeige/Nanbeige4.2-3B 120317 None
+Nanbeige/Nanbeige4.3-33B-INT4 194 None
+Nanbeige/Nanbeige4.3-33B-FP8 203 None
+Nanbeige/Nanbeige4.3-33B-INT8 115 None
+Nanbeige/Nanbeige4.2-3B-DSpark 443 None
+Nanbeige/Nanbeige4-3B-Thinking-2510 1039 None
+Nanbeige/Nanbeige4-3B-Thinking-2511 1755 None
+Nanbeige/Nanbeige4.1-3B 5249 None
+Nanbeige/Nanbeige4.2-3B-GPTQ-Int8 142 None
+Nanbeige/CoSineVerifier-Tool-4B 830 None
+Nanbeige/Nanbeige4-3B-Base 366 None
+Nanbeige/ToolMind-Web-3B 1022 None
+Nanbeige/Nanbeige4.2-3B-Base 1210 None
+Nanbeige/Nanbeige4.2-3B-FP8 341 None
+=== config fields ===
+5:  "attention_bias": false,
+11:  "head_dim": 128,
+22:  "num_key_value_heads": 8,
+28:  "rope_scaling": null,
+29:  "rope_theta": 120000000,
+35:  "use_cache": false,
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import json
+t=json.load(open('tree_Nanbeige_Nanbeige4.3-33B.json'))
+s=sum(x.get('size',0) for x in t if x['type']=='file')
+print('sum all files',s, s/2**30,'GiB')
+st=[x for x in t if x['path'].endswith('.safetensors')]
+print('sum safetensors',sum(x['size'] for x in st), sum(x['size'] for x in st)/2**30)
+print('index total', json.load(open('nb_model.safetensors.index.json'))['metadata'])
+for f in ['nb_fp8.json','nb_int8.json','nb_int4.json','nb_blobs.json','nb_bar.json']:
+    d=json.load(open(f))
+    print(f, d['id'], 'sum siblings', sum(x.get('size',0) for x in d['siblings']), 'params', d.get('safetensors'))
+EOF
+sum all files 66260069411 61.70949843805283 GiB
+sum safetensors 66238009168 61.68895323574543
+index total {'total_size': 66237954048}
+nb_fp8.json Nanbeige/Nanbeige4.3-33B-FP8 sum siblings 35537762628 params {'parameters': {'BF16': 2393603072, 'F8_E4M3': 30725373952}, 'total': 33118977024}
+nb_int8.json Nanbeige/Nanbeige4.3-33B-INT8 sum siblings 36014176905 params {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+nb_int4.json Nanbeige/Nanbeige4.3-33B-INT4 sum siblings 22572447484 params {'parameters': {'I32': 30725373952, 'BF16': 2393603072}, 'total': 33118977024}
+nb_blobs.json Nanbeige/Nanbeige4.3-33B sum siblings 66260069411 params {'parameters': {'BF16': 33118977024}, 'total': 33118977024}
+nb_bar.json bartowski/Nanbeige_Nanbeige4.3-33B-GGUF sum siblings 533783620946 params None
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import struct
+for x in [1290068416,925353388]:
+    print(x, struct.unpack('<f',struct.pack('<I',x))[0])
+EOF
+head -30 /ai/github/lsa-rocm/agents/scratch/modeling_llama_4.51.1.py
+echo "=== version strings ==="; grep -nE "__version__|transformers version|4\.5" /ai/github/lsa-rocm/agents/scratch/modeling_llama_4.51.1.py | head
+1290068416 120000000.0
+925353388 9.999999747378752e-06
+# coding=utf-8
+# Copyright 2022 EleutherAI and the HuggingFace Inc. team. All rights reserved.
+#
+# This code is based on EleutherAI's GPT-NeoX library and the GPT-NeoX
+# and OPT implementations in this library. It has been modified from its
+# original forms to accommodate minor architectural differences compared
+# to GPT-NeoX and OPT used by the Meta AI team that trained the model.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+from functools import partial
+from typing import Callable, Optional, Tuple, Union
+
+import torch
+import torch.utils.checkpoint
+from torch import nn
+
+from ...activations import ACT2FN
+from ...cache_utils import Cache, DynamicCache, StaticCache
+from ...generation import GenerationMixin
+from ...modeling_attn_mask_utils import AttentionMaskConverter
+=== version strings ===
+522:        # TODO (joao): remove this exception in v4.56 -- it exists for users that try to pass a legacy cache
+766:    @deprecate_kwarg("num_logits_to_keep", version="4.50", new_name="logits_to_keep")
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && nl -ba nb_config.json | sed -n '1,40p'; echo "=== modeling 600-680 ==="; sed -n '600,680p' modeling_llama_4.51.1.py
+1	{
+     2	  "architectures": [
+     3	    "LlamaForCausalLM"
+     4	  ],
+     5	  "attention_bias": false,
+     6	  "attention_dropout": 0.0,
+     7	  "bos_token_id": 166100,
+     8	  "embd_pdrop": 0.0,
+     9	  "eos_token_id": 166101,
+    10	  "ffn_hidden_size": 22016,
+    11	  "head_dim": 128,
+    12	  "hidden_act": "silu",
+    13	  "hidden_size": 7168,
+    14	  "initializer_range": 0.02,
+    15	  "intermediate_size": 22016,
+    16	  "kv_channels": 128,
+    17	  "max_position_embeddings": 524288,
+    18	  "mlp_bias": false,
+    19	  "model_type": "llama",
+    20	  "num_attention_heads": 56,
+    21	  "num_hidden_layers": 52,
+    22	  "num_key_value_heads": 8,
+    23	  "num_query_groups": 8,
+    24	  "pad_token_id": 0,
+    25	  "pretraining_tp": 1,
+    26	  "resid_pdrop": 0.0,
+    27	  "rms_norm_eps": 1e-05,
+    28	  "rope_scaling": null,
+    29	  "rope_theta": 120000000,
+    30	  "rotary_base": 120000000,
+    31	  "seq_length": 524288,
+    32	  "tie_word_embeddings": false,
+    33	  "torch_dtype": "bfloat16",
+    34	  "transformers_version": "4.51.1",
+    35	  "use_cache": false,
+    36	  "vocab_size": 166912
+    37	}
+=== modeling 600-680 ===
+
+    def _update_causal_mask(
+        self,
+        attention_mask: torch.Tensor,
+        input_tensor: torch.Tensor,
+        cache_position: torch.Tensor,
+        past_key_values: Cache,
+        output_attentions: bool = False,
+    ):
+        if self.config._attn_implementation == "flash_attention_2":
+            if attention_mask is not None and (attention_mask == 0.0).any():
+                return attention_mask
+            return None
+        if self.config._attn_implementation == "flex_attention":
+            if isinstance(attention_mask, torch.Tensor):
+                attention_mask = make_flex_block_causal_mask(attention_mask)
+            if isinstance(attention_mask, BlockMask):
+                return attention_mask
+
+        # For SDPA, when possible, we will rely on its `is_causal` argument instead of its `attn_mask` argument, in
+        # order to dispatch on Flash Attention 2. This feature is not compatible with static cache, as SDPA will fail
+        # to infer the attention mask.
+        past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+        using_static_cache = isinstance(past_key_values, StaticCache)
+
+        # When output attentions is True, sdpa implementation's forward method calls the eager implementation's forward
+        if self.config._attn_implementation == "sdpa" and not using_static_cache and not output_attentions:
+            if AttentionMaskConverter._ignore_causal_mask_sdpa(
+                attention_mask,
+                inputs_embeds=input_tensor,
+                past_key_values_length=past_seen_tokens,
+                is_training=self.training,
+            ):
+                return None
+
+        dtype, device = input_tensor.dtype, input_tensor.device
+        sequence_length = input_tensor.shape[1]
+        if using_static_cache:
+            target_length = past_key_values.get_max_cache_shape()
+        else:
+            target_length = (
+                attention_mask.shape[-1]
+                if isinstance(attention_mask, torch.Tensor)
+                else past_seen_tokens + sequence_length + 1
+            )
+
+        # In case the provided `attention` mask is 2D, we generate a causal mask here (4D).
+        causal_mask = self._prepare_4d_causal_attention_mask_with_cache_position(
+            attention_mask,
+            sequence_length=sequence_length,
+            target_length=target_length,
+            dtype=dtype,
+            device=device,
+            cache_position=cache_position,
+            batch_size=input_tensor.shape[0],
+        )
+
+        if (
+            self.config._attn_implementation == "sdpa"
+            and attention_mask is not None
+            and attention_mask.device.type in ["cuda", "xpu"]
+            and not output_attentions
+        ):
+            # Attend to all tokens in fully masked rows in the causal_mask, for example the relevant first rows when
+            # using left padding. This is required by F.scaled_dot_product_attention memory-efficient attention path.
+            # Details: https://github.com/pytorch/pytorch/issues/110213
+            min_dtype = torch.finfo(dtype).min
+            causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
+
+        return causal_mask
+
+    @staticmethod
+    def _prepare_4d_causal_attention_mask_with_cache_position(
+        attention_mask: torch.Tensor,
+        sequence_length: int,
+        target_length: int,
+        dtype: torch.dtype,
+        device: torch.device,
+        cache_position: torch.Tensor,
+        batch_size: int,
+        **kwargs,
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -n "DynamicCache\|StaticCache\|class LlamaModel\|supports_gradient_checkpointing\|_supports_sdpa\|_supports_flash" modeling_llama_4.51.1.py | head -20; echo "=== 490-520 ==="; sed -n '480,520p' modeling_llama_4.51.1.py
+28:from ...cache_utils import Cache, DynamicCache, StaticCache
+368:    supports_gradient_checkpointing = True
+371:    _supports_flash_attn_2 = True
+372:    _supports_sdpa = True
+462:class LlamaModel(LlamaPreTrainedModel):
+530:            past_key_values = DynamicCache()
+623:        using_static_cache = isinstance(past_key_values, StaticCache)
+=== 490-520 ===
+        self.rotary_emb = LlamaRotaryEmbedding(config=config)
+        self.gradient_checkpointing = False
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.embed_tokens
+
+    def set_input_embeddings(self, value):
+        self.embed_tokens = value
+
+    @can_return_tuple
+    @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
+    def forward(
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Cache] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        **flash_attn_kwargs: Unpack[FlashAttentionKwargs],
+    ) -> BaseModelOutputWithPast:
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        use_cache = use_cache if use_cache is not None else self.config.use_cache
+
+        if (input_ids is None) ^ (inputs_embeds is not None):
+            raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
+
+        if self.gradient_checkpointing and self.training and use_cache:
+            logger.warning_once(
+                "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`."
+            )
+            use_cache = False
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -n "self.scaling\|apply_rotary_pos_emb(query_states\|self.q_proj = \|self.k_proj = \|self.v_proj = \|self.o_proj = \|softmax\|ROPE_INIT_FUNCTIONS\|attention_scaling\|self.is_causal = True\|num_key_value_groups" modeling_llama_4.51.1.py | head -30; echo "=== config lines ==="; grep -n "head_dim if head_dim is not None\|self.head_dim" configuration_llama_4.51.1.py
+39:from ...modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
+104:        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
+106:        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
+120:            cos = emb.cos() * self.attention_scaling
+121:            sin = emb.sin() * self.attention_scaling
+198:    key_states = repeat_kv(key, module.num_key_value_groups)
+199:    value_states = repeat_kv(value, module.num_key_value_groups)
+206:    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
+222:        self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
+223:        self.scaling = self.head_dim**-0.5
+225:        self.is_causal = True
+227:        self.q_proj = nn.Linear(
+230:        self.k_proj = nn.Linear(
+233:        self.v_proj = nn.Linear(
+236:        self.o_proj = nn.Linear(
+257:        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+281:            scaling=self.scaling,
+=== config lines ===
+208:        self.head_dim = head_dim if head_dim is not None else self.hidden_size // self.num_attention_heads
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+import json
+d=json.load(open('nb_commits.json'))
+for c in d: print(c['id'][:12], c['date'], c['title'][:70])
+EOF
+df919e1e2cf0 2026-10-28T01:59:01.000Z Update README.md
+84c54883993f 2026-10-27T16:00:24.000Z Add evaluation results (#30)
+c1093c501cc6 2026-10-25T11:11:17.000Z Update README.md
+d5f259ee6116 2026-10-25T10:32:50.000Z Update README.md
+183dcf8ed01f 2026-10-25T10:31:24.000Z Update README.md
+f1117ebd908e 2026-10-25T10:29:29.000Z Update README.md
+5195ee504efb 2026-10-25T10:19:35.000Z Delete figures/1
+cff1226677f8 2026-10-25T10:19:28.000Z Upload 3 files
+3d7e4cfbe7fd 2026-10-25T10:19:01.000Z Create figures/1
+f27a0c1ac591 2026-10-25T02:44:27.000Z Update config.json
+f4a32f1776d6 2026-10-24T11:58:57.000Z Update config.json
+0dacc64718ab 2026-10-24T11:57:14.000Z Upload folder using huggingface_hub
+1e900382bce4 2026-10-24T02:49:18.000Z initial commit
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -n "ModuleList\|for layer_idx in range\|class LlamaDecoderLayer\|self.self_attn = LlamaAttention\|self.input_layernorm\|self.post_attention_layernorm\|self.rotary_emb\|self.layers" modeling_llama_4.51.1.py | head -20; echo "=== 462-495 ==="; sed -n '462,492p' modeling_llama_4.51.1.py
+290:class LlamaDecoderLayer(nn.Module):
+295:        self.self_attn = LlamaAttention(config=config, layer_idx=layer_idx)
+298:        self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+299:        self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+315:        hidden_states = self.input_layernorm(hidden_states)
+333:        hidden_states = self.post_attention_layernorm(hidden_states)
+476:        self.layers = nn.ModuleList(
+477:            [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+480:        self.rotary_emb = LlamaRotaryEmbedding(config=config)
+548:        position_embeddings = self.rotary_emb(hidden_states, position_ids)
+554:        for decoder_layer in self.layers[: self.config.num_hidden_layers]:
+=== 462-495 ===
+class LlamaModel(LlamaPreTrainedModel):
+    """
+    Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`LlamaDecoderLayer`]
+
+    Args:
+        config: LlamaConfig
+    """
+
+    def __init__(self, config: LlamaConfig):
+        super().__init__(config)
+        self.padding_idx = config.pad_token_id
+        self.vocab_size = config.vocab_size
+
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.layers = nn.ModuleList(
+            [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+        )
+        self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.rotary_emb = LlamaRotaryEmbedding(config=config)
+        self.gradient_checkpointing = False
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.embed_tokens
+
+    def set_input_embeddings(self, value):
+        self.embed_tokens = value
+
+    @can_return_tuple
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && grep -niE "attention|sparse|window|sink|mla|latent|rope|gqa|kv cache|kv-cache" nb_README.md | head -20; echo "=== fp8 readme ==="; python3 -c "
+import json
+d=json.load(open('nb_fp8.json'))
+print(d.get('cardData',{}).get('quantization_config') or 'no cardData quant')
+"
+=== fp8 readme ===
+no cardData quant
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_fp8.json'))
+print([s['rfilename'] for s in d['siblings']])
+print('---readme snippet---')
+" ; ls /ai/github/lsa-rocm/agents/scratch | head -50; echo; date
+['.gitattributes', 'README.md', 'added_tokens.json', 'chat_template.jinja', 'config.json', 'generation_config.json', 'model-00001-of-00009.safetensors', 'model-00002-of-00009.safetensors', 'model-00003-of-00009.safetensors', 'model-00004-of-00009.safetensors', 'model-00005-of-00009.safetensors', 'model-00006-of-00009.safetensors', 'model-00007-of-00009.safetensors', 'model-00008-of-00009.safetensors', 'model-00009-of-00009.safetensors', 'model.safetensors.index.json', 'recipe.yaml', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer.model', 'tokenizer_config.json']
+---readme snippet---
+adapter_index.json
+api.json
+arxiv-full.html
+arxiv.html
+B0a
+b0c-venv
+BUILD.md
+config.json
+configuration_llama_4.51.1.py
+generation_config.json
+gguf_head40.bin
+gguf_head.bin
+gptoss.json
+granite.json
+modeling_llama_4.51.1.py
+nanbeige_info.json
+nanbeige.json
+nb_all.json
+nb_bar.json
+nb_blobs.json
+nb_commits.json
+nb_config_cached.json
+nb_config.json
+nb_fp8.json
+nb_generation_config.json
+nb_int4b.json
+nb_int4.json
+nb_int8.json
+nb_model.safetensors.index.json
+nb_org.json
+nbq_FP8_config.json
+nbq_INT4_config.json
+nbq_INT8_config.json
+nb_readme_cached.md
+nb_README.md
+nb_search.json
+paper.txt
+README.md
+tree_ibm-granite_granite-switch-4.1-8b.json
+tree_Nanbeige_Nanbeige4.3-33B.json
+tree_openai_gpt-oss-20b.json
+tree_unsloth_bf16.json
+
+Tue Nov  3 05:00:15 PM PST 2026
+[0m
+=== tree_unsloth ===
+[0m
+[0m$ [0mcd /ai/github/lsa-rocm/agents/scratch && python3 - <<'EOF'
+c=52*8*128*2*2
+print('KV bytes/token bf16:',c, c/1024,'KiB', c/2**20,'MiB')
+for ctx in [4096,32768,131072,524288]:
+    print(ctx, c*ctx/2**30,'GiB')
+# qkv param counts
+h=7168; nh=56; nkv=8; hd=128
+print('q params/layer',h*nh*hd,'k',h*nkv*hd,'v',h*nkv*hd,'o',nh*hd*h)
+EOF
+KV bytes/token bf16: 212992 208.0 KiB 0.203125 MiB
+4096 0.8125 GiB
+32768 6.5 GiB
+131072 26.0 GiB
+524288 104.0 GiB
+q params/layer 51380224 k 7340032 v 7340032 o 51380224
+[0m
+[91m[1mError: [0mEPROTO: The TLS handshake failed. Does the server speak TLS on this port?

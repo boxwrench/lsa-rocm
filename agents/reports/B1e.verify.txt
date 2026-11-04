@@ -1,0 +1,4 @@
+[1;91mE-001h rocSHMEM[0m Could not open libnuma. Returning	[90mNUMAWrapper@src/gda/numa_wrapper.cpp:48[0m
+8192: independent recompute cosine=0.999999 peak_vram_gib=20.6037 elapsed_s=9.038 impl=sdpa
+16384: independent recompute cosine=0.999999 peak_vram_gib=24.4554 elapsed_s=17.641 impl=sdpa
+FAILS: ['32768: missing /ai/github/lsa-rocm/results/dumps/ornith-1.5-9b-32768/meta.json']

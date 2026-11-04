@@ -1,0 +1,738 @@
+[0m
+> build · deepseek/deepseek-v4.1-flash-1017
+[0m
+I'll start by reading the plan and checking the scratch files.
+[0m→ [0mRead docs/plan.md
+[0m
+[0m$ [0mls -la agents/scratch/ 2>/dev/null | head -50; echo "---"; ls agents/reports/ 2>/dev/null
+total 43748
+drwxrwxr-x 3 boxwrench boxwrench     4096 Nov  3 16:35 .
+drwxrwxr-x 4 boxwrench boxwrench     4096 Nov  3 16:30 ..
+-rw-rw-r-- 1 boxwrench boxwrench      596 Nov  3 16:31 adapter_index.json
+-rw-rw-r-- 1 boxwrench boxwrench    13332 Nov  3 16:30 api.json
+drwxrwxr-x 3 boxwrench boxwrench     4096 Nov  3 16:54 B0a
+-rw-rw-r-- 1 boxwrench boxwrench     1180 Nov  3 16:31 BUILD.md
+-rw-rw-r-- 1 boxwrench boxwrench     3174 Nov  3 16:30 config.json
+-rw-rw-r-- 1 boxwrench boxwrench    11986 Nov  3 16:31 configuration_llama_4.51.1.py
+-rw-rw-r-- 1 boxwrench boxwrench      231 Nov  3 16:31 generation_config.json
+-rw-rw-r-- 1 boxwrench boxwrench 40000001 Nov  3 16:34 gguf_head40.bin
+-rw-rw-r-- 1 boxwrench boxwrench  4000001 Nov  3 16:34 gguf_head.bin
+-rw-rw-r-- 1 boxwrench boxwrench    49284 Nov  3 16:31 modeling_llama_4.51.1.py
+-rw-rw-r-- 1 boxwrench boxwrench    11828 Nov  3 16:30 nanbeige_info.json
+-rw-rw-r-- 1 boxwrench boxwrench   217701 Nov  3 16:32 nb_all.json
+-rw-rw-r-- 1 boxwrench boxwrench    23066 Nov  3 16:33 nb_bar.json
+-rw-rw-r-- 1 boxwrench boxwrench    15861 Nov  3 16:30 nb_blobs.json
+-rw-rw-r-- 1 boxwrench boxwrench     3102 Nov  3 16:35 nb_commits.json
+-rw-rw-r-- 1 boxwrench boxwrench      883 Nov  3 16:34 nb_config_cached.json
+-rw-rw-r-- 1 boxwrench boxwrench      883 Nov  3 16:30 nb_config.json
+-rw-rw-r-- 1 boxwrench boxwrench    22812 Nov  3 16:30 nb_fp8.json
+-rw-rw-r-- 1 boxwrench boxwrench      164 Nov  3 16:30 nb_generation_config.json
+-rw-rw-r-- 1 boxwrench boxwrench    82506 Nov  3 16:33 nb_int4b.json
+-rw-rw-r-- 1 boxwrench boxwrench    82506 Nov  3 16:30 nb_int4.json
+-rw-rw-r-- 1 boxwrench boxwrench    22809 Nov  3 16:30 nb_int8.json
+-rw-rw-r-- 1 boxwrench boxwrench    38810 Nov  3 16:30 nb_model.safetensors.index.json
+-rw-rw-r-- 1 boxwrench boxwrench     8305 Nov  3 16:31 nb_org.json
+-rw-rw-r-- 1 boxwrench boxwrench     2229 Nov  3 16:35 nbq_FP8_config.json
+-rw-rw-r-- 1 boxwrench boxwrench     1706 Nov  3 16:35 nbq_INT4_config.json
+-rw-rw-r-- 1 boxwrench boxwrench     1825 Nov  3 16:35 nbq_INT8_config.json
+-rw-rw-r-- 1 boxwrench boxwrench     8884 Nov  3 16:34 nb_readme_cached.md
+-rw-rw-r-- 1 boxwrench boxwrench     8884 Nov  3 16:30 nb_README.md
+-rw-rw-r-- 1 boxwrench boxwrench    55285 Nov  3 16:30 nb_search.json
+-rw-rw-r-- 1 boxwrench boxwrench    22763 Nov  3 16:30 README.md
+---
+B0a.log
+B0b.log
+old
+[0m
+[0m$ [0mcd agents/scratch && for f in nb_config.json nb_config_cached.json nb_generation_config.json nanbeige_info.json nb_commits.json; do echo "=== $f ==="; cat "$f"; echo; done
+=== nb_config.json ===
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}
+=== nb_config_cached.json ===
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}
+=== nb_generation_config.json ===
+{
+  "_from_model_config": true,
+  "bos_token_id": 166100,
+  "eos_token_id": 166101,
+  "pad_token_id": 0,
+  "transformers_version": "4.51.1",
+  "use_cache": false
+}
+
+=== nanbeige_info.json ===
+{"_id":"6adc1caea171e3197498083f","id":"Nanbeige/Nanbeige4.3-33B","private":false,"pipeline_tag":"text-generation","library_name":"transformers","tags":["transformers","safetensors","llama","text-generation","llm","nanbeige","conversational","en","zh","base_model:Nanbeige/Nanbeige4.3-33B-Base","base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base","license:apache-2.0","eval-results","text-generation-inference","endpoints_compatible","region:us"],"downloads":17839,"likes":1027,"modelId":"Nanbeige/Nanbeige4.3-33B","author":"Nanbeige","sha":"df919e1e2cf077a22204c78b6c826bf3db18bc08","lastModified":"2026-10-28T01:59:01.000Z","gated":false,"disabled":false,"widgetData":[{"text":"Hi, what can you help me with?"},{"text":"What is 84 * 3 / 2?"},{"text":"Tell me an interesting fact about the universe!"},{"text":"Explain quantum computing in simple terms."}],"model-index":null,"config":{"architectures":["LlamaForCausalLM"],"model_type":"llama","tokenizer_config":{"bos_token":"<|im_start|>","chat_template":"\n\n{%- macro visible_text(content) -%}\n    {%- if content is string -%}\n        {{- content }}\n    {%- elif content is iterable and content is not mapping -%}\n        {%- for item in content -%}\n            {%- if item is mapping and item.type == 'text' -%}\n                {{- item.text }}\n            {%- elif item is string -%}\n                {{- item }}\n            {%- elif item is mapping and item.type in ['image', 'image_url', 'video', 'video_url', 'audio', 'audio_url', 'input_audio'] -%}\n                {%- set media_type = item.type | replace('_url', '') | replace('input_', '') -%}\n                {{- \"<reminder>You are unable to process this \" ~ media_type ~ \" because you don't have multi-modal input ability. Try different methods.</reminder>\" }}\n            {%- endif -%}\n        {%- endfor -%}\n    {%- else -%}\n        {{- content }}\n    {%- endif -%}\n{%- endmacro -%}\n\n\n{%- set tool_call_format = tool_call_format if tool_call_format is defined else 'xml' %}\n{%- if tools %}\n    {{- '<|im_start|>system\\n' }}    \n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- visible_text(messages[0].content) + '\\n\\n' }}\n    {%- else %} \n        {{- '你是一位工具函数调用专家，你会得到一个问题和一组可能的工具函数。根据问题，你需要进行一个或多个函数/工具调用以实现目的，请尽量尝试探索通过工具解决问题。\\n如果没有一个函数可以使用，请直接使用自然语言回复用户。\\n如果给定的问题缺少函数所需的参数，请使用自然语言进行提问，向用户询问必要信息。\\n如果调用结果已经足够回答用户问题，请对历史结果进行总结，使用自然语言回复用户。' }} \n    {%- endif %}\n\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    \n    {%- if tool_call_format == 'json' %}\n        {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n\" }}\n        {{- '<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n' }}\n    {%- else %}\n        {{- \"\\n</tools>\\n\\nFor each function call, output the function name and arguments within the following XML format:\\n\" }}\n        {{- '<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call><|im_end|>\\n' }}\n    {%- endif %}\n    \n{%- else %}\n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- '<|im_start|>system\\n' + visible_text(messages[0].content) + '<|im_end|>\\n' }}\n    {%- else %} \n        {{- '<|im_start|>system\\n你是南北阁，一款由BOSS直聘自主研发并训练的专业大语言模型。<|im_end|>\\n' }} \n    {%- endif %}\n{%- endif %}\n\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.get('role', '') == \"user\" and visible_text(message.content) is string and not(visible_text(message.content).startswith('<tool_response>') and visible_text(message.content).endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n\n{%- for message in messages %}\n    {%- if visible_text(message.content) is string %}\n        {%- set content = visible_text(message.content) %}\n    {%- else %}\n        {%- set content = '' %}\n    {%- endif %}\n    \n    {%- if message.get('role', '') == \"system\" %}\n        {%- if not loop.first %}\n            {{- raise_exception('System message must be at the beginning.') }}\n        {%- endif %}\n        \n    {%- elif message.get('role', '') == \"assistant\" %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is string %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in content %}\n                {%- set reasoning_content = content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n                {%- set content = content.split('</think>')[-1].lstrip('\\n').rstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- set content = content|trim %}\n        {%- set reasoning_content = reasoning_content|trim %}\n        \n        {%- if (preserve_thinking is defined and preserve_thinking is false) and (loop.index0 < ns.last_query_index) %}\n            {{- '<|im_start|>' + message.get('role', '') + '\\n<think>\\n\\n</think>\\n\\n' + content }}\n        {%- else %}\n            {{- '<|im_start|>' + message.get('role', '') + '\\n<think>\\n' + reasoning_content + '\\n</think>\\n\\n' + content }}\n        {%- endif %}\n        \n        {%- if message.tool_calls and message.tool_calls is iterable and message.tool_calls is not mapping %}\n            {%- if tool_call_format == 'json' %}\n                {%- for tool_call in message.tool_calls %}\n                    {%- if (loop.first and content) or (not loop.first) %}\n                        {{- '\\n' }}\n                    {%- endif %}\n                    {%- if tool_call.function %}\n                        {%- set tool_call = tool_call.function %}\n                    {%- endif %}\n                    {{- '<tool_call>\\n{\"name\": \"' }}\n                    {{- tool_call.name }}\n                    {{- '\", \"arguments\": ' }}\n                    {%- if tool_call.arguments is string %}\n                        {{- tool_call.arguments }}\n                    {%- else %}\n                        {{- tool_call.arguments | tojson }}\n                    {%- endif %}\n                    {{- '}\\n</tool_call>' }}\n                {%- endfor %}\n            {%- else %}\n                {%- for tool_call in message.tool_calls %}\n                    {%- if tool_call.function is defined %}\n                        {%- set tool_call = tool_call.function %}\n                    {%- endif %}\n                    \n                    {%- if loop.first %}\n                        {%- if content|trim %}\n                            {{- '\n\n<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                        {%- else %}\n                            {{- '<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                        {%- endif %}\n                    {%- else %}\n                        {{- '\n<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                    {%- endif %}\n                    \n                    {%- if tool_call.arguments is defined %}\n                        {%- for args_name, args_value in tool_call.arguments|items %}\n                            {{- '<parameter=' + args_name + '>\n' }}\n                            {%- set args_value = args_value | string if args_value is string else args_value | tojson | safe %}\n                            {{- args_value }}\n                            {{- '\n</parameter>\n' }}\n                        {%- endfor %}\n                    {%- endif %}\n                    {{- '</function>\n</tool_call>' }}\n                {%- endfor %}\n            {%- endif %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n        \n    {%- elif message.get('role', '') == \"tool\" %}\n        {%- if loop.previtem and loop.previtem.get('role', '') != \"tool\" %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or loop.nextitem.get('role', '') != \"tool\" %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- elif message.get('role', '') != '' %}\n        {{- '<|im_start|>' + message.get('role', '') + '\\n' + content + '<|im_end|>' + '\\n' }}\n    {%- endif %}\n{%- endfor %}\n\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    \n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\n\n</think>\n\n' }}\n    {%- else %}\n        {{- '<think>\n' }}\n    {%- endif %}\n    \n{%- endif %}\n","eos_token":"<|im_end|>","pad_token":"<unk>","unk_token":"<unk>","use_default_system_prompt":false}},"cardData":{"license":"apache-2.0","language":["en","zh"],"library_name":"transformers","pipeline_tag":"text-generation","tags":["llm","nanbeige"],"base_model":["Nanbeige/Nanbeige4.3-33B-Base"]},"transformersInfo":{"auto_model":"AutoModelForCausalLM","pipeline_tag":"text-generation","processor":"AutoTokenizer"},"siblings":[{"rfilename":".eval_results/Nanbeige4.3-33B.yaml"},{"rfilename":".gitattributes"},{"rfilename":"README.md"},{"rfilename":"added_tokens.json"},{"rfilename":"config.json"},{"rfilename":"figures/nanbeige43-benchmarks.png"},{"rfilename":"figures/nbg.png"},{"rfilename":"figures/occupation.png"},{"rfilename":"generation_config.json"},{"rfilename":"model-00001-of-00014.safetensors"},{"rfilename":"model-00002-of-00014.safetensors"},{"rfilename":"model-00003-of-00014.safetensors"},{"rfilename":"model-00004-of-00014.safetensors"},{"rfilename":"model-00005-of-00014.safetensors"},{"rfilename":"model-00006-of-00014.safetensors"},{"rfilename":"model-00007-of-00014.safetensors"},{"rfilename":"model-00008-of-00014.safetensors"},{"rfilename":"model-00009-of-00014.safetensors"},{"rfilename":"model-00010-of-00014.safetensors"},{"rfilename":"model-00011-of-00014.safetensors"},{"rfilename":"model-00012-of-00014.safetensors"},{"rfilename":"model-00013-of-00014.safetensors"},{"rfilename":"model-00014-of-00014.safetensors"},{"rfilename":"model.safetensors.index.json"},{"rfilename":"special_tokens_map.json"},{"rfilename":"tokenizer.json"},{"rfilename":"tokenizer.model"},{"rfilename":"tokenizer_config.json"}],"spaces":["fastgpu/vram-and-gpu-cost-calculator","apathy-exe/Nanbeige4.3-33B","600me/llm-gpu-cost-calculator","600me/rag-web-scraping-cost-calculator","600me/residential-proxy-sticky-session-calculator","600me/ai-saas-stripe-vs-mor-tax-calculator","joeWorld/nanbeige4-3-33b-chat","600me/pdf-api-cost-calculator","600me/seo-workflow-tco-calculator"],"createdAt":"2026-10-24T02:49:18.000Z","safetensors":{"parameters":{"BF16":33118977024},"total":33118977024},"usedStorage":66259989086}
+=== nb_commits.json ===
+[{"id":"df919e1e2cf077a22204c78b6c826bf3db18bc08","title":"Update README.md","message":"","authors":[{"user":"flust","avatar":"/avatars/564658b54f5bbd91230be840f9ee3e61.svg"}],"date":"2026-10-28T01:59:01.000Z"},{"id":"84c54883993f9053b058f95ddc8f591b203e92bf","title":"Add evaluation results (#30)","message":"\n\n\n- Add evaluation results (64f694ba02fb8d01ddd774ec05fab6c26547de03)\n\n\nCo-authored-by: Nathan Habib <SaylorTwift@users.noreply.huggingface.co>\n","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"},{"user":"SaylorTwift","avatar":"https://cdn-avatars.huggingface.co/v1/production/uploads/1678663263366-63e0eea7af523c37e5a77966.jpeg"}],"date":"2026-10-27T16:00:24.000Z"},{"id":"c1093c501cc6460427c0ac634db7223d0450c0ee","title":"Update README.md","message":"","authors":[{"user":"flust","avatar":"/avatars/564658b54f5bbd91230be840f9ee3e61.svg"}],"date":"2026-10-25T11:11:17.000Z"},{"id":"d5f259ee61162ce79d5a6396556c148ab7237fc5","title":"Update README.md","message":"","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"}],"date":"2026-10-25T10:32:50.000Z"},{"id":"183dcf8ed01f9931b19c1c91a6a7340a6dda7537","title":"Update README.md","message":"","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"}],"date":"2026-10-25T10:31:24.000Z"},{"id":"f1117ebd908ec13fd62c7bdf1dabd718c4371db0","title":"Update README.md","message":"","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"}],"date":"2026-10-25T10:29:29.000Z"},{"id":"5195ee504efb176aac3313ffc145ab9c897fdd93","title":"Delete figures/1","message":"","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"}],"date":"2026-10-25T10:19:35.000Z"},{"id":"cff1226677f8504f6f78b23f6bc5af811e6f8b14","title":"Upload 3 files","message":"","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"}],"date":"2026-10-25T10:19:28.000Z"},{"id":"3d7e4cfbe7fd6e471231defaac92b531aee9d7b6","title":"Create figures/1","message":"","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"}],"date":"2026-10-25T10:19:01.000Z"},{"id":"f27a0c1ac5919b592d002c66c757cd96accd97f5","title":"Update config.json","message":"","authors":[{"user":"chenzongchao","avatar":"/avatars/6cddb90cb0dc8aff988d25e7f19a53cd.svg"}],"date":"2026-10-25T02:44:27.000Z"},{"id":"f4a32f1776d6f62ef842e39e3e7384d65a7279a1","title":"Update config.json","message":"","authors":[{"user":"chenzongchao","avatar":"/avatars/6cddb90cb0dc8aff988d25e7f19a53cd.svg"}],"date":"2026-10-24T11:58:57.000Z"},{"id":"0dacc64718ab6a5a7cbfc74cacc663d6c5c3de05","title":"Upload folder using huggingface_hub","message":"","authors":[{"user":"chenzongchao","avatar":"/avatars/6cddb90cb0dc8aff988d25e7f19a53cd.svg"}],"date":"2026-10-24T11:57:14.000Z"},{"id":"1e900382bce4f5dc90085fd1e11b3e6373b79514","title":"initial commit","message":"","authors":[{"user":"leran1995","avatar":"/avatars/dc6d6a6868950519b69e39ef641cbcda.svg"}],"date":"2026-10-24T02:49:18.000Z"}]
+[0m
+[0m$ [0mcd agents/scratch && echo "=== nb_blobs.json ==="; cat nb_blobs.json | head -100; echo "=== nbq configs ==="; for f in nbq_FP8_config.json nbq_INT4_config.json nbq_INT8_config.json; do echo "--- $f"; cat $f; done
+=== nb_blobs.json ===
+{"_id":"6adc1caea171e3197498083f","id":"Nanbeige/Nanbeige4.3-33B","private":false,"pipeline_tag":"text-generation","library_name":"transformers","tags":["transformers","safetensors","llama","text-generation","llm","nanbeige","conversational","en","zh","base_model:Nanbeige/Nanbeige4.3-33B-Base","base_model:finetune:Nanbeige/Nanbeige4.3-33B-Base","license:apache-2.0","eval-results","text-generation-inference","endpoints_compatible","region:us"],"downloads":17839,"likes":1027,"modelId":"Nanbeige/Nanbeige4.3-33B","author":"Nanbeige","sha":"df919e1e2cf077a22204c78b6c826bf3db18bc08","lastModified":"2026-10-28T01:59:01.000Z","gated":false,"disabled":false,"widgetData":[{"text":"Hi, what can you help me with?"},{"text":"What is 84 * 3 / 2?"},{"text":"Tell me an interesting fact about the universe!"},{"text":"Explain quantum computing in simple terms."}],"model-index":null,"config":{"architectures":["LlamaForCausalLM"],"model_type":"llama","tokenizer_config":{"use_default_system_prompt":false,"bos_token":"<|im_start|>","eos_token":"<|im_end|>","unk_token":"<unk>","pad_token":"<unk>","chat_template":"\n\n{%- macro visible_text(content) -%}\n    {%- if content is string -%}\n        {{- content }}\n    {%- elif content is iterable and content is not mapping -%}\n        {%- for item in content -%}\n            {%- if item is mapping and item.type == 'text' -%}\n                {{- item.text }}\n            {%- elif item is string -%}\n                {{- item }}\n            {%- elif item is mapping and item.type in ['image', 'image_url', 'video', 'video_url', 'audio', 'audio_url', 'input_audio'] -%}\n                {%- set media_type = item.type | replace('_url', '') | replace('input_', '') -%}\n                {{- \"<reminder>You are unable to process this \" ~ media_type ~ \" because you don't have multi-modal input ability. Try different methods.</reminder>\" }}\n            {%- endif -%}\n        {%- endfor -%}\n    {%- else -%}\n        {{- content }}\n    {%- endif -%}\n{%- endmacro -%}\n\n\n{%- set tool_call_format = tool_call_format if tool_call_format is defined else 'xml' %}\n{%- if tools %}\n    {{- '<|im_start|>system\\n' }}    \n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- visible_text(messages[0].content) + '\\n\\n' }}\n    {%- else %} \n        {{- '你是一位工具函数调用专家，你会得到一个问题和一组可能的工具函数。根据问题，你需要进行一个或多个函数/工具调用以实现目的，请尽量尝试探索通过工具解决问题。\\n如果没有一个函数可以使用，请直接使用自然语言回复用户。\\n如果给定的问题缺少函数所需的参数，请使用自然语言进行提问，向用户询问必要信息。\\n如果调用结果已经足够回答用户问题，请对历史结果进行总结，使用自然语言回复用户。' }} \n    {%- endif %}\n\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    \n    {%- if tool_call_format == 'json' %}\n        {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n\" }}\n        {{- '<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n' }}\n    {%- else %}\n        {{- \"\\n</tools>\\n\\nFor each function call, output the function name and arguments within the following XML format:\\n\" }}\n        {{- '<tool_call>\n<function=example_function_name>\n<parameter=example_parameter_1>\nvalue_1\n</parameter>\n<parameter=example_parameter_2>\nThis is the value for the second parameter\nthat can span\nmultiple lines\n</parameter>\n</function>\n</tool_call><|im_end|>\\n' }}\n    {%- endif %}\n    \n{%- else %}\n    {%- if messages|length > 0 and messages[0].get('role', '') == 'system' %}\n        {{- '<|im_start|>system\\n' + visible_text(messages[0].content) + '<|im_end|>\\n' }}\n    {%- else %} \n        {{- '<|im_start|>system\\n你是南北阁，一款由BOSS直聘自主研发并训练的专业大语言模型。<|im_end|>\\n' }} \n    {%- endif %}\n{%- endif %}\n\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.get('role', '') == \"user\" and visible_text(message.content) is string and not(visible_text(message.content).startswith('<tool_response>') and visible_text(message.content).endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n\n{%- for message in messages %}\n    {%- if visible_text(message.content) is string %}\n        {%- set content = visible_text(message.content) %}\n    {%- else %}\n        {%- set content = '' %}\n    {%- endif %}\n    \n    {%- if message.get('role', '') == \"system\" %}\n        {%- if not loop.first %}\n            {{- raise_exception('System message must be at the beginning.') }}\n        {%- endif %}\n        \n    {%- elif message.get('role', '') == \"assistant\" %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is string %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in content %}\n                {%- set reasoning_content = content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n                {%- set content = content.split('</think>')[-1].lstrip('\\n').rstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- set content = content|trim %}\n        {%- set reasoning_content = reasoning_content|trim %}\n        \n        {%- if (preserve_thinking is defined and preserve_thinking is false) and (loop.index0 < ns.last_query_index) %}\n            {{- '<|im_start|>' + message.get('role', '') + '\\n<think>\\n\\n</think>\\n\\n' + content }}\n        {%- else %}\n            {{- '<|im_start|>' + message.get('role', '') + '\\n<think>\\n' + reasoning_content + '\\n</think>\\n\\n' + content }}\n        {%- endif %}\n        \n        {%- if message.tool_calls and message.tool_calls is iterable and message.tool_calls is not mapping %}\n            {%- if tool_call_format == 'json' %}\n                {%- for tool_call in message.tool_calls %}\n                    {%- if (loop.first and content) or (not loop.first) %}\n                        {{- '\\n' }}\n                    {%- endif %}\n                    {%- if tool_call.function %}\n                        {%- set tool_call = tool_call.function %}\n                    {%- endif %}\n                    {{- '<tool_call>\\n{\"name\": \"' }}\n                    {{- tool_call.name }}\n                    {{- '\", \"arguments\": ' }}\n                    {%- if tool_call.arguments is string %}\n                        {{- tool_call.arguments }}\n                    {%- else %}\n                        {{- tool_call.arguments | tojson }}\n                    {%- endif %}\n                    {{- '}\\n</tool_call>' }}\n                {%- endfor %}\n            {%- else %}\n                {%- for tool_call in message.tool_calls %}\n                    {%- if tool_call.function is defined %}\n                        {%- set tool_call = tool_call.function %}\n                    {%- endif %}\n                    \n                    {%- if loop.first %}\n                        {%- if content|trim %}\n                            {{- '\n\n<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                        {%- else %}\n                            {{- '<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                        {%- endif %}\n                    {%- else %}\n                        {{- '\n<tool_call>\n<function=' + tool_call.name + '>\n' }}\n                    {%- endif %}\n                    \n                    {%- if tool_call.arguments is defined %}\n                        {%- for args_name, args_value in tool_call.arguments|items %}\n                            {{- '<parameter=' + args_name + '>\n' }}\n                            {%- set args_value = args_value | string if args_value is string else args_value | tojson | safe %}\n                            {{- args_value }}\n                            {{- '\n</parameter>\n' }}\n                        {%- endfor %}\n                    {%- endif %}\n                    {{- '</function>\n</tool_call>' }}\n                {%- endfor %}\n            {%- endif %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n        \n    {%- elif message.get('role', '') == \"tool\" %}\n        {%- if loop.previtem and loop.previtem.get('role', '') != \"tool\" %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or loop.nextitem.get('role', '') != \"tool\" %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- elif message.get('role', '') != '' %}\n        {{- '<|im_start|>' + message.get('role', '') + '\\n' + content + '<|im_end|>' + '\\n' }}\n    {%- endif %}\n{%- endfor %}\n\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    \n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\n\n</think>\n\n' }}\n    {%- else %}\n        {{- '<think>\n' }}\n    {%- endif %}\n    \n{%- endif %}\n"}},"cardData":{"license":"apache-2.0","language":["en","zh"],"library_name":"transformers","pipeline_tag":"text-generation","tags":["llm","nanbeige"],"base_model":["Nanbeige/Nanbeige4.3-33B-Base"]},"transformersInfo":{"auto_model":"AutoModelForCausalLM","pipeline_tag":"text-generation","processor":"AutoTokenizer"},"siblings":[{"rfilename":".eval_results/Nanbeige4.3-33B.yaml","blobId":"65a4ce64f43dc4a736ec8f101d374cdecd9ec3ee","size":2416},{"rfilename":".gitattributes","blobId":"ffcf59baea062e44de8e842f3c5d600895ece23b","size":1699},{"rfilename":"README.md","blobId":"44adde50678aaea84dd6864898c6698a6ad6e337","size":8884},{"rfilename":"added_tokens.json","blobId":"8805f6dd0517ef0a74400d304c63bf176b3e28ed","size":174},{"rfilename":"config.json","blobId":"adee1d1b766ca3dbaa104d07ba1a28b6a84fef85","size":883},{"rfilename":"figures/nanbeige43-benchmarks.png","blobId":"9c1c3468ec8cc0a4081bb423990c38c1497158fa","size":137165,"lfs":{"sha256":"cb98ba304c3e3d5a8432683241fd89157ff560b2ce9682a3f1b96ea6e022fd48","size":137165,"pointerSize":131}},{"rfilename":"figures/nbg.png","blobId":"3466c5a7576bf8a142a80596cb73707fbc523d6c","size":15639},{"rfilename":"figures/occupation.png","blobId":"5aaef0707c78688b2fa3fd7696c3693eab33cc78","size":609476,"lfs":{"sha256":"90dce956d37e02f01d4150717eeb9167cd078255588091bd05128b7bdaf94aaf","size":609476,"pointerSize":131}},{"rfilename":"generation_config.json","blobId":"a46c6565c7ccaca981a8d5f069da850827d6962b","size":164},{"rfilename":"model-00001-of-00014.safetensors","blobId":"9ce940fa409bb41cd6a9cbee4cca7f8f684417a5","size":4051757592,"lfs":{"sha256":"a70e695f1a8c9686158e791829e603833840e7a8ce7ece884eff6aeca561f9b2","size":4051757592,"pointerSize":135}},{"rfilename":"model-00002-of-00014.safetensors","blobId":"c4eff89b134b5d90274a29a759633a871355c75b","size":4961951064,"lfs":{"sha256":"36599c909e677a50cffd7715376a2e6eeb40097296e2bb1103cd6316ffe8af52","size":4961951064,"pointerSize":135}},{"rfilename":"model-00003-of-00014.safetensors","blobId":"e51ee484c9d651cb6bed2d38657bc4e82ae58e23","size":4947270864,"lfs":{"sha256":"228267c30873849f69149f09faf35f9e956bf5a50ddd0820ee33b5cd326eb66d","size":4947270864,"pointerSize":135}},{"rfilename":"model-00004-of-00014.safetensors","blobId":"8036fd4c64e1d0f45f549219d4885b10d5beab52","size":4873856544,"lfs":{"sha256":"e5654a03d7e9bfddfee1b8b051864d5b61a3f1aae282c1c5deed2117a9a8f94e","size":4873856544,"pointerSize":135}},{"rfilename":"model-00005-of-00014.safetensors","blobId":"3995fe69d135f26d029216ca22d058ddf3446da9","size":4690428272,"lfs":{"sha256":"055ef50375b8ce6342d5beaf971f59c67fbb1f358047511c0781564b7fcaf541","size":4690428272,"pointerSize":135}},{"rfilename":"model-00006-of-00014.safetensors","blobId":"4e65226f696958a986ecdb5e56fc0c7873f944ff","size":4793130400,"lfs":{"sha256":"5d0fb320fd4161bb901f7869f67d2e3459a2c2699040818b6349c6021bfe3ddb","size":4793130400,"pointerSize":135}},{"rfilename":"model-00007-of-00014.safetensors","blobId":"56021b749573707d680583252bd7dbea51de82cd","size":4727128376,"lfs":{"sha256":"8b2203d94427d8b5e64805ccec17c14b1ca3f12baffb542ed396424e03c474df","size":4727128376,"pointerSize":135}},{"rfilename":"model-00008-of-00014.safetensors","blobId":"ced8e0803b50eb89b2bfaa3ccce8a0d208684c20","size":4998767864,"lfs":{"sha256":"4e7b957640e52ee183ebe0f8f1f23d65c94075dd0aff0b22176e3f44abb3102b","size":4998767864,"pointerSize":135}},{"rfilename":"model-00009-of-00014.safetensors","blobId":"15f95cb61f767b75844f4745e6a2340ee0e8fe75","size":4954597256,"lfs":{"sha256":"5e90fe70ad8f88bf5ccd9ca3a3f38b384960689d26a05f45d1b135afba6a749e","size":4954597256,"pointerSize":135}},{"rfilename":"model-00010-of-00014.safetensors","blobId":"af520cc41376ad44e10897f15f7d89d91ea79ee5","size":4793131024,"lfs":{"sha256":"19bb937ef55014945b7ac20b0b0ca039c75756679da28b6bc949bf6cdfd92b1e","size":4793131024,"pointerSize":135}},{"rfilename":"model-00011-of-00014.safetensors","blobId":"cfed86d75160873f459e0830a9f96f57ebcdc589","size":4895919880,"lfs":{"sha256":"09909f3730fe888a83518c88e67b44d6d1aa45a2ffd411ddefe767f510e6e72f","size":4895919880,"pointerSize":135}},{"rfilename":"model-00012-of-00014.safetensors","blobId":"8bcc48c2bfe8e6315a53d31cff065e4a63b22b57","size":4727056152,"lfs":{"sha256":"2cdb2749eb589bf5e89290d457609d0461169e115bfa9549b0755f5b48dd716c","size":4727056152,"pointerSize":135}},{"rfilename":"model-00013-of-00014.safetensors","blobId":"1b8f6f409723210fdfd2697093e9c31881d71a00","size":4984073248,"lfs":{"sha256":"a1babb6d7bef3d4a31f071e590ec58fc96ac084584b8d55f632d9a44b2647df5","size":4984073248,"pointerSize":135}},{"rfilename":"model-00014-of-00014.safetensors","blobId":"729fde9d193286777c8923fa5cad19c0f016678b","size":3838940632,"lfs":{"sha256":"b23adaf4c6e6d62e7e93a76bdcb55dbd5a47f6870a5713200e6627b6b291ebdc","size":3838940632,"pointerSize":135}},{"rfilename":"model.safetensors.index.json","blobId":"c45ed46c3ca5a40fa8f6fcfd76d48429b5e8d430","size":38810},{"rfilename":"special_tokens_map.json","blobId":"fb83292a14c95f398736acae643c48c152b9eb71","size":623},{"rfilename":"tokenizer.json","blobId":"39a8c90df827f163105c35c11c00b0936f2f437c","size":18450979,"lfs":{"sha256":"1d858a0fc007f22af6ae18bfa1ae52d30e398aa9cd1ea06e7777176869346a3f","size":18450979,"pointerSize":133}},{"rfilename":"tokenizer.model","blobId":"5dc56ceef972dd0a233ce8c8100316ac1bdc089e","size":2782298,"lfs":{"sha256":"fb41d04798b714520a9b075727b0226538b7330254299062742c50ec8374bc36","size":2782298,"pointerSize":132}},{"rfilename":"tokenizer_config.json","blobId":"00946f0ef9517230d7db61f70b4ae1212936f30c","size":11033}],"spaces":["fastgpu/vram-and-gpu-cost-calculator","apathy-exe/Nanbeige4.3-33B","600me/llm-gpu-cost-calculator","600me/rag-web-scraping-cost-calculator","600me/residential-proxy-sticky-session-calculator","600me/ai-saas-stripe-vs-mor-tax-calculator","joeWorld/nanbeige4-3-33b-chat","600me/pdf-api-cost-calculator","600me/seo-workflow-tco-calculator"],"createdAt":"2026-10-24T02:49:18.000Z","safetensors":{"parameters":{"BF16":33118977024},"total":33118977024},"usedStorage":66259989086}=== nbq configs ===
+--- nbq_FP8_config.json
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "quantization_config": {
+    "config_groups": {
+      "group_0": {
+        "format": "float-quantized",
+        "input_activations": {
+          "actorder": null,
+          "block_structure": null,
+          "dynamic": true,
+          "group_size": 128,
+          "num_bits": 8,
+          "observer": null,
+          "observer_kwargs": {},
+          "scale_dtype": null,
+          "strategy": "group",
+          "symmetric": true,
+          "type": "float",
+          "zp_dtype": null
+        },
+        "output_activations": null,
+        "targets": [
+          "Linear"
+        ],
+        "weights": {
+          "actorder": null,
+          "block_structure": [
+            128,
+            128
+          ],
+          "dynamic": false,
+          "group_size": null,
+          "num_bits": 8,
+          "observer": "memoryless_minmax",
+          "observer_kwargs": {},
+          "scale_dtype": null,
+          "strategy": "block",
+          "symmetric": true,
+          "type": "float",
+          "zp_dtype": null
+        }
+      }
+    },
+    "format": "float-quantized",
+    "global_compression_ratio": null,
+    "ignore": [
+      "lm_head"
+    ],
+    "kv_cache_scheme": null,
+    "quant_method": "compressed-tensors",
+    "quantization_status": "compressed",
+    "sparsity_config": {},
+    "transform_config": {},
+    "version": "0.19.0"
+  },
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}--- nbq_INT4_config.json
+{
+  "_attn_implementation_autoset": true,
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912,
+  "quantization_config": {
+    "config_groups": {
+      "group_0": {
+        "input_activations": null,
+        "output_activations": null,
+        "targets": [
+          "Linear"
+        ],
+        "weights": {
+          "actorder": null,
+          "block_structure": null,
+          "dynamic": false,
+          "group_size": 32,
+          "num_bits": 4,
+          "observer": "minmax",
+          "observer_kwargs": {},
+          "strategy": "group",
+          "symmetric": false,
+          "type": "int",
+          "zp_dtype": "torch.int8"
+        }
+      }
+    },
+    "format": "pack-quantized",
+    "ignore": [
+      "lm_head",
+      "model.embed_tokens"
+    ],
+    "kv_cache_scheme": null,
+    "quant_method": "compressed-tensors",
+    "quantization_status": "compressed"
+  }
+}
+--- nbq_INT8_config.json
+{
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 166100,
+  "embd_pdrop": 0.0,
+  "eos_token_id": 166101,
+  "ffn_hidden_size": 22016,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 7168,
+  "initializer_range": 0.02,
+  "intermediate_size": 22016,
+  "kv_channels": 128,
+  "max_position_embeddings": 524288,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 56,
+  "num_hidden_layers": 52,
+  "num_key_value_heads": 8,
+  "num_query_groups": 8,
+  "pad_token_id": 0,
+  "pretraining_tp": 1,
+  "quantization_config": {
+    "config_groups": {
+      "group_0": {
+        "format": "pack-quantized",
+        "input_activations": null,
+        "output_activations": null,
+        "targets": [
+          "Linear"
+        ],
+        "weights": {
+          "actorder": null,
+          "block_structure": null,
+          "dynamic": false,
+          "group_size": 128,
+          "num_bits": 8,
+          "observer": "memoryless_minmax",
+          "observer_kwargs": {},
+          "scale_dtype": null,
+          "strategy": "group",
+          "symmetric": true,
+          "type": "int",
+          "zp_dtype": null
+        }
+      }
+    },
+    "format": "pack-quantized",
+    "global_compression_ratio": null,
+    "ignore": [
+      "lm_head"
+    ],
+    "kv_cache_scheme": null,
+    "quant_method": "compressed-tensors",
+    "quantization_status": "compressed",
+    "sparsity_config": {},
+    "transform_config": {},
+    "version": "0.19.0"
+  },
+  "resid_pdrop": 0.0,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": null,
+  "rope_theta": 120000000,
+  "rotary_base": 120000000,
+  "seq_length": 524288,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.1",
+  "use_cache": false,
+  "vocab_size": 166912
+}
+[0m
+[0m$ [0mcd agents/scratch && echo "=== README (nb_README.md) ==="; cat -n nb_README.md
+=== README (nb_README.md) ===
+     1	---
+     2	license: apache-2.0
+     3	language:
+     4	- en
+     5	- zh
+     6	library_name: transformers
+     7	pipeline_tag: text-generation
+     8	tags:
+     9	- llm
+    10	- nanbeige
+    11	base_model:
+    12	- Nanbeige/Nanbeige4.3-33B-Base
+    13	---
+    14	
+    15	<div align="center">
+    16	<img src="figures/nbg.png" width="200" alt="Nanbeige Logo">
+    17	</div>
+    18	
+    19	# <span id="Introduction">1. Introduction</span>
+    20	
+    21	In Nanbeige4.3, we take a foundational step toward pushing the boundaries of lightweight agents. Our strategy centers on building a high-capacity teacher agent first, which will subsequently anchor the distillation of advanced agentic capabilities into smaller models.
+    22	
+    23	To this end, we first introduce Nanbeige4.3-33B, designed as the flagship teacher model for the Nanbeige4.3 series. Delivering state-of-the-art agentic performance among open models in the ~30B parameter class, Nanbeige4.3-33B excels at complex coding and professional cowork tasks. It not only offers a powerful, cost-effective option for immediate real-world deployment, but also lays the necessary foundation to power our upcoming small model distillation pipeline (e.g., for Nanbeige4.3-3B).
+    24	
+    25	
+    26	<div align="center">
+    27	<img src="figures/nanbeige43-benchmarks.png" width="1000">
+    28	</div>
+    29	
+    30	# <span id="Model-Performance">2. Model Performance</span>
+    31	
+    32	We compare Nanbeige4.3-33B with recently released frontier models at around the 30B-parameter scale: Qwen3.8-27B, Muse-Glimmer-30B, and Gemma4-31B. All models are evaluated at their highest thinking effort. For each benchmark, we use the same inference hyperparameters and harness across models.
+    33	<table>
+    34	  <thead>
+    35	    <tr>
+    36	      <th>Category</th><th>Benchmark</th><th>Nanbeige4.3-33B<sup>1</sup></th><th>Qwen3.8-27B</th><th>Muse-Glimmer-30B</th><th>Gemma4-31B</th>
+    37	    </tr>
+    38	  </thead>
+    39	  <tbody>
+    40	    <tr><td rowspan="8">Agentic Coding</td><td>Terminal-Bench 2.1<sup>2</sup></td><td><strong>80.9</strong></td><td>73.0</td><td>61.8</td><td>47.2</td></tr>
+    41	    <tr><td>Terminal-Bench 4.0<sup>3</sup></td><td><strong>23.8</strong></td><td>6.3</td><td>1.6</td><td>0.0</td></tr>
+    42	    <tr><td>DeepSWE<sup>3</sup></td><td><strong>65.5</strong></td><td>42.5</td><td>4.4</td><td>2.7</td></tr>
+    43	    <tr><td>SWE-Bench Pro<sup>3</sup></td><td>60.3</td><td><strong>61.7</strong></td><td>51.2</td><td>36.9</td></tr>
+    44	    <tr><td>SWE-Atlas-QnA<sup>4</sup></td><td><strong>50.8</strong></td><td>41.9</td><td>17.7</td><td>3.3</td></tr>
+    45	    <tr><td>NL2Repo<sup>5</sup></td><td><strong>53.0</strong></td><td>48.3</td><td>27.4</td><td>33.8</td></tr>
+    46	    <tr><td>Scicode</td><td><strong>52.6</strong></td><td>46.7</td><td>44.9</td><td>45.5</td></tr>
+    47	    <tr><td>SkillsBench</td><td><strong>61.1</strong></td><td>56.4</td><td>39.7</td><td>28.9</td></tr>
+    48	    <tr><td rowspan="9">Agentic Cowork</td><td>Automation Bench<sup>6</sup></td><td><strong>54.2</strong></td><td>38.3</td><td>15.2</td><td>9.7</td></tr>
+    49	    <tr><td>JobBench<sup>7</sup></td><td><strong>44.8</strong></td><td>34.5</td><td>16.6</td><td>9.0</td></tr>
+    50	    <tr><td>GDPval<sup>8</sup></td><td>84.8</td><td><strong>86.4</strong></td><td>75.8</td><td>71.4</td></tr>
+    51	    <tr><td>Claw-Eval<sub>pass^3</sub><sup>9</sup></td><td><strong>78.3</strong></td><td>75.2</td><td>57.3</td><td>44.2</td></tr>
+    52	    <tr><td>Toolathlon-Verified<sup>10</sup></td><td><strong>70.4</strong></td><td>68.5</td><td>47.2</td><td>27.8</td></tr>
+    53	    <tr><td>DeepPlanning<sup>12</sup></td><td><strong>63.3</strong></td><td>49.2</td><td>21.4</td><td>19.4</td></tr>
+    54	    <tr><td>EnterpriseOps-Gym<sup>12</sup></td><td><strong>41.0</strong></td><td>40.2</td><td>30.5</td><td>27.3</td></tr>
+    55	    <tr><td>YC-bench<sup>11</sup></td><td><strong>$1,025,437</strong></td><td>$641,290</td><td>$513,978</td><td>$265,152</td></tr>
+    56	    <tr><td>Tau3-Bench<sup>12</sup></td><td><strong>48.8</strong></td><td>48.5</td><td>33.7</td><td>18.6</td></tr>
+    57	    <tr><td rowspan="3">Reasoning</td><td>GPQA Diamond</td><td>89.5</td><td>89.2</td><td>83.5</td><td><strong>91.3</strong></td></tr>
+    58	    <tr><td>AIME 2026</td><td><strong>95.2</strong></td><td>94.5</td><td>94.7</td><td>89.2</td></tr>
+    59	    <tr><td>AA-LCR</td><td><strong>84.0</strong></td><td>82.0</td><td>83.3</td><td>72.0</td></tr>
+    60	  </tbody>
+    61	</table>
+    62	
+    63	<small>
+    64	<sup>1</sup> Nanbeige4.3-33B is evaluated with <code>preserve_thinking=true</code> in the chat template.<br>
+    65	<sup>2</sup> Terminal-Bench 2.1 is evaluated using Terminus 2.<br>
+    66	<sup>3</sup> Terminal-Bench 4 and DeepSWE are evaluated using mini-swe-agent v2.4.6.<br>
+    67	<sup>4</sup> SWE-Atlas-QnA is evaluated using mini-swe-agent v2.4.6. Answers are evaluated against 1,304 task-specific rubrics using GPT-6 Sol as the judge, with medium reasoning effort.<br>
+    68	<sup>5</sup> NL2Repo is evaluated using Claude Code.<br>
+    69	<sup>6</sup> Automation Bench v1.0.6 includes 600 publicly released tasks.<br>
+    70	<sup>7</sup> JobBench is evaluated with the Claude Code harness equipped with a search tool.<br>
+    71	<sup>8</sup> GDPval is scored using revised rubrics.<br>
+    72	<sup>9</sup> Claw-Eval is evaluated exclusively on the Claw-Eval General subset (comprising 157 single-turn user interaction tasks).<br>
+    73	<sup>10</sup> Toolathlon-Verified sets no max_tokens limit for individual model requests.<br>
+    74	<sup>11</sup> YC-bench retains only the most recent 10 turns of user dialogue as historical context before each model call.<br>
+    75	<sup>12</sup> DeepPlanning, EnterpriseOps-Gym, Tau3-Bench are evaluated using their official repositories.<br>
+    76	</small>
+    77	
+    78	Nanbeige4.3-33B leads on most of the benchmarks, showing strong performance in both agentic coding and cowork tasks. 
+    79	Beyond its breadth across benchmarks, Nanbeige4.3-33B shows strong performance on **agent tasks across a wide range of professions and industries**. For example, on JobBench, it outperforms the baseline in most of the 35 occupations evaluated.
+    80	
+    81	<div align="center">
+    82	  <img src="figures/occupation.png" width="1000" alt="occupation">
+    83	</div>
+    84	
+    85	
+    86	
+    87	
+    88	# <span id="Quickstart">3. Quickstart</span>
+    89	
+    90	The tokenizer provides a configurable chat template for reasoning and tool-use scenarios:
+    91	
+    92	- `enable_thinking` controls whether the model generates reasoning for the current response. It is enabled by default; set it to `False` for non-thinking mode.
+    93	- `preserve_thinking` controls whether reasoning from previous assistant turns is retained in a multi-turn conversation. We recommend `False` for general chat and question answering, and `True` for multi-turn tool use, office tasks, and code-agent workflows.
+    94	- Passing `tools` enables the tool-use template. We recommend `tool_call_format="xml"` for the best tool-calling performance; `json` is also supported for compatibility.
+    95	
+    96	The model supports a context length of up to 524,288 tokens (512K).
+    97	
+    98	We recommend adjusting the inference settings according to the target scenario:
+    99	
+   100	| Scenario | Temperature | Top_p | Max New Tokens |
+   101	|---|---:|---:|---:|
+   102	| Agentic and tool-use tasks | 1.0 | 0.95 | 65,536 |
+   103	| Reasoning and chat tasks | 0.6 | 0.95 | 262,144 |
+   104	
+   105	
+   106	You can run the model with Transformers, SGLang, or vLLM:
+   107	
+   108	## Transformers
+   109	
+   110	```python
+   111	from transformers import AutoModelForCausalLM, AutoTokenizer
+   112	
+   113	model_id = 'Nanbeige/Nanbeige4.3-33B'
+   114	tokenizer = AutoTokenizer.from_pretrained(
+   115	  model_id,
+   116	  use_fast=False,
+   117	  trust_remote_code=True
+   118	)
+   119	model = AutoModelForCausalLM.from_pretrained(
+   120	  model_id,
+   121	  torch_dtype='auto',
+   122	  device_map='auto',
+   123	  trust_remote_code=True
+   124	)
+   125	
+   126	messages = [{'role': 'user', 'content': 'Which number is bigger, 9.11 or 9.8?'}]
+   127	inputs = tokenizer.apply_chat_template(
+   128	  messages,
+   129	  add_generation_prompt=True,
+   130	  return_tensors='pt'
+   131	).to(model.device)
+   132	output_ids = model.generate(inputs, max_new_tokens=1024)
+   133	response = tokenizer.decode(output_ids[0][inputs.shape[-1]:], skip_special_tokens=True)
+   134	print(response)
+   135	```
+   136	
+   137	## SGLang
+   138	
+   139	```bash
+   140	MODEL_PATH=/path/to/your/Nanbeige4.3-33B
+   141	python -m sglang.launch_server \
+   142	  --model-path ${MODEL_PATH} \
+   143	  --host 0.0.0.0 \
+   144	  --port 8000 \
+   145	  --tp-size 4 \
+   146	  --mem-fraction-static 0.8 \
+   147	  --reasoning-parser qwen3 \
+   148	  --tool-call-parser qwen3_coder
+   149	```
+   150	
+   151	## vLLM
+   152	
+   153	```bash
+   154	MODEL_PATH=/path/to/your/Nanbeige4.3-33B
+   155	vllm serve ${MODEL_PATH} \
+   156	  --host 0.0.0.0 \
+   157	  --port 8000 \
+   158	  --tensor-parallel-size 4 \
+   159	  --gpu-memory-utilization 0.8 \
+   160	  --enable-auto-tool-choice \
+   161	  --reasoning-parser qwen3 \
+   162	  --tool-call-parser qwen3_coder
+   163	```
+   164	
+   165	# <span id="Contact">4. Contact</span>
+   166	
+   167	If you have any questions, please open an issue in this repository or contact us at nanbeige@kanzhun.com.
+   168	
+   169	We also welcome collaborations to build domain-specific and industry-focused agents, including joint work on data and training.
+   170	
+   171	# <span id="Citation">5. Citation</span>
+   172	
+   173	If you find our model useful or would like to use it in your own work, please cite this Hugging Face project:
+   174	
+   175	```bibtex
+   176	@misc{nanbeige43chat2026,
+   177	  title        = {Nanbeige4.3-33B},
+   178	  author       = {Nanbeige Team},
+   179	  year         = {2026},
+   180	  publisher    = {Hugging Face},
+   181	  howpublished = {\url{https://huggingface.co/Nanbeige/Nanbeige4.3-33B}}
+   182	}
+   183	```
+[0m
+[0m$ [0mcd agents/scratch && echo "=== nb_org.json ==="; python3 -c "
+import json
+d=json.load(open('nb_org.json'))
+print(type(d))
+if isinstance(d,list):
+  for m in d: print(m.get('id') or m.get('modelId'))
+else: print(json.dumps(d,indent=1)[:3000])
+"; echo "=== nb_search ids ==="; python3 -c "
+import json
+d=json.load(open('nb_search.json'))
+if isinstance(d,list):
+  for m in d: print(m.get('id'))
+else:
+  print(list(d.keys()))
+  for m in d.get('models',[]): print(m.get('id'))
+"
+=== nb_org.json ===
+<class 'list'>
+Nanbeige/Nanbeige4.3-33B
+Nanbeige/Nanbeige4.3-33B-Base
+Nanbeige/Nanbeige4.2-3B
+Nanbeige/Nanbeige4.3-33B-INT4
+Nanbeige/Nanbeige4.3-33B-FP8
+Nanbeige/Nanbeige4.3-33B-INT8
+Nanbeige/Nanbeige4.2-3B-DSpark
+Nanbeige/Nanbeige4-3B-Thinking-2510
+Nanbeige/Nanbeige4-3B-Thinking-2511
+Nanbeige/Nanbeige4.1-3B
+Nanbeige/Nanbeige4.2-3B-GPTQ-Int8
+Nanbeige/CoSineVerifier-Tool-4B
+Nanbeige/Nanbeige4-3B-Base
+Nanbeige/ToolMind-Web-3B
+Nanbeige/Nanbeige4.2-3B-Base
+Nanbeige/Nanbeige4.2-3B-FP8
+=== nb_search ids ===
+Nanbeige/Nanbeige4.3-33B
+dealignai/Nanbeige4.3-33B-UNCENSORED-GGUF
+abenzerps/Nanbeige4.3-33B-GSQ-RCO-GGUF
+Nanbeige/Nanbeige4.3-33B-Base
+AtomicChat/Nanbeige4.3-33B-GGUF
+bartowski/Nanbeige_Nanbeige4.3-33B-GGUF
+FRENCHFAKER/Nanbeige4.3-33B-cybersec-abliterated-GGUF
+Nanbeige/Nanbeige4.3-33B-INT4
+webbrain-one/Nanbeige4.3-33B-NVFP4
+Luni/Nanbeige-4.3-33B-Heretic
+Nanbeige/Nanbeige4.3-33B-FP8
+Nanbeige/Nanbeige4.3-33B-INT8
+sakamakismile/Nanbeige4.3-33B-Heretic-NVFP4
+Harsha001/Nanbeige4.3-33B-ROCmFPX
+prithivMLmods/Nanbeige4.3-33B-NVFP4-GGUF
+Luni/Nanbeige-4.3-33B-Heretic-GSQ-RCO-GGUF
+mradermacher/Nanbeige4.3-33B-i1-GGUF
+DogukanUrker/Nanbeige4.3-33B-GGUF
+primitive-ai/Nanbeige4.3-33B-NVFP4
+Nurymanau/Nanbeige4.3-33B-MLX-4bit
+pyros-vault/Nanbeige4.3-33B-oQ4e
+fcmeyer/Nanbeige4.3-33B-MLX-6bit
+pratikgx/Nanbeige4.3-33B-MLX-4bit
+pyros-vault/Nanbeige4.3-33B-oQ8e
+Tech2wild/Nanbeige4.3-33B-W4A16-AutoRound
+ProCreations/Nanbeige4.3-33B-DFlash2
+ProCreations/Nanbeige4.3-33B-NVFP4-A16
+wasifb/Nanbeige4.3-33B-AutoRound-W4A16
+shisa-ai/Nanbeige4.3-33B-DMS-2x
+PollardWeights/Nanbeige4.3-33B-Pollard
+0bserverx/Nanbeige4.3-33B-RVN-Uncensored-Heretic-Abliterated-RCO-GGUF
+axteam/Nanbeige4.3-33B-NVFP4A16
+axteam/Nanbeige4.3-33B-AWQ-4bit
+axteam/Nanbeige4.3-33B-NVFP4
+axteam/Nanbeige4.3-33B-GGUF
+junafinity/Nanbeige-4.3-33B-Heretic-Uncensored-MLX-4bit
+SolsticeAI/Nanbeige4.3-33B-Unlocked-Uncensored-Heretic
+eepos/Nanbeige4.3-33B-Q4_K_S-GGUF
+KnutJaegersberg/Nanbeige4.3-33B-Q8_0-GGUF
+CVLTAI/Nanbeige4.3-33B-GGUF
+KnutJaegersberg/Nanbeige4.3-33B-Base-Q8_0-GGUF
+blallo27/Nanbeige4.3-33B-Q6_K-GGUF
+moeshawky/Nanbeige4.3-33B-GGUF
+eyes-ml/Nanbeige4.3-33B
+eyes-ml/Nanbeige4.3-33B-Base
+Duckets/Nanbeige4.3-33B-MLX-4bit
+XTer123/Nanbeige4.3-33B-GGUF
+moeshawky/Nanbeige4.3-33B-INT8-safetensors
+nesymerp1/Nanbeige4.3-33B-Base-Q4_K_M-GGUF
+primitive-ai/Nanbeige4.3-33B-FP8
+DJLougen/Nanbeige4.3-33B-MLX
+moeshawky/Nanbeige4.3-33B-FP8-safetensors
+stuchapin/Nanbeige4.3-33B-Base-W4A16-AutoRound
+killen8/Nanbeige4.3-33B-MLX-4bit
+hamuz/Nanbeige4.3-33B-MLX
+fcmeyer/Nanbeige4.3-33B-MLX-bf16
+fcmeyer/Nanbeige4.3-33B-MLX-4bit
+fcmeyer/Nanbeige4.3-33B-MLX-8bit
+primitive-ai/Nanbeige4.3-33B-mixed-NVFP4-FP8
+fcmeyer/Nanbeige4.3-33B-MLX-4bit-g128
+fcmeyer/Nanbeige4.3-33B-MLX-mixed-4-6-g64
+Razor3D/Nanbeige4.3-33B-Q4_K_M-GGUF
+Luni/Nanbeige-4.3-33B-EXL3
+Luni/Nanbeige-4.3-33B-Heretic-EXL3
+a-gordo/Nanbeige4.3-33B-oQ8e
+a-gordo/Nanbeige4.3-33B-oQ6e
+a-gordo/Nanbeige4.3-33B-oQ4e
+stuchapin/Nanbeige4.3-33B-Base-W3A16-AutoRound
+kapitsaprime/Nanbeige4.3-33B-MLX-4bit
+kapitsaprime/Nanbeige4.3-33B-MLX-8bit
+lxe/Nanbeige4.3-33B-EXL3-2.5bpw
+chriswessels/Nanbeige4.3-33B-oQ8e
+pyros-vault/Nanbeige4.3-33B-oQ6e
+stuchapin/Nanbeige4.3-33B-Base-W8A16-AutoRound
+OsaurusAI/Nanbeige4.3-33B-JANG_4D
+OsaurusAI/Nanbeige4.3-33B-JANG_6M
+ProCreations/Nanbeige4.3-33B-FP8
+OsaurusAI/Nanbeige4.3-33B-JANG_2D
+nonkronk/Nanbeige4.3-33B-EXL3-4.0bpw
+jeonghyeon00/Nanbeige4.3-33B-w8a16-compressed-tensors
+jeonghyeon00/Nanbeige4.3-33B-w4a16-gptq-compressed-tensors
+Luni/Nanbeige-4.3-33B-Heretic-GGUF
+ProCreations/Nanbeige4.3-33B-EXL3
+XTer123/Nanbeige4.3-33B-Uncensored-GGUF
+jeonghyeon00/Nanbeige4.3-33B-W4A16-AutoRound
+alexwengg/Nanbeige4.3-33B-MLX-mixed-3-4-6bit
+alexwengg/Nanbeige4.3-33B-MLX-3bit
+mph/Nanbeige4.3-33B-MXFP8
+Luni/Nanbeige-4.3-33B-Heretic-EXL3-SC
+danyalmalik/Nanbeige4.3-33B-IQ2_M-ONNX-WebGPU
+vcruz305/Nanbeige4.3-33B-SAGE-EXL3-4.50bpw
+danyalmalik/Nanbeige4.3-33B-Q4_K_M-ONNX-WebGPU
+yamz-labs/Nanbeige4.3-33B-EXL3-Yamz
+3hs4n/Nanbeige4.3-33B-mlx-JANG_2D-compact
+mradermacher/Nanbeige4.3-33B-Base-GGUF
+heliophage/Nanbeige4.3-33B-W4A16-GPTQ
+akhtyamovpavel/Nanbeige4.3-33B-Hyper-GGUF
+stoyani/Nanbeige4.3-33B-FP8-KVcal
+mradermacher/Nanbeige4.3-33B-Base-i1-GGUF
+Luni/Nanbeige-4.3-33B-DFlash2
+[0m
+[93m[1m! [0mpermission requested: external_directory (/ai/github/reports/*); auto-rejecting
+[0m✗ [0mcd agents/scratch && echo "=== B0b.log ==="; cat ../reports/B0b.log 2>/dev/null | head -80; echo "=== old dir ==="; ls -la ../reports/old 2>/dev/null failed
+[91m[1mError: [0mThe user rejected permission to use this specific tool call.
+[0m
+[0m$ [0mcd agents/scratch && python3 -c "
+import json
+d=json.load(open('nb_model.safetensors.index.json'))
+print('keys:', list(d.keys()))
+wm=d['weight_map']
+print('num tensors:', len(wm))
+import re
+layers=sorted({int(m.group(1)) for k in wm if (m:=re.search(r'model.layers.(\d+)\.',k))})
+print('layers:', len(layers), layers[:5], layers[-5:])
+# list distinct suffixes
+suf={}
+for k in wm:
+    s=re.sub(r'model.layers.\d+.','L.',k)
+    suf[s]=suf.get(s,0)+1
+for s,c in sorted(suf.items()): print(c,s)
+print('metadata:', d.get('metadata'))
+"
+keys: ['metadata', 'weight_map']
+num tensors: 471
+layers: 52 [0, 1, 2, 3, 4] [47, 48, 49, 50, 51]
+52 L.input_layernorm.weight
+52 L.mlp.down_proj.weight
+52 L.mlp.gate_proj.weight
+52 L.mlp.up_proj.weight
+52 L.post_attention_layernorm.weight
+52 L.self_attn.k_proj.weight
+52 L.self_attn.o_proj.weight
+52 L.self_attn.q_proj.weight
+52 L.self_attn.v_proj.weight
+1 lm_head.weight
+1 model.embed_tokens.weight
+1 model.norm.weight
+metadata: {'total_size': 66237954048}
+[0m
