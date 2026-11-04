@@ -100,6 +100,41 @@ def _find_attention_modules(model, full_indices: list[int]):
     return found
 
 
+def _make_gqa_sdpa(rows: int):
+    """Causal attention for chunked prefill that never expands K/V to the query-head count.
+
+    The stock sdpa path calls ``repeat_kv`` whenever a mask is present, which materialises K and V
+    ``num_key_value_groups`` times larger (about 8 GiB per layer at 500K tokens for Ornith). Here the
+    ``g`` query heads of each KV head are folded into the row dimension (``[B, Hkv, g*s, D]``), so K and
+    V stay ``[B, Hkv, Tk, D]`` views. Queries are processed in sub-blocks of ``rows`` and each block sees
+    only the keys up to its last position, so there is no wasted work above the causal diagonal.
+    The chunk being processed is the last ``q_len`` of the ``Tk`` keys (the cache has been updated).
+    """
+    import torch.nn.functional as F
+
+    def gqa_sdpa(module, query, key, value, attention_mask, dropout=0.0, scaling=None, **kwargs):
+        B, Hq, q_len, D = query.shape
+        Hkv, Tk = key.shape[1], key.shape[2]
+        g = Hq // Hkv
+        p0 = Tk - q_len
+        if scaling is None:
+            scaling = D ** -0.5
+        out = torch.empty(B, Hq, q_len, value.shape[-1], dtype=query.dtype, device=query.device)
+        for a in range(0, q_len, rows):
+            s = min(rows, q_len - a)
+            qs = query[:, :, a : a + s].reshape(B, Hkv, g, s, D).reshape(B, Hkv, g * s, D)
+            lk = p0 + a + s
+            pos = (p0 + a + torch.arange(s, device=query.device)).repeat(g)          # row (j, i) -> position i
+            mask = torch.arange(lk, device=query.device)[None, :] <= pos[:, None]     # [g*s, lk] bool
+            o = F.scaled_dot_product_attention(
+                qs, key[:, :, :lk], value[:, :, :lk], attn_mask=mask[None, None], scale=scaling
+            )
+            out[:, :, a : a + s] = o.reshape(B, Hkv, g, s, -1).reshape(B, Hq, s, -1)
+        return out.transpose(1, 2).contiguous(), None
+
+    return gqa_sdpa
+
+
 def _apply_rope_yarn(config, factor: float) -> dict:
     """Rewrite the loaded config so the model builds with YaRN rope scaling.
 
@@ -377,6 +412,8 @@ def run(args) -> dict:
                 f"attention implementation {args.attn!r} is not registered in ALL_ATTENTION_FUNCTIONS"
             )
         orig_interface = ALL_ATTENTION_FUNCTIONS[args.attn]
+        if getattr(args, "gqa_sdpa", False):
+            orig_interface = _make_gqa_sdpa(int(getattr(args, "gqa_rows", 128)))
 
     def wrapped_interface(module, query, key, value, attention_mask, scaling=None, dropout=0.0, **kwargs):
         out, weights = orig_interface(
@@ -730,6 +767,14 @@ def main(argv=None):
         default="sdpa",
         help="attention implementation for the forward pass; sdpa never materialises the full matrix",
     )
+    p.add_argument(
+        "--gqa-sdpa",
+        action="store_true",
+        help="use a grouped-query attention path that never expands K/V to the query-head count "
+        "(folds each KV head's query group into the row dimension, in sub-blocks of --gqa-rows queries). "
+        "The stock sdpa path expands K/V 4x when a mask is present, which does not fit beyond about 450K tokens.",
+    )
+    p.add_argument("--gqa-rows", type=int, default=128, help="queries per sub-block for --gqa-sdpa")
     p.add_argument(
         "--prefill-chunk",
         type=int,
