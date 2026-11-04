@@ -37,10 +37,18 @@ def build(fs, cfg, start, L):
         n += len(tok(piece, add_special_tokens=False)["input_ids"])
         if n >= L + 64: break
     return exact("\n\n".join(parts), L), used
-manifest = {"tokenizer": "Ornith-1.5-9B", "add_special_tokens": False, "seed": 0, "prompts": []}
+# usage: build_coherent.py [kind ...] [--lengths 4096,32768,131072]   (partial runs merge into the manifest)
+args = sys.argv[1:]; LENGTHS = (4096, 32768, 131072); only = []
+while args:
+    a = args.pop(0)
+    if a == "--lengths": LENGTHS = tuple(int(x) for x in args.pop(0).split(","))
+    else: only.append(a)
+mp = f"{R}/manifest.coherent.compact.json"
+manifest = json.load(open(mp)) if os.path.exists(mp) else {"tokenizer": "Ornith-1.5-9B", "add_special_tokens": False, "seed": 0, "prompts": []}
 for kind, cfg in SRC.items():
+    if only and kind not in only: continue
     fs = files(cfg)
-    for L in (4096, 32768, 131072):
+    for L in LENGTHS:
         best = None
         for attempt in range(14):
             start = (attempt * 37 + 11) % len(fs)
@@ -53,6 +61,7 @@ for kind, cfg in SRC.items():
         if best is None: print("FAILED to fill", pid, "files", len(fs)); continue
         r, text, used, start = best
         open(f"{R}/texts/{pid}.txt", "w", encoding="utf-8").write(text)
+        manifest["prompts"] = [x for x in manifest["prompts"] if x["id"] != pid]
         manifest["prompts"].append(dict(id=pid, genre=cfg["genre"], length=L, token_count=L,
             sha256=hashlib.sha256(text.encode()).hexdigest(), licences=[cfg["licence"]], sources=[cfg["name"]],
             num_sources=1, num_files=len(used), start_file_index=start, eight_gram_repetition=round(r, 3)))

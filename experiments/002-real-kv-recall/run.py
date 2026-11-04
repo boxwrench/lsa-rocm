@@ -548,8 +548,15 @@ PAPER_BUCKET_CAP = 16
 PAPER_K = 2048
 
 
-def make_paper_config(n_cluster: int, k: int) -> OracleConfig:
-    """The paper's flat/tree knobs (Table 2), scaled to our context by ``n_cluster`` and ``k``."""
+def make_paper_config(n_cluster: int, k: int, tree: str = "scaled") -> OracleConfig:
+    """The paper's flat/tree knobs (Table 2), scaled to our context by ``n_cluster`` and ``k``.
+
+    ``tree="upstream"`` uses the upstream production tree settings for Qwen3.8-27B
+    (``configs/evaluation/production/qwen38_27b/lsa_tree_tp1.yaml``: top_level 16, node bucket 4,
+    node cluster block 4096, beam 2048, start nodes 32768). Those only prune once a context holds
+    more candidates than the beam, which is around 1M tokens.
+    """
+    up = tree == "upstream"
     return OracleConfig(
         pool_size=PAPER_N_POOL,
         bucket_size=PAPER_BUCKET_SIZE,
@@ -561,12 +568,12 @@ def make_paper_config(n_cluster: int, k: int) -> OracleConfig:
         sink_size=PAPER_SINK_SIZE,
         window_size=n_cluster,
         # Tree: paper Table 2 uses node buckets of 4, 4096-bucket blocks, beam 2048.
-        top_level=4,
+        top_level=16 if up else 4,
         node_bucket_size=4,
-        node_cluster_block_size=max(4, n_cluster // PAPER_BUCKET_SIZE),
+        node_cluster_block_size=4096 if up else max(4, n_cluster // PAPER_BUCKET_SIZE),
         node_cluster_algorithm="ward",
-        beam_width=min(2048, max(8, k)),
-        start_nodes=None,
+        beam_width=2048 if up else min(2048, max(8, k)),
+        start_nodes=32768 if up else None,
         page_size=max(n_cluster, ((n_cluster + 511) // 512) * 512),
         growth_buckets=0,
     )
@@ -705,9 +712,9 @@ def paper_run(args) -> dict:
     p = max(1, k // 4)
     if n_cluster % PAPER_BUCKET_SIZE:
         raise SystemExit(f"--n-cluster must be a multiple of {PAPER_BUCKET_SIZE}")
-    cfg = make_paper_config(n_cluster, k)
+    cfg = make_paper_config(n_cluster, k, getattr(args, 'tree', 'scaled'))
     if args.quick:
-        cfg = make_paper_config(n_cluster, min(k, 64))
+        cfg = make_paper_config(n_cluster, min(k, 64), getattr(args, 'tree', 'scaled'))
         k, p = cfg.top_k, cfg.top_p
 
     pca_from = None
@@ -1054,6 +1061,7 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--mode", choices=("legacy", "paper"), default="legacy")
     p.add_argument("--n-cluster", type=int, default=PAPER_N_CLUSTER)
+    p.add_argument("--tree", choices=("scaled", "upstream"), default="scaled", help="tree knobs: scaled to short contexts (default) or the upstream production settings (long context)")
     p.add_argument("--k", type=int, default=PAPER_K)
     p.add_argument("--pca-from", default=None)
     p.add_argument("--pca-out", default=None,
