@@ -148,6 +148,16 @@ Nanbeige rotates every head dimension, so there is no position-free part: the in
 not the paper's recipe, and the position-dependent rotation probably hurts. Dropping from 1024 to 64 dims costs about 0.04; the rest of
 the gap to block-sparse is granularity (block-sparse scores every block of 4 keys, LSA scores buckets of about 32 keys).
 
+### ornith-code917504: 917504 tokens
+
+Dump `ornith-yarn-code-coh-917504` (self-check cosine 0.999998927116394), tree preset `upstream`, window 512, mean retrieval efficiency over layers. Source: `results/b2_1-summary-ornith-code917504.json`.
+
+| k (share of keys) | flat | tree | block-sparse | recency | layers flat >= 0.70 | flat > recency | flat > block-sparse |
+|---|---|---|---|---|---|---|---|
+| 2048 (0.22%) | 0.56 | 0.56 | 0.57 | 0.16 | 3/8 | 7/8 | 2/8 |
+| 4096 (0.45%) | 0.61 | 0.61 | 0.62 | 0.16 | 4/8 | 8/8 | 1/8 |
+| 8192 (0.89%) | 0.66 | 0.66 | 0.67 | 0.37 | 4/8 | 7/8 | 1/8 |
+
 ## Conclusion
 As pre-registered, **Gate 1 fails** on this run: efficiency is below 0.70 on every layer at k=2048, and LSA does not beat the block-sparse baseline. Two readings, both preliminary: (a) the paper's claim is parity with block-sparse at a much cheaper index, and parity is what we see, so the 'beats block-sparse' criterion was mis-specified; (b) the efficiency criterion is a real shortfall at 32K for this model, though the paper's own budget regime is 1M and beyond. Diagnostics: the projected 64-dim shared index space reaches 68 to 80% of the ideal at k=2048 and clustering costs roughly a third more; raising d_idx to 768 changes efficiency by under 0.02.
 
