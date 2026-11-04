@@ -751,8 +751,9 @@ def paper_run(args) -> dict:
         offset = q_total - n_q
         positions = positions_all[offset:]
 
-        raw_keys = paper_index_keys(keys, rotary)
-        raw_queries = paper_raw_queries(queries, group, offset, n_q, rotary)
+        idx_rot = 0 if getattr(args, 'index_all_dims', False) else rotary
+        raw_keys = paper_index_keys(keys, idx_rot)
+        raw_queries = paper_raw_queries(queries, group, offset, n_q, idx_rot)
 
         if pca_from is not None:
             entry = pca_from.get(str(layer)) if isinstance(pca_from, dict) else None
@@ -952,7 +953,7 @@ def paper_run(args) -> dict:
         "p": p,
         "rotary_dim": int(default_rotary) if default_rotary is not None else None,
         "rotary_dim_per_layer": rotary_per_layer,
-        "index_dims_source": "rope_free_dims_all_kv_heads",
+        "index_dims_source": ("all_dims_post_rope_all_kv_heads" if getattr(args, "index_all_dims", False) else "rope_free_dims_all_kv_heads"),
         "pca_fit_source": (
             f"pca-from:{pca_from_meta}" if pca_from is not None else "fit-on-this-prompt"
         ),
@@ -1061,6 +1062,7 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--mode", choices=("legacy", "paper"), default="legacy")
     p.add_argument("--n-cluster", type=int, default=PAPER_N_CLUSTER)
+    p.add_argument("--index-all-dims", action="store_true", help="index over ALL dims of the post-RoPE keys instead of only the RoPE-free dims (needed for models that rotate every dim, e.g. Llama-style)")
     p.add_argument("--tree", choices=("scaled", "upstream"), default="scaled", help="tree knobs: scaled to short contexts (default) or the upstream production settings (long context)")
     p.add_argument("--k", type=int, default=PAPER_K)
     p.add_argument("--pca-from", default=None)
