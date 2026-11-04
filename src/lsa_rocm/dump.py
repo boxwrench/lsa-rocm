@@ -2,14 +2,20 @@
 
 Usage:
     python -m lsa_rocm.dump --model PATH --prompt-file FILE --max-tokens N \
-        --n-queries Q --out DIR [--device cpu|cuda]
+        --n-queries Q --out DIR [--device cpu|cuda] [--attn sdpa|eager]
 
 The tool runs a single forward pass over the prompt, captures, per full-attention
 layer, keys/values as cached (post-RoPE) [Hkv, T, D], keys before RoPE (when the
 model's rotary helper can be intercepted), queries of the last Q positions after
-RoPE [Hq, Q, D] and their positions. It then recomputes the attention output of
-the last query from the dumped tensors and compares it against the attention
-module's own output; a cosine below 0.999 aborts the run.
+RoPE [Hq, Q, D], their positions, and the attention module's own output for the
+last query position [Hq, D]. It then recomputes the attention output of the last
+query from the dumped tensors and compares it against the module output; a
+cosine below 0.999 aborts the run.
+
+Long context: --attn sdpa (the default) makes the forward pass use PyTorch SDPA,
+which dispatches to the flash kernel on ROCm and never materialises the full
+attention matrix. --attn eager keeps the original full-attention-matrix path for
+small models and regression tests.
 """
 
 from __future__ import annotations
@@ -20,6 +26,7 @@ import json
 import os
 import platform
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -98,12 +105,13 @@ def run(args) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     prompt_text = Path(args.prompt_file).read_text()
+    prompt_bytes = prompt_text.encode()
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     enc = tokenizer(prompt_text, return_tensors="pt", truncation=True, max_length=args.max_tokens)
     input_ids = enc["input_ids"].to(device)
-    attention_mask = enc.get("attention_mask")
-    if attention_mask is not None:
-        attention_mask = attention_mask.to(device)
+    # The prompt is truncated to the first --max-tokens tokens and never padded,
+    # so no 2D mask is needed; passing None lets sdpa use is_causal directly.
+    attention_mask = None
     T = int(input_ids.shape[1])
     if T <= 0:
         raise SystemExit("empty prompt after tokenization")
@@ -115,9 +123,11 @@ def run(args) -> dict:
         args.model,
         dtype=dtype,
         trust_remote_code=True,
-        attn_implementation="eager",
+        attn_implementation=args.attn,
     ).to(device)
     model.eval()
+    # What transformers actually put on the config (never assume the request was honoured).
+    actual_impl = str(getattr(model.config, "_attn_implementation", args.attn))
     config = model.config
     text_cfg = _text_config(config)
     full_indices, layer_types = _full_attention_indices(config)
@@ -139,34 +149,52 @@ def run(args) -> dict:
         "rotary_dim": {},
     }
 
-    # Under the "eager" implementation transformers falls back to the module's
-    # own `eager_attention_forward` default rather than a registry entry, so we
-    # recover that function and register our wrapper under the "eager" key,
-    # which get_interface then finds first.
+    # Wrap the attention implementation's own interface function. It receives
+    # post-RoPE q/k/v and the module's own scaling and returns the module's
+    # attention output; pre-RoPE k is captured by wrapping the rotary helper
+    # used inside the attention forward.
     import importlib
 
-    eager_fn = None
-    for _idx, (_name, module) in attn_modules.items():
-        cls_mod = importlib.import_module(type(module).__module__)
-        eager_fn = getattr(cls_mod, "eager_attention_forward", None)
-        if eager_fn is not None:
-            break
-    if eager_fn is None:
-        raise RuntimeError("could not locate the model's eager_attention_forward")
-    orig_interface = eager_fn
+    if args.attn == "eager":
+        # transformers falls back to the module's own `eager_attention_forward`
+        # default rather than a registry entry, so recover that function.
+        orig_interface = None
+        for _idx, (_name, module) in attn_modules.items():
+            cls_mod = importlib.import_module(type(module).__module__)
+            orig_interface = getattr(cls_mod, "eager_attention_forward", None)
+            if orig_interface is not None:
+                break
+        if orig_interface is None:
+            raise RuntimeError("could not locate the model's eager_attention_forward")
+    else:
+        if args.attn not in ALL_ATTENTION_FUNCTIONS:
+            raise RuntimeError(
+                f"attention implementation {args.attn!r} is not registered in ALL_ATTENTION_FUNCTIONS"
+            )
+        orig_interface = ALL_ATTENTION_FUNCTIONS[args.attn]
 
-    def wrapped_interface(module, query, key, value, attention_mask, scaling, dropout=0.0, **kwargs):
+    def wrapped_interface(module, query, key, value, attention_mask, scaling=None, dropout=0.0, **kwargs):
         out, weights = orig_interface(
-            module, query, key, value, attention_mask, scaling, dropout=dropout, **kwargs
+            module, query, key, value, attention_mask, dropout=dropout, scaling=scaling, **kwargs
         )
         idx = getattr(module, "layer_idx", None)
         if idx in full_indices:
+            if scaling is None:
+                scaling = float(getattr(module, "scaling", 1.0))
             q = query[0].detach().to("cpu")
             k = key[0].detach().to("cpu")
             v = value[0].detach().to("cpu")
             if k.shape[-2] != T:
                 raise RuntimeError(f"layer {idx}: captured {k.shape[-2]} keys, expected {T}")
             pre = state["pending_pre_rope"].pop(idx, None)
+            # out: [B, T, Hq, D] for both eager and sdpa
+            o = out.detach()
+            if o.dim() == 4 and o.shape[1] == T:
+                module_out_last = o[0, T - 1].float().to("cpu").contiguous()
+            elif o.dim() == 3 and o.shape[1] == T:
+                module_out_last = o[0, T - 1].float().to("cpu").contiguous()
+            else:
+                raise RuntimeError(f"unexpected attention output shape {tuple(o.shape)}")
             record = {
                 "queries_post_rope": q[:, T - nq :].contiguous().clone(),
                 "keys_post_rope": k.contiguous().clone(),
@@ -176,21 +204,17 @@ def run(args) -> dict:
                 "num_key_value_groups": int(module.num_key_value_groups),
                 "num_attention_heads": int(getattr(module, "config").num_attention_heads),
                 "num_key_value_heads": int(getattr(module, "config").num_key_value_heads),
+                "selfcheck_module_out": module_out_last,
             }
             if pre is not None:
                 record["keys_pre_rope"] = pre
+            state["own_out_last"][idx] = module_out_last
             state["captured"][idx] = record
-            # out: [B, T, Hq, D] under eager
-            o = out.detach()
-            if o.dim() == 4 and o.shape[1] == T:
-                state["own_out_last"][idx] = o[0, T - 1].float().to("cpu")
-            elif o.dim() == 3:
-                state["own_out_last"][idx] = o[0, T - 1].float().to("cpu")
-            else:
-                raise RuntimeError(f"unexpected attention output shape {tuple(o.shape)}")
         return out, weights
 
-    ALL_ATTENTION_FUNCTIONS["eager"] = wrapped_interface
+    had_key = args.attn in ALL_ATTENTION_FUNCTIONS
+    saved_interface = ALL_ATTENTION_FUNCTIONS[args.attn] if had_key else None
+    ALL_ATTENTION_FUNCTIONS[args.attn] = wrapped_interface
 
     # Patch each model module that defines apply_rotary_pos_emb.
     patched_modules = []
@@ -231,6 +255,9 @@ def run(args) -> dict:
         hooks.append(module.register_forward_pre_hook(pre_hook, with_kwargs=True))
         hooks.append(module.register_forward_hook(post_hook, with_kwargs=True))
 
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
+    t_forward = time.time()
     try:
         with torch.no_grad():
             model(
@@ -238,13 +265,25 @@ def run(args) -> dict:
                 attention_mask=attention_mask,
                 position_ids=positions.unsqueeze(0),
                 use_cache=False,
+                # Only the attention tensors are captured, so skip the full-sequence logits
+                # (T x vocab is about 16 GB at T=32768 with a 248k vocabulary).
+                logits_to_keep=1,
             )
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
     finally:
-        ALL_ATTENTION_FUNCTIONS.pop("eager", None)
+        elapsed_s = time.time() - t_forward
+        if had_key:
+            ALL_ATTENTION_FUNCTIONS[args.attn] = saved_interface
+        else:
+            ALL_ATTENTION_FUNCTIONS.pop(args.attn, None)
         for mod, orig in zip(patched_modules, rotary_patch_state.values()):
             mod.apply_rotary_pos_emb = orig
         for h in hooks:
             h.remove()
+    peak_vram_gib = (
+        round(torch.cuda.max_memory_allocated(device) / (2**30), 4) if device.type == "cuda" else None
+    )
 
     if sorted(state["captured"]) != sorted(full_indices):
         raise RuntimeError(
@@ -305,8 +344,15 @@ def run(args) -> dict:
         "model_revision": getattr(config, "_commit_hash", None),
         "architectures": getattr(config, "architectures", None),
         "model_type": getattr(config, "model_type", None),
-        "prompt_file": os.path.abspath(args.prompt_file),
-        "prompt_sha256": hashlib.sha256(prompt_text.encode()).hexdigest(),
+        "max_tokens": int(args.max_tokens),
+        "prompt_file": os.path.basename(args.prompt_file),
+        "prompt_file_path": os.path.abspath(args.prompt_file),
+        "prompt_sha256": hashlib.sha256(prompt_bytes).hexdigest(),
+        "peak_vram_gib": peak_vram_gib,
+        "elapsed_s": round(elapsed_s, 3),
+        "attention_impl": actual_impl,
+        "self_check_layer": check_layer,
+        "self_check_cosine": cos,
         "tokens": T,
         "n_queries": nq,
         "query_positions": state.get("query_positions", list(range(T - nq, T))),
@@ -329,7 +375,7 @@ def run(args) -> dict:
         "rocm_version": torch.version.hip,
         "transformers_version": __import__("transformers").__version__,
         "seed": args.seed,
-        "attention_implementation": "eager",
+        "attention_implementation": actual_impl,
         "self_check": {
             "layer": check_layer,
             "cosine": cos,
@@ -358,6 +404,12 @@ def main(argv=None):
     p.add_argument("--n-queries", type=int, default=8)
     p.add_argument("--out", required=True)
     p.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
+    p.add_argument(
+        "--attn",
+        choices=["sdpa", "eager"],
+        default="sdpa",
+        help="attention implementation for the forward pass; sdpa never materialises the full matrix",
+    )
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args(argv)
     run(args)
