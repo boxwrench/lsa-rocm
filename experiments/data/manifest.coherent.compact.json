@@ -104,6 +104,57 @@
    "num_files": 41,
    "start_file_index": 36,
    "eight_gram_repetition": 0.148
+  },
+  {
+   "id": "prose-coh-524288",
+   "genre": "prose",
+   "length": 524288,
+   "token_count": 524288,
+   "sha256": "3a1d72563aa837cf0c2c1fa6a42017a61ba11e7aa963ddd01fd38dea1e8763e4",
+   "licences": [
+    "MIT (dataset card)"
+   ],
+   "sources": [
+    "paul_graham_essays dataset (sgoel9; dataset card MIT, essays are the author's)"
+   ],
+   "num_sources": 1,
+   "num_files": 171,
+   "start_file_index": 11,
+   "eight_gram_repetition": 0.015
+  },
+  {
+   "id": "code-coh-524288",
+   "genre": "code",
+   "length": 524288,
+   "token_count": 524288,
+   "sha256": "e60b75cb4044dd3dd128ef3c4aef60b19bf851268aab618cf14d154d4e4c1acf",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "exllamav3 (turboderp, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 83,
+   "start_file_index": 85,
+   "eight_gram_repetition": 0.188
+  },
+  {
+   "id": "code-coh-917504",
+   "genre": "code",
+   "length": 917504,
+   "token_count": 917504,
+   "sha256": "175a1e3c608dcce5cd39e8e07d802138ddf4830a3e9dad1171988a9614a65d51",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "exllamav3 (turboderp, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 201,
+   "start_file_index": 46,
+   "eight_gram_repetition": 0.273
   }
  ]
 }

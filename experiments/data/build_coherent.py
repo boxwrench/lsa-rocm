@@ -11,6 +11,18 @@ SRC = {
  "tech-coh": dict(genre="technical", root="/ai/github/composable_kernel", name="composable_kernel docs (AMD, MIT)", licence="MIT",
                   pats=["docs/**/*.rst", "docs/**/*.md", "**/*.md"], hdr=".. ==== file: {} ====\n"),
 }
+def _materialise_essays(dst="/ai/github/lsa-rocm/agents/scratch/essays"):
+    """One text file per essay of the sgoel9/paul_graham_essays dataset (gitignored scratch, never committed)."""
+    import csv
+    os.makedirs(dst, exist_ok=True)
+    if glob.glob(dst + "/*.txt"): return dst
+    csv.field_size_limit(10**9)
+    f = glob.glob("/ai/huggingface/hub/datasets--sgoel9--paul_graham_essays/snapshots/*/*.csv")[0]
+    for r in list(csv.DictReader(open(f, encoding="utf-8", errors="ignore"))):
+        open(f"{dst}/{int(r['id']):04d}.txt", "w", encoding="utf-8").write(f"{r['title']}\n\n{r['text']}\n")
+    return dst
+SRC["prose-coh"] = dict(genre="prose", root=_materialise_essays(), name="paul_graham_essays dataset (sgoel9; dataset card MIT, essays are the author's)",
+                        licence="MIT (dataset card)", pats=["*.txt"], hdr="== essay: {} ==\n")
 def files(cfg):
     fs = sorted({p for pat in cfg["pats"] for p in glob.glob(os.path.join(cfg["root"], pat), recursive=True)
                  if os.path.isfile(p) and os.path.getsize(p) > 1500 and "/third_party/" not in p})
