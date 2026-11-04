@@ -48,7 +48,18 @@ PYTHONPATH=src:third_party/lsa/src agents/scratch/venv-lsa-min/bin/python \
 ```
 
 ## Result
+**Preliminary: one model, one prompt, 16 queries.** Ornith 1.5 9B, coherent prose, 32768 tokens, all 8 full-attention layers, paper-mode (training-free, layer-shared PCA index, d_idx 64, n_cluster = window = 512, p = k/4). Retrieval efficiency = captured head-averaged attention mass outside sink and window divided by the exact top-k at the same selection size (mean over layers). Source: `results/b2_1-summary-ornith-prose32768.json`.
+
+| k (share of 32768 keys) | flat | tree | block-sparse | recency | layers with flat >= 0.70 | flat > recency | flat > block-sparse |
+|---|---|---|---|---|---|---|---|
+| 512 (1.6%) | 0.32 | 0.32 | 0.35 | 0.15 | 0/8 | 7/8 | 0/8 |
+| 1024 (3.1%) | 0.42 | 0.42 | 0.45 | 0.28 | 0/8 | 7/8 | 0/8 |
+| 2048 (6.2%) | 0.53 | 0.53 | 0.55 | 0.39 | 0/8 | 7/8 | 0/8 |
+| 4096 (12.5%) | 0.64 | 0.64 | 0.66 | 0.41 | 4/8 | 7/8 | 0/8 |
+
+Tree equals flat at this length. At k=2048 the best layer reaches 0.69 and none reach 0.70. The block-sparse baseline is slightly better than LSA on every layer. Recency beats flat on the first full-attention layer (layer 3).
 
 ## Conclusion
+As pre-registered, **Gate 1 fails** on this run: efficiency is below 0.70 on every layer at k=2048, and LSA does not beat the block-sparse baseline. Two readings, both preliminary: (a) the paper's claim is parity with block-sparse at a much cheaper index, and parity is what we see, so the 'beats block-sparse' criterion was mis-specified; (b) the efficiency criterion is a real shortfall at 32K for this model, though the paper's own budget regime is 1M and beyond. Diagnostics: the projected 64-dim shared index space reaches 68 to 80% of the ideal at k=2048 and clustering costs roughly a third more; raising d_idx to 768 changes efficiency by under 0.02.
 
 ## Caveats

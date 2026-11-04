@@ -1,6 +1,6 @@
 # 000-quick-signal
 
-**Status:** done, preliminary. A rough first look, not a result. The proper experiment is 002.
+**Status:** done, preliminary, **superseded by 002.** Its numbers include the recent-key window and sinks in the captured mass, which inflates them, and it does not follow the paper's index recipe (see docs/paper-notes.md). With the paper's metric (mass outside the window) retrieval is far weaker, see experiment 002.
 
 ## Hypothesis
 LSA-style retrieval on the full-attention layers of a recent hybrid model captures much more attention mass than

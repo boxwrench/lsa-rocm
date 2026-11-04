@@ -90,6 +90,12 @@ the long-context work (chunked-prefill dumper, 128K and 1M dumps, synthetic 1M a
 spike) is no longer blocked by Gate 1. Gate 1 stays as the pre-registered reporting criterion at 32K. A short-context
 result does not predict long-context behaviour: at 32K a k=4096 budget is 12.5% of the keys, at 1M it is 0.4%.
 
+**Gate 1 outcome (2026-11-03, Ornith 9B, prose-32768, one prompt, preliminary): FAILED as pre-registered.** Flat retrieval
+at k=2048 reached efficiency >= 0.70 on 0 of 8 layers (best 0.69, mean 0.53), and did not beat the block-sparse baseline
+(mean 0.55). The second criterion was mis-specified: the paper claims parity with block-sparse at a cheaper index, which is
+what we see. The original gate stays on record. It is not rewritten after the fact. Remaining checks before any conclusion:
+more prompts (code, technical), Nanbeige, and long context, where the budget share is tiny and the tree matters.
+
 ## Rules for agents
 
 1. Work only inside the paths named in your task. Do not edit `docs/plan.md`, `docs/metrics.md` or `agents/verify/`.
