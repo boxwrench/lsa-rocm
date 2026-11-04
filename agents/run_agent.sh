@@ -11,7 +11,7 @@ vcheck(){ sha256sum -c --quiet agents/verify/SHA256SUMS >/dev/null 2>&1 || { st 
 attempt(){ # model tag extra
   timeout 1380 opencode run -m "$1" "$BASE
 $3" > agents/reports/$id.$2.log 2>&1; }
-[ "$id" = "B1e" ] && { gpu_wait || { st "GPU 1 not idle after 20 min"; echo BLOCKED > agents/reports/$id.status; exit 1; }; }
+case $id in B1e|B1g) _g=1;; esac; [ -n "$_g" ] && { gpu_wait || { st "GPU 1 not idle after 20 min"; echo BLOCKED > agents/reports/$id.status; exit 1; }; }
 DS=merge-gateway/deepseek/deepseek-v4.1-flash-1017; LC=longcat/LongCat-2.5-Preview
 n=0
 for spec in "$DS ds1" "$DS ds2" "$LC lc1"; do
@@ -19,7 +19,7 @@ for spec in "$DS ds1" "$DS ds2" "$LC lc1"; do
   # skip the DeepSeek retry unless the previous failure was a network error
   if [ "$tag" = ds2 ] && ! grep -qE "EPROTO|ECONNRESET|fetch failed" agents/reports/$id.ds1.log 2>/dev/null; then continue; fi
   [ "$tag" = ds2 ] && sleep 60
-  [ "$id" = "B1e" ] && { gpu_wait || { st "GPU busy"; echo BLOCKED > agents/reports/$id.status; exit 1; }; }
+  case $id in B1e|B1g) _g=1;; esac; [ -n "$_g" ] && { gpu_wait || { st "GPU busy"; echo BLOCKED > agents/reports/$id.status; exit 1; }; }
   extra=""
   if [ -f agents/reports/$id.verify.txt ]; then extra="CONTINUATION: an earlier attempt left files and a partial report. The last acceptance run printed:
 $(tail -30 agents/reports/$id.verify.txt)

@@ -85,6 +85,11 @@ These were written on 2026-11-03 **before** the paper-mode sweep was run. Change
   at 10M tokens. We report where it dominates at our lengths, which will differ.
 - **Gate 3.** Only then run the remaining models (B4) and the CPU-memory KV idea on the Strix Halo node.
 
+**Change note, 2026-11-03 (before any paper-mode result existed):** long context is the point of the experiment, so
+the long-context work (chunked-prefill dumper, 128K and 1M dumps, synthetic 1M and 10M index timing, the 2M Strix Halo
+spike) is no longer blocked by Gate 1. Gate 1 stays as the pre-registered reporting criterion at 32K. A short-context
+result does not predict long-context behaviour: at 32K a k=4096 budget is 12.5% of the keys, at 1M it is 0.4%.
+
 ## Rules for agents
 
 1. Work only inside the paths named in your task. Do not edit `docs/plan.md`, `docs/metrics.md` or `agents/verify/`.
@@ -112,9 +117,10 @@ These were written on 2026-11-03 **before** the paper-mode sweep was run. Change
 | B2.3 | Run Ornith at 4K and 32K, prose, code and technical prompts. I read the numbers and decide Gate 1. | after B2.1, B2.2 |
 | B2.4 | Spike: load Nanbeige (FP8 compressed-tensors, else bf16 with CPU offload) on ROCm and dump 32K | parallel, may need a download |
 | B3 | GPU stage timing on the R9700 at 4K, 32K, 128K (needs a 128K dump, expected to fit now) | after Gate 1 |
-| B3b | Index-stage timing at 1M and 10M with synthetic keys (64-dim index vectors, 10M is about 1.3 GB). Measures cost only, not quality. Tests the claim that search dominates at 10M. | after Gate 1 |
-| B2.5 | Stretch: Ornith 1M-token dump and retrieval-quality run. Needs chunked prefill and the model split over both R9700s (KV 32 GiB), YaRN factor 4 beyond the 262K native context. | after Gate 1 at 32K and 128K |
-| B2.6 | Stretch: Ornith about 2M tokens on the Strix Halo node (KV 64 GiB plus 18 GiB weights inside its ~112 GiB GPU-addressable RAM). Needs a ROCm torch for gfx1151, chunked prefill, YaRN factor 8. 3M does not fit. | after B2.5, spike first |
+| B3b | Index-stage timing at 1M and 10M with synthetic keys (64-dim index vectors, 10M is about 1.3 GB). Measures cost only, not quality. Tests the claim that search dominates at 10M. | after B2.1, not gated |
+| B1g | **Chunked-prefill dumper** (needed for 128K and 1M) and the 128K Ornith dump | **next, parallel** |
+| B2.5 | Stretch: Ornith 1M-token dump and retrieval-quality run. Needs chunked prefill and the model split over both R9700s (KV 32 GiB), YaRN factor 4 beyond the 262K native context. | after B1g, not gated |
+| B2.6 | Stretch: Ornith about 2M tokens on the Strix Halo node (KV 64 GiB plus 18 GiB weights inside its ~112 GiB GPU-addressable RAM). Needs a ROCm torch for gfx1151, chunked prefill, YaRN factor 8. 3M does not fit. | after B2.5, spike first, not gated |
 | B4 | Qwen3.8-27B quantized spike and run, then small models and gpt-oss control | after Gate 2 |
 | B5 | `FINDINGS.md`, each claim linked to an experiment | last |
 

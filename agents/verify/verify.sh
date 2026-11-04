@@ -1,6 +1,5 @@
 #!/bin/bash
+PY=/ai/environments/comfyui-rocm714/bin/python
 case "$1" in
- B1e) exec /ai/environments/comfyui-rocm714/bin/python -I /ai/github/lsa-rocm/agents/verify/B1e.py;;
- B1f) exec /ai/environments/comfyui-rocm714/bin/python -I /ai/github/lsa-rocm/agents/verify/B1f.py;;
- B2_0) exec /ai/environments/comfyui-rocm714/bin/python -I /ai/github/lsa-rocm/agents/verify/B2_0.py;;
+ B1e|B1f|B1g|B2_0|B2_1|B2_2) exec $PY -I /ai/github/lsa-rocm/agents/verify/$1.py;;
 esac
