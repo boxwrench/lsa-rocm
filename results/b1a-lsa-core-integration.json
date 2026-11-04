@@ -1,0 +1,67 @@
+{
+  "task": "B1a",
+  "kind": "lsa.core.read -> metrics integration",
+  "git_commit": "b75251933d49c46dbbc33bfa508cbf3edc55a6c1",
+  "torch": "2.13.0+cpu",
+  "seed": 0,
+  "config": {
+    "n_keys": 32,
+    "dim": 8,
+    "n_queries": 4,
+    "pool_size": 1,
+    "bucket_size": 8,
+    "bucket_cap": 16,
+    "cluster_block_size": 8,
+    "top_p": 2,
+    "top_k": 8,
+    "sink_size": 1,
+    "window_size": 4,
+    "selected_shape": [
+      4,
+      13
+    ],
+    "selected_dtype": "torch.int32",
+    "lengths_dtype": "torch.int32"
+  },
+  "lengths": [
+    12,
+    13,
+    13,
+    13
+  ],
+  "total_mass": [
+    0.348118,
+    0.4194,
+    0.433004,
+    0.438928
+  ],
+  "mass_excluding_sinks": [
+    0.309077,
+    0.405289,
+    0.404305,
+    0.412385
+  ],
+  "recall_at_8": [
+    0.125,
+    0.5,
+    0.375,
+    0.5
+  ],
+  "output_error": [
+    1.141374,
+    0.452567,
+    0.882769,
+    0.669876
+  ],
+  "budget_fraction": [
+    0.375,
+    0.40625,
+    0.40625,
+    0.40625
+  ],
+  "checks": {
+    "mass_in_unit_interval": true,
+    "recall_in_unit_interval": true,
+    "error_non_negative": true
+  }
+}

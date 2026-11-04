@@ -1,0 +1,144 @@
+{
+  "task": "B1a",
+  "git_commit": "b75251933d49c46dbbc33bfa508cbf3edc55a6c1",
+  "git_dirty": true,
+  "python": "3.12.13",
+  "executable": "/ai/github/lsa-rocm/agents/scratch/venv-lsa-min/bin/python",
+  "torch": "2.13.0+cpu",
+  "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+  "device": "cpu",
+  "seed": null,
+  "config": {
+    "test_module": "tests/test_metrics.py",
+    "dtype": "float32",
+    "tie_break": "ascending key index (stable argsort of -weights)",
+    "selection_format": "selected [Nq,S] int + lengths [Nq]"
+  },
+  "tests_run": 24,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "successful": true,
+  "tests": [
+    {
+      "test": "test_metrics.AttentionWeightsTest.test_causal_mask_excludes_future_keys",
+      "status": "pass",
+      "seconds": 0.001192
+    },
+    {
+      "test": "test_metrics.AttentionWeightsTest.test_causal_mask_inclusive_boundary",
+      "status": "pass",
+      "seconds": 0.000144
+    },
+    {
+      "test": "test_metrics.AttentionWeightsTest.test_fully_masked_query_gives_zero_row",
+      "status": "pass",
+      "seconds": 0.000119
+    },
+    {
+      "test": "test_metrics.AttentionWeightsTest.test_input_validation",
+      "status": "pass",
+      "seconds": 6.8e-05
+    },
+    {
+      "test": "test_metrics.AttentionWeightsTest.test_matches_manual_softmax",
+      "status": "pass",
+      "seconds": 4.3e-05
+    },
+    {
+      "test": "test_metrics.AttentionWeightsTest.test_scale_is_applied",
+      "status": "pass",
+      "seconds": 2.7e-05
+    },
+    {
+      "test": "test_metrics.BudgetFractionTest.test_basic",
+      "status": "pass",
+      "seconds": 6.1e-05
+    },
+    {
+      "test": "test_metrics.BudgetFractionTest.test_validation",
+      "status": "pass",
+      "seconds": 1.4e-05
+    },
+    {
+      "test": "test_metrics.MassCapturedTest.test_all_keys_selected_gives_mass_one",
+      "status": "pass",
+      "seconds": 0.000187
+    },
+    {
+      "test": "test_metrics.MassCapturedTest.test_empty_selection_gives_zero",
+      "status": "pass",
+      "seconds": 7.1e-05
+    },
+    {
+      "test": "test_metrics.MassCapturedTest.test_minus_one_padding_from_lsa_core_is_ignored",
+      "status": "pass",
+      "seconds": 5.6e-05
+    },
+    {
+      "test": "test_metrics.MassCapturedTest.test_missing_heavy_keys_gives_computed_mass",
+      "status": "pass",
+      "seconds": 5.2e-05
+    },
+    {
+      "test": "test_metrics.MassCapturedTest.test_padding_beyond_length_is_ignored",
+      "status": "pass",
+      "seconds": 4.8e-05
+    },
+    {
+      "test": "test_metrics.MassCapturedTest.test_sink_mass_reported_separately",
+      "status": "pass",
+      "seconds": 5.1e-05
+    },
+    {
+      "test": "test_metrics.OutputErrorTest.test_all_keys_selected_gives_zero_error",
+      "status": "pass",
+      "seconds": 0.000174
+    },
+    {
+      "test": "test_metrics.OutputErrorTest.test_error_formula_on_a_known_case",
+      "status": "pass",
+      "seconds": 8.8e-05
+    },
+    {
+      "test": "test_metrics.OutputErrorTest.test_padding_is_ignored",
+      "status": "pass",
+      "seconds": 8e-05
+    },
+    {
+      "test": "test_metrics.OutputErrorTest.test_renormalisation_is_used",
+      "status": "pass",
+      "seconds": 9.3e-05
+    },
+    {
+      "test": "test_metrics.OutputErrorTest.test_zero_selection_gives_error_one",
+      "status": "pass",
+      "seconds": 7.5e-05
+    },
+    {
+      "test": "test_metrics.RecallAtKTest.test_all_keys_selected_gives_one",
+      "status": "pass",
+      "seconds": 0.000143
+    },
+    {
+      "test": "test_metrics.RecallAtKTest.test_k_larger_than_n_is_clamped",
+      "status": "pass",
+      "seconds": 6.7e-05
+    },
+    {
+      "test": "test_metrics.RecallAtKTest.test_padding_is_ignored",
+      "status": "pass",
+      "seconds": 5.1e-05
+    },
+    {
+      "test": "test_metrics.RecallAtKTest.test_ties_broken_by_ascending_index",
+      "status": "pass",
+      "seconds": 0.000114
+    },
+    {
+      "test": "test_metrics.RecallAtKTest.test_top_k_miss",
+      "status": "pass",
+      "seconds": 0.000112
+    }
+  ]
+}
