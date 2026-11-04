@@ -1,0 +1,109 @@
+{
+ "tokenizer": "Ornith-1.5-9B",
+ "add_special_tokens": false,
+ "seed": 0,
+ "prompts": [
+  {
+   "id": "code-coh-4096",
+   "genre": "code",
+   "length": 4096,
+   "token_count": 4096,
+   "sha256": "ef06587da0e65c731c99df6c32970b80bdb4d96974c9e02f831baaffa3c085a2",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "exllamav3 (turboderp, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 2,
+   "start_file_index": 11,
+   "eight_gram_repetition": 0.068
+  },
+  {
+   "id": "code-coh-32768",
+   "genre": "code",
+   "length": 32768,
+   "token_count": 32768,
+   "sha256": "8e784fd4c84fd657298df47898207959a82ca0c41b672305eeee4b8419faf087",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "exllamav3 (turboderp, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 7,
+   "start_file_index": 85,
+   "eight_gram_repetition": 0.102
+  },
+  {
+   "id": "code-coh-131072",
+   "genre": "code",
+   "length": 131072,
+   "token_count": 131072,
+   "sha256": "62f1db958ef0a24255fc6128180812bee27093161970be35750f0e2ed055d441",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "exllamav3 (turboderp, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 23,
+   "start_file_index": 85,
+   "eight_gram_repetition": 0.096
+  },
+  {
+   "id": "tech-coh-4096",
+   "genre": "technical",
+   "length": 4096,
+   "token_count": 4096,
+   "sha256": "5c9f37732bc7e69f9dc4faebb97309b7aa56c3f79c919ddbda7a8600ebe8195b",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "composable_kernel docs (AMD, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 5,
+   "start_file_index": 122,
+   "eight_gram_repetition": 0.105
+  },
+  {
+   "id": "tech-coh-32768",
+   "genre": "technical",
+   "length": 32768,
+   "token_count": 32768,
+   "sha256": "eef087e0bc484631858ec43f97e471102ea6532489df7731015235bb684722ce",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "composable_kernel docs (AMD, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 18,
+   "start_file_index": 159,
+   "eight_gram_repetition": 0.09
+  },
+  {
+   "id": "tech-coh-131072",
+   "genre": "technical",
+   "length": 131072,
+   "token_count": 131072,
+   "sha256": "676312200b2ba2b49bd276358c4c62c9f982bb5e060dabcd6dc55f25be6be7a7",
+   "licences": [
+    "MIT"
+   ],
+   "sources": [
+    "composable_kernel docs (AMD, MIT)"
+   ],
+   "num_sources": 1,
+   "num_files": 41,
+   "start_file_index": 36,
+   "eight_gram_repetition": 0.148
+  }
+ ]
+}
