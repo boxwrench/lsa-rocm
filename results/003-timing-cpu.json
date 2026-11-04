@@ -1,0 +1,58 @@
+{
+ "device": "cpu",
+ "gpu": "cpu",
+ "torch": "2.13.0+cpu",
+ "params": {
+  "d_idx": 64,
+  "n_pool": 4,
+  "bucket": 8,
+  "cluster_block": 512,
+  "k": 4096,
+  "p": 1024,
+  "nq": 32
+ },
+ "rows": [
+  {
+   "T": 32768,
+   "pool_keys": 8192,
+   "buckets": 1024,
+   "score_centroids_s": 0.0010532399755902588,
+   "score_exhaustive_s": 0.0009532919793855399,
+   "gather_s": 0.06551178600057028,
+   "cluster_total_s_cpu_reference": 0.038491616025567055,
+   "bytes_index_vectors_pool_GB": 0.001
+  },
+  {
+   "T": 131072,
+   "pool_keys": 32768,
+   "buckets": 4096,
+   "score_centroids_s": 0.0004715549875982106,
+   "score_exhaustive_s": 0.0019490520062390715,
+   "gather_s": 0.06853805901482701,
+   "cluster_total_s_cpu_reference": 0.15396646410226822,
+   "bytes_index_vectors_pool_GB": 0.004
+  },
+  {
+   "T": 1048576,
+   "pool_keys": 262144,
+   "buckets": 32768,
+   "score_centroids_s": 0.0015743959811516106,
+   "score_exhaustive_s": 0.015540811989922076,
+   "gather_s": 0.0663766689831391,
+   "cluster_total_s_cpu_reference": 1.2317317128181458,
+   "bytes_index_vectors_pool_GB": 0.034
+  },
+  {
+   "T": 10485760,
+   "pool_keys": 2621440,
+   "buckets": 327680,
+   "score_centroids_s": 0.01407197501976043,
+   "score_exhaustive_s": 0.18140917099663056,
+   "gather_s": 0.06521837299806066,
+   "cluster_total_s_cpu_reference": 12.317317128181458,
+   "bytes_index_vectors_pool_GB": 0.336
+  }
+ ],
+ "cluster_s_per_512_key_block_cpu_reference": 0.0006014315003994852,
+ "git_commit": "296b2c2a0d9f3d3dcae203581779c90c1bf1047d"
+}
