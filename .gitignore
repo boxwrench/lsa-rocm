@@ -1,0 +1,8 @@
+results/*.pt
+results/dumps/
+__pycache__/
+*.pyc
+.venv/
+third_party/*/
+agents/reports/*.log
+agents/scratch/
