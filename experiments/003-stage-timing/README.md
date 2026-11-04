@@ -42,6 +42,8 @@ with the `lsa.core` reference (timed on 16 blocks of 512 keys, scaled to all blo
 | 1,048,576 | 1.2 s |
 | 10,485,760 | 12.3 s |
 
+**Correction, 2026-11-04:** an earlier `003-timing-gpu.json` recorded 755 s here. Cause: the ROCm torch build defaults to 16 threads, and the Ward reference runs thousands of tiny ops, so oversubscription made it about 60x slower (0.056 s vs 0.0011 s per 512-key block). `bench_stages.py` now times clustering with one thread; the rerun gives 13.5 s at 10M, consistent with the CPU file. Found by an outside review.
+
 ## Conclusion (preliminary)
 - Centroid scoring is cheaper than exhaustive scoring and the gap grows with context: on the GPU 2.6x at 131K, 2.5x at 1M and 7.5x at 10M keys.
 - On the GPU the gather (about 2.2 ms for 32 queries x 4096 keys) is a floor that does not shrink with context. At 1M tokens it is as large as the whole saving, so centroid plus gather
@@ -51,4 +53,4 @@ with the `lsa.core` reference (timed on 16 blocks of 512 keys, scaled to all blo
 
 ## Caveats
 Synthetic keys, one query batch size (32), fp32 scoring (production kernels use lower precision), the clustering reference is a Python implementation and was not run on the GPU,
-the gather is measured on a 1M-row table, and this is a single card. Index vectors at 10M tokens are about 1.3 GB, which fits easily.
+the gather is always measured on a fixed 1M-row table (so its flat cost across 32K to 10M is an assumption, not a measurement of a real 10M-token KV cache), and this is a single card. Index vectors at 10M tokens are about 1.3 GB, which fits easily.

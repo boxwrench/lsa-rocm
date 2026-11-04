@@ -32,8 +32,9 @@ res = {"device": a.device, "gpu": torch.cuda.get_device_name(0) if dev.type == "
 try:
     from lsa.core import build_buckets
     nb_meas = 16; keys = mixture(BLOCK * nb_meas, D)
+    _nt = torch.get_num_threads(); torch.set_num_threads(1)  # many tiny ops: multi-thread oversubscription is ~60x slower
     t = timeit(lambda: build_buckets(keys, POOL, BUCKET, 2 * BUCKET, BLOCK, "ward"), reps=3)
-    per_block = t / nb_meas
+    torch.set_num_threads(_nt); per_block = t / nb_meas
 except Exception as e:
     per_block = None; res["cluster_error"] = repr(e)[:200]
 res["cluster_s_per_512_key_block_cpu_reference"] = per_block
