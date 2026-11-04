@@ -9,6 +9,12 @@ The prompt is prefilled once with ordinary attention (all but the last prompt to
 - QUANT is `none`, `int8`, `int4` or `int4rht` (random-sign Hadamard rotation then 4-bit), all per token and head, **simulated by quantize then dequantize** of the cached K and V (no real packed kernel, no speed claim).
 - K = 0 is a control: no long-range keys. It should fail.
 
+## Reading the results (written 2026-11-04 after the 128K hard run)
+- At budgets of 128 keys and up, LSA, block-sparse and full attention are indistinguishable on this test, at 32K and 128K, with 20 distractors, and with a simulated 4-bit cache.
+- At a budget of 32 keys at 128K, LSA found 5 of 10 facts against 9 of 10 for block-sparse (at 32K, 8 against 9). Suggestive, not significant at 10 prompts. A possible reason, untested: block-sparse reads contiguous 4-key blocks, which keep the planted sentence's neighbouring tokens together, while Ward buckets group tokens by key similarity and split a sentence across buckets, so a tiny budget covers it only partly.
+- The one full-attention miss at 128K (depth 0.25, vault 243) is a model error: it answered with a distractor's code. It is not a retrieval failure of the sparse path.
+- `bsp:*:0` is not a true zero-budget control: the block-sparse code always takes at least one 4-key block, so it is effectively K = 4 (and got 3 of 10 at 128K). `lsa:*:0` reads no long-range keys (0 of 10 at both lengths).
+
 ## What these results do and do not show
 - Sparse decoding on the 8 full-attention layers finds a single planted fact as reliably as full attention at the tested lengths, even with very small budgets and a simulated 4-bit cache. One fact is an easy target: the test saturates, which is why a harder variant with 20 similar distractor facts was added.
 - The model is a hybrid. The 24 linear-attention layers carry some information from the whole context regardless of what the 8 full-attention layers read, so even K = 0 can sometimes recover part of the answer (seen in a smoke test). The K = 0 rows measure this floor.
@@ -71,16 +77,16 @@ Source: `results/005-hard-32768.json`. GPU numerical faults detected and retried
 
 Source: `results/005-hard-131072.json`. GPU numerical faults detected and retried: 1.
 
-| config | correct / 8 |
+| config | correct / 10 |
 |---|---|
-| `full:none` | 7 |
-| `lsa:none:2048` | 7 |
-| `lsa:none:512` | 7 |
-| `lsa:none:128` | 7 |
-| `lsa:none:32` | 4 |
+| `full:none` | 9 |
+| `lsa:none:2048` | 9 |
+| `lsa:none:512` | 9 |
+| `lsa:none:128` | 9 |
+| `lsa:none:32` | 5 |
 | `lsa:none:0` | 0 |
-| `bsp:none:2048` | 7 |
-| `bsp:none:512` | 7 |
-| `bsp:none:128` | 8 |
-| `bsp:none:32` | 8 |
+| `bsp:none:2048` | 9 |
+| `bsp:none:512` | 9 |
+| `bsp:none:128` | 10 |
+| `bsp:none:32` | 9 |
 | `bsp:none:0` | 3 |

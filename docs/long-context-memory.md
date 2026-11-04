@@ -26,7 +26,7 @@ KV per token: bf16 32 KiB, 8-bit about 16 KiB, 4-bit about 8.5 KiB (with scale a
 Per decode step the selected keys (about 2.6K at k=2048 plus window and sinks) are about 83 MB in bf16 or about 20 MB at 4-bit across the 8 layers: roughly 0.4 to 1.7 ms of PCIe time at 50 GB/s. This is bandwidth arithmetic, not a benchmark.
 
 ## What supports it so far (this repo)
-- Sparse decoding found a planted fact at every tested depth at 32K, 10 of 10, same as full attention ([experiments/005-needle](../experiments/005-needle/)). 128K: see that directory's results.
+- Needle test with sparse decoding ([experiments/005-needle](../experiments/005-needle/README.md)): one planted fact, 10 prompts per cell, scored by string match. Sparse decoding on the 8 full-attention layers matched full attention at 32K and 128K down to budgets of 128 keys, with 20 distractor facts, and with a simulated (quantize-dequantize) 8-bit, 4-bit and rotated 4-bit cache. At 32 keys LSA fell to 5 of 10 at 128K while block-sparse selection kept 9 of 10 (suggestive only). A zero-budget control fails, though the hybrid's linear-attention layers carry some information. Nothing here is a real quantized kernel or a speed measurement.
 - On real keys, a sparse decode step was 5x cheaper than a fair full-attention step at 512K ([experiments/004-e2e-attention](../experiments/004-e2e-attention/README.md)). Output error was 0.10 to 0.18 relative L2 at k=2048.
 - A chunked-prefill dumper reached 917K tokens with KV in CPU RAM ([FINDINGS.md](FINDINGS.md)).
 
