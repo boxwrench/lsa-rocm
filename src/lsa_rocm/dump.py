@@ -2,9 +2,10 @@
 
 Usage:
     python -m lsa_rocm.dump --model PATH --prompt-file FILE --max-tokens N \
-        --n-queries Q --out DIR [--device cpu|cuda] [--attn sdpa|eager]
+        --n-queries Q --out DIR [--device cpu|cuda] [--attn sdpa|eager] \
+        [--prefill-chunk N]
 
-The tool runs a single forward pass over the prompt, captures, per full-attention
+The tool runs a forward pass over the prompt, captures, per full-attention
 layer, keys/values as cached (post-RoPE) [Hkv, T, D], keys before RoPE (when the
 model's rotary helper can be intercepted), queries of the last Q positions after
 RoPE [Hq, Q, D], their positions, and the attention module's own output for the
@@ -16,6 +17,16 @@ Long context: --attn sdpa (the default) makes the forward pass use PyTorch SDPA,
 which dispatches to the flash kernel on ROCm and never materialises the full
 attention matrix. --attn eager keeps the original full-attention-matrix path for
 small models and regression tests.
+
+Chunked prefill: --prefill-chunk N (tokens per chunk, 0 = one pass over the
+whole prompt, the default) runs the prompt through the model in chunks of N
+tokens with use_cache=True and a cache object. Each chunk's post-RoPE K/V are
+appended into per-layer CPU buffers, and only the last Q query positions are
+kept. This is what makes prompts beyond one-pass GPU memory (128K and up) dump.
+Qwen3.5-family linear-attention layers carry their recurrent state in the same
+cache, so they keep working across chunk boundaries. logits_to_keep=1 keeps the
+per-chunk logits tiny. A chunk is exact when the chunked K/V agree with a
+single-pass dump: the acceptance check compares their cosines per layer.
 """
 
 from __future__ import annotations
@@ -138,15 +149,32 @@ def run(args) -> dict:
 
     positions = torch.arange(T, dtype=torch.long, device=device)
 
+    chunk_size = int(getattr(args, "prefill_chunk", 0) or 0)
+    chunked = chunk_size > 0
+    if chunked and chunk_size < 1:
+        raise SystemExit("--prefill-chunk must be positive")
+
     # Per-layer capture. The attention interface receives post-RoPE q/k/v and
     # returns the module's own attention output; pre-RoPE k is captured by
     # wrapping the rotary helper used inside the attention forward.
+    #
+    # In chunked mode the attention interface sees the whole cache up to and
+    # including the current chunk, so the current chunk's K/V are its trailing
+    # chunk_len positions. Those are appended to per-layer CPU buffers, keeping
+    # only the last --n-queries queries, so the capture footprint does not grow
+    # with the number of chunks beyond the dump itself.
     state = {
         "pending_pre_rope": {},
         "captured": {},
         "current_layer": None,
         "own_out_last": {},
         "rotary_dim": {},
+        "chunked": chunked,
+        "chunk_len": 0,
+        "chunk_index": 0,
+        "num_chunks": 0,
+        "buffers": {idx: {"k": [], "v": [], "q_tail": None} for idx in full_indices},
+        "layer_meta": {},
     }
 
     # Wrap the attention implementation's own interface function. It receives
@@ -181,35 +209,62 @@ def run(args) -> dict:
         if idx in full_indices:
             if scaling is None:
                 scaling = float(getattr(module, "scaling", 1.0))
-            q = query[0].detach().to("cpu")
-            k = key[0].detach().to("cpu")
-            v = value[0].detach().to("cpu")
-            if k.shape[-2] != T:
-                raise RuntimeError(f"layer {idx}: captured {k.shape[-2]} keys, expected {T}")
-            pre = state["pending_pre_rope"].pop(idx, None)
-            # out: [B, T, Hq, D] for both eager and sdpa
+            # In chunked mode `out`, `query` and the trailing part of `key` all
+            # refer to the current chunk only; the cache prefix is in `key`.
+            q_len = int(query.shape[2])
+            if not state["chunked"] and q_len != T:
+                raise RuntimeError(f"layer {idx}: query length {q_len}, expected {T}")
+            # out: [B, q_len, Hq, D] for both eager and sdpa
             o = out.detach()
-            if o.dim() == 4 and o.shape[1] == T:
-                module_out_last = o[0, T - 1].float().to("cpu").contiguous()
-            elif o.dim() == 3 and o.shape[1] == T:
-                module_out_last = o[0, T - 1].float().to("cpu").contiguous()
-            else:
+            if not (o.dim() in (3, 4) and o.shape[1] == q_len):
                 raise RuntimeError(f"unexpected attention output shape {tuple(o.shape)}")
-            record = {
-                "queries_post_rope": q[:, T - nq :].contiguous().clone(),
-                "keys_post_rope": k.contiguous().clone(),
-                "values": v.contiguous().clone(),
-                "positions": positions[T - nq :].to("cpu").clone(),
+            module_out_last = o[0, q_len - 1].float().to("cpu").contiguous()
+            meta = {
                 "scaling": float(scaling),
                 "num_key_value_groups": int(module.num_key_value_groups),
                 "num_attention_heads": int(getattr(module, "config").num_attention_heads),
                 "num_key_value_heads": int(getattr(module, "config").num_key_value_heads),
-                "selfcheck_module_out": module_out_last,
             }
-            if pre is not None:
-                record["keys_pre_rope"] = pre
-            state["own_out_last"][idx] = module_out_last
-            state["captured"][idx] = record
+            pre = state["pending_pre_rope"].pop(idx, None)
+            if not state["chunked"]:
+                q = query[0].detach().to("cpu")
+                k = key[0].detach().to("cpu")
+                v = value[0].detach().to("cpu")
+                if k.shape[-2] != T:
+                    raise RuntimeError(f"layer {idx}: captured {k.shape[-2]} keys, expected {T}")
+                record = {
+                    "queries_post_rope": q[:, T - nq :].contiguous().clone(),
+                    "keys_post_rope": k.contiguous().clone(),
+                    "values": v.contiguous().clone(),
+                    "positions": positions[T - nq :].to("cpu").clone(),
+                    **meta,
+                    "selfcheck_module_out": module_out_last,
+                }
+                if pre is not None:
+                    record["keys_pre_rope"] = pre
+                state["own_out_last"][idx] = module_out_last
+                state["captured"][idx] = record
+                state["layer_meta"][idx] = meta
+            else:
+                # Append only this chunk's post-RoPE K/V (trailing q_len rows of
+                # the cache) and this chunk's queries to small CPU buffers.
+                cl = q_len
+                if key.shape[-2] < cl:
+                    raise RuntimeError(
+                        f"layer {idx}: cache has {key.shape[-2]} keys but chunk has {cl} queries"
+                    )
+                k_new = key[0, :, -cl:, :].detach().to("cpu")
+                v_new = value[0, :, -cl:, :].detach().to("cpu")
+                q_new = query[0].detach().to("cpu")
+                buf = state["buffers"][idx]
+                buf["k"].append(k_new.contiguous().clone())
+                buf["v"].append(v_new.contiguous().clone())
+                tail = q_new if buf["q_tail"] is None else torch.cat([buf["q_tail"], q_new], dim=1)
+                buf["q_tail"] = tail[:, -nq:, :].contiguous().clone()
+                if pre is not None:
+                    buf.setdefault("pre", []).append(pre.contiguous().clone())
+                state["own_out_last"][idx] = module_out_last
+                state["layer_meta"][idx] = meta
         return out, weights
 
     had_key = args.attn in ALL_ATTENTION_FUNCTIONS
@@ -234,8 +289,11 @@ def run(args) -> dict:
                 if cur in full_indices:
                     nd = cos.shape[-1]
                     state["rotary_dim"][cur] = int(nd)
-                    kk = k[0].detach().to("cpu")
-                    state["pending_pre_rope"][cur] = kk.contiguous().clone()
+                    # Pre-RoPE keys are only dumped in single-pass mode; in
+                    # chunked mode they are not needed and would grow buffers.
+                    if not state["chunked"]:
+                        kk = k[0].detach().to("cpu")
+                        state["pending_pre_rope"][cur] = kk.contiguous().clone()
                 return orig(q, k, cos, sin, *a, **kw)
 
             return wrapper
@@ -260,17 +318,52 @@ def run(args) -> dict:
     t_forward = time.time()
     try:
         with torch.no_grad():
-            model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                position_ids=positions.unsqueeze(0),
-                use_cache=False,
-                # Only the attention tensors are captured, so skip the full-sequence logits
-                # (T x vocab is about 16 GB at T=32768 with a 248k vocabulary).
-                logits_to_keep=1,
-            )
-        if device.type == "cuda":
-            torch.cuda.synchronize(device)
+            if not chunked:
+                model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    position_ids=positions.unsqueeze(0),
+                    use_cache=False,
+                    # Only the attention tensors are captured, so skip the full-sequence logits
+                    # (T x vocab is about 16 GB at T=32768 with a 248k vocabulary).
+                    logits_to_keep=1,
+                )
+            else:
+                # Chunked prefill: feed the prompt N tokens at a time through a
+                # persistent cache. Linear-attention layers keep their conv and
+                # recurrent state in that cache; full-attention layers keep K/V.
+                from transformers.cache_utils import DynamicCache
+
+                past = DynamicCache(config=config)
+                num_chunks = (T + chunk_size - 1) // chunk_size
+                state["num_chunks"] = num_chunks
+                for ci, start in enumerate(range(0, T, chunk_size)):
+                    end = min(start + chunk_size, T)
+                    cl = end - start
+                    state["chunk_index"] = ci
+                    state["chunk_len"] = cl
+                    chunk_ids = input_ids[:, start:end]
+                    chunk_pos = positions[start:end].unsqueeze(0)
+                    out = model(
+                        input_ids=chunk_ids,
+                        attention_mask=None,
+                        position_ids=chunk_pos,
+                        past_key_values=past,
+                        use_cache=True,
+                        logits_to_keep=1,
+                    )
+                    # The model mutates the cache in place, but take the returned
+                    # object in case a model rebuilds it.
+                    if out.past_key_values is not None:
+                        past = out.past_key_values
+                    print(
+                        f"chunk {ci + 1}/{num_chunks}: tokens [{start}, {end}) "
+                        f"({cl} tokens), cache_seq_len={past.get_seq_length()}",
+                        flush=True,
+                    )
+                    del out
+            if device.type == "cuda":
+                torch.cuda.synchronize(device)
     finally:
         elapsed_s = time.time() - t_forward
         if had_key:
@@ -285,10 +378,34 @@ def run(args) -> dict:
         round(torch.cuda.max_memory_allocated(device) / (2**30), 4) if device.type == "cuda" else None
     )
 
+    if chunked:
+        # Materialise per-layer captures from the chunk buffers.
+        for idx in full_indices:
+            buf = state["buffers"].pop(idx)
+            if not buf["k"]:
+                raise RuntimeError(f"layer {idx}: no chunks captured")
+            rec = {
+                "queries_post_rope": buf["q_tail"].contiguous().clone(),
+                "keys_post_rope": torch.cat(buf["k"], dim=1).contiguous(),
+                "values": torch.cat(buf["v"], dim=1).contiguous(),
+                "positions": positions[T - nq :].to("cpu").clone(),
+                **state["layer_meta"][idx],
+                "selfcheck_module_out": state["own_out_last"][idx],
+            }
+            if buf.get("pre"):
+                rec["keys_pre_rope"] = torch.cat(buf["pre"], dim=1).contiguous()
+            state["captured"][idx] = rec
+
     if sorted(state["captured"]) != sorted(full_indices):
         raise RuntimeError(
             f"captured layers {sorted(state['captured'])} != full-attention layers {full_indices}"
         )
+    for idx in full_indices:
+        rec = state["captured"][idx]
+        if rec["keys_post_rope"].shape[-2] != T:
+            raise RuntimeError(
+                f"layer {idx}: captured {rec['keys_post_rope'].shape[-2]} keys, expected {T}"
+            )
 
     # Self-check: recompute the last query's attention output from the dump.
     check_layer = full_indices[0]
@@ -351,6 +468,9 @@ def run(args) -> dict:
         "peak_vram_gib": peak_vram_gib,
         "elapsed_s": round(elapsed_s, 3),
         "attention_impl": actual_impl,
+        "prefill_chunk": chunk_size,
+        "chunked_prefill": chunked,
+        "num_chunks": int(state["num_chunks"]),
         "self_check_layer": check_layer,
         "self_check_cosine": cos,
         "tokens": T,
@@ -409,6 +529,12 @@ def main(argv=None):
         choices=["sdpa", "eager"],
         default="sdpa",
         help="attention implementation for the forward pass; sdpa never materialises the full matrix",
+    )
+    p.add_argument(
+        "--prefill-chunk",
+        type=int,
+        default=0,
+        help="tokens per prefill chunk; 0 (default) is a single pass over the whole prompt",
     )
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args(argv)

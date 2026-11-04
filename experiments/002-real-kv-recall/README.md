@@ -59,6 +59,18 @@ PYTHONPATH=src:third_party/lsa/src agents/scratch/venv-lsa-min/bin/python \
 
 Tree equals flat at this length. At k=2048 the best layer reaches 0.69 and none reach 0.70. The block-sparse baseline is slightly better than LSA on every layer. Recency beats flat on the first full-attention layer (layer 3).
 
+### 128K tokens (same model, prompt and settings)
+
+Ornith 1.5 9B, coherent prose, 131072 tokens (chunked-prefill dump, self-check cosine 0.99999911), window 512. Source: `results/b2_1-summary-ornith-prose131072.json`.
+
+| k (share of 131072 keys) | flat | tree | block-sparse | recency | layers with flat >= 0.70 | flat > recency | flat > block-sparse |
+|---|---|---|---|---|---|---|---|
+| 512 (0.39%) | 0.26 | 0.26 | 0.28 | 0.12 | 0/8 | 6/8 | 0/8 |
+| 2048 (1.56%) | 0.43 | 0.43 | 0.46 | 0.29 | 0/8 | 6/8 | 0/8 |
+| 4096 (3.12%) | 0.52 | 0.52 | 0.55 | 0.43 | 1/8 | 6/8 | 0/8 |
+
+Efficiency falls gently as the budget share shrinks: at k=4096 the mean is 0.64 at 32K (12.5% of keys) and 0.52 at 128K (3.1%). Tree still equals flat: with 4096 open buckets needed to form a level, the hierarchy barely exists below about 1M tokens. Recency beats flat on the first full-attention layer (layer 3) at every budget. The block-sparse baseline stays slightly ahead of flat.
+
 ## Conclusion
 As pre-registered, **Gate 1 fails** on this run: efficiency is below 0.70 on every layer at k=2048, and LSA does not beat the block-sparse baseline. Two readings, both preliminary: (a) the paper's claim is parity with block-sparse at a much cheaper index, and parity is what we see, so the 'beats block-sparse' criterion was mis-specified; (b) the efficiency criterion is a real shortfall at 32K for this model, though the paper's own budget regime is 1M and beyond. Diagnostics: the projected 64-dim shared index space reaches 68 to 80% of the ideal at k=2048 and clustering costs roughly a third more; raising d_idx to 768 changes efficiency by under 0.02.
 
