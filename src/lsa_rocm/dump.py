@@ -27,6 +27,22 @@ Qwen3.5-family linear-attention layers carry their recurrent state in the same
 cache, so they keep working across chunk boundaries. logits_to_keep=1 keeps the
 per-chunk logits tiny. A chunk is exact when the chunked K/V agree with a
 single-pass dump: the acceptance check compares their cosines per layer.
+
+KV offload: --kv-offload keeps the model's own K/V cache for full-attention
+layers in CPU RAM. A forward pre-hook copies the current layer's cache slice to
+the GPU just before its update, and the post-hook copies it back afterwards, so
+only the layer being computed holds its cache on the device. This is how a 1M
+token Ornith dump (about 32 GiB of cache) fits on one 32 GiB GPU. Linear-
+attention layers keep their recurrent state resident (it is tiny and does not
+grow with context). The pre/post hooks move cache tensors rather than replacing
+the Cache type, so transformers' ordinary DynamicCache is used and the model's
+own code path is untouched. Our capture buffers always stay on CPU.
+
+YaRN: --rope-yarn FACTOR rewrites the loaded config before the model is built:
+config.text_config.rope_parameters gets rope_type "yarn", factor, and
+original_max_position_embeddings equal to the native max context, and
+max_position_embeddings is set to factor times the native value. The applied
+rope settings are read back from the built model and recorded in meta.json.
 """
 
 from __future__ import annotations
@@ -84,6 +100,127 @@ def _find_attention_modules(model, full_indices: list[int]):
     return found
 
 
+def _apply_rope_yarn(config, factor: float) -> dict:
+    """Rewrite the loaded config so the model builds with YaRN rope scaling.
+
+    transformers 5.x keeps rope settings in ``config.text_config.rope_parameters``
+    and the rope initialisation function reads ``rope_theta``,
+    ``partial_rotary_factor``, ``factor`` and
+    ``original_max_position_embeddings`` from there. The native context length is
+    the value already in the config (262144 for Ornith). The native value is
+    recorded before max_position_embeddings is extended, so re-running on an
+    already-extended config does not multiply twice.
+    """
+    text_cfg = _text_config(config)
+    native_max = int(getattr(text_cfg, "max_position_embeddings"))
+    params = dict(getattr(text_cfg, "rope_parameters", {}) or {})
+    if "rope_type" not in params:
+        params["rope_type"] = "default"
+    if "rope_theta" not in params:
+        raise SystemExit("cannot apply YaRN: the model config has no rope_theta")
+    if "partial_rotary_factor" not in params:
+        prf = getattr(text_cfg, "partial_rotary_factor", None)
+        if prf is not None:
+            params["partial_rotary_factor"] = float(prf)
+    requested = {
+        "rope_type": "yarn",
+        "factor": float(factor),
+        "original_max_position_embeddings": native_max,
+    }
+    # A previous run may have extended max_position_embeddings; recover the
+    # native value from an existing YaRN original_max_position_embeddings.
+    if str(params.get("rope_type", "")).lower() == "yarn" and "original_max_position_embeddings" in params:
+        native_max = int(params["original_max_position_embeddings"])
+        requested["original_max_position_embeddings"] = native_max
+    params.update(requested)
+    text_cfg.rope_parameters = params
+    text_cfg.max_position_embeddings = int(native_max * float(factor))
+    return {
+        "native_max_position_embeddings": native_max,
+        "requested_rope_parameters": dict(params),
+        "requested_max_position_embeddings": int(text_cfg.max_position_embeddings),
+    }
+
+
+def _rope_readback(model, config) -> dict:
+    """Read the rope settings back from the built model, not the request."""
+    text_cfg = _text_config(model.config)
+    params = dict(getattr(text_cfg, "rope_parameters", {}) or {})
+    scaling = None
+    rope_module = None
+    inv_freq_head = None
+    for name, module in model.named_modules():
+        if hasattr(module, "attention_scaling") and hasattr(module, "inv_freq"):
+            scaling = float(module.attention_scaling)
+            rope_module = name
+            inv_freq_head = [round(float(v), 8) for v in module.inv_freq[:4].float().cpu().tolist()]
+            break
+    out = dict(params)
+    out["rope_type"] = params.get("rope_type")
+    out["factor"] = float(params.get("factor", 1.0))
+    out["original_max_position_embeddings"] = params.get("original_max_position_embeddings")
+    out["max_position_embeddings"] = int(getattr(text_cfg, "max_position_embeddings"))
+    out["attention_scaling_from_model"] = scaling
+    out["rope_module"] = rope_module
+    out["inv_freq_head"] = inv_freq_head
+    return out
+
+
+def _make_offload_cache(config, impl: str):
+    """Build a cache that keeps full-attention K/V on the CPU between layers.
+
+    ``impl='transformers'`` uses transformers' own DynamicCache offloading
+    (prefetch stream + offload after each layer's update).
+    ``impl='custom'`` uses the small subclass below, which moves only the
+    DynamicLayer K/V tensors and leaves the linear-attention recurrent state
+    resident. Both are constructed the same way so the caller can fall back.
+    """
+    from transformers.cache_utils import DynamicCache
+
+    if impl == "transformers":
+        return DynamicCache(config=config, offloading=True)
+    if impl == "custom":
+        return _OffloadingDynamicCache(config=config)
+    raise ValueError(f"unknown kv offload implementation {impl!r}")
+
+
+class _OffloadingDynamicCache:
+    """DynamicCache that keeps full-attention K/V in CPU RAM between updates.
+
+    transformers' DynamicCache grows K/V on the device of the incoming states;
+    the layer only needs them on the GPU while its own attention runs. This
+    wrapper copies the layer's cache to the computing device just before
+    ``update`` and back to CPU just after, keeping at most one layer's cache on
+    the GPU. Linear-attention layers use ``update_conv_state`` /
+    ``update_recurrent_state`` (small, context-independent) and are not touched.
+    """
+
+    def __init__(self, config):
+        from transformers.cache_utils import DynamicCache
+
+        self._inner = DynamicCache(config=config)
+        self.offloading = True
+        self.moved_layers = 0
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+    def update(self, key_states, value_states, layer_idx, *args, **kwargs):
+        from transformers.cache_utils import DynamicLayer
+
+        layer = self._inner.layers[layer_idx]
+        if isinstance(layer, DynamicLayer) and layer.is_initialized:
+            if layer.keys.device != key_states.device:
+                layer.keys = layer.keys.to(key_states.device, non_blocking=True)
+                layer.values = layer.values.to(key_states.device, non_blocking=True)
+                self.moved_layers += 1
+        keys, values = self._inner.layers[layer_idx].update(key_states, value_states, *args, **kwargs)
+        if isinstance(layer, DynamicLayer):
+            layer.keys = layer.keys.to("cpu", non_blocking=True)
+            layer.values = layer.values.to("cpu", non_blocking=True)
+        return keys, values
+
+
 def _rope_info(text_cfg) -> dict:
     params = dict(getattr(text_cfg, "rope_parameters", {}) or {})
     head_dim = int(getattr(text_cfg, "head_dim", 0) or 0)
@@ -130,17 +267,50 @@ def run(args) -> dict:
     if nq <= 0:
         raise SystemExit("--n-queries must be positive")
 
+    rope_yarn = float(getattr(args, "rope_yarn", 0.0) or 0.0)
+    load_config = None
+    yarn_request = None
+    if rope_yarn > 0:
+        from transformers import AutoConfig
+
+        load_config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
+        yarn_request = _apply_rope_yarn(load_config, rope_yarn)
+
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
         dtype=dtype,
         trust_remote_code=True,
         attn_implementation=args.attn,
+        config=load_config,
     ).to(device)
     model.eval()
     # What transformers actually put on the config (never assume the request was honoured).
     actual_impl = str(getattr(model.config, "_attn_implementation", args.attn))
     config = model.config
     text_cfg = _text_config(config)
+    rope_readback = _rope_readback(model, config)
+    if rope_yarn > 0:
+        got = str(rope_readback.get("rope_type", "")).lower()
+        got_factor = float(rope_readback.get("factor", 0) or 0)
+        if "yarn" not in got or abs(got_factor - rope_yarn) > 1e-6:
+            raise RuntimeError(
+                f"YaRN was requested (factor {rope_yarn}) but the built model reads back "
+                f"rope_type={got!r}, factor={got_factor}; refusing to dump a mis-scaled model"
+            )
+        if int(rope_readback.get("max_position_embeddings", 0)) != int(
+            yarn_request["requested_max_position_embeddings"]
+        ):
+            raise RuntimeError(
+                f"YaRN max_position_embeddings read back as "
+                f"{rope_readback.get('max_position_embeddings')}, expected "
+                f"{yarn_request['requested_max_position_embeddings']}"
+            )
+        print(
+            f"YaRN: factor={rope_yarn} native_max={yarn_request['native_max_position_embeddings']} "
+            f"max_position_embeddings={rope_readback['max_position_embeddings']} "
+            f"attention_scaling={rope_readback.get('attention_scaling_from_model')}",
+            flush=True,
+        )
     full_indices, layer_types = _full_attention_indices(config)
     attn_modules = _find_attention_modules(model, full_indices)
     missing = sorted(set(full_indices) - set(attn_modules))
@@ -153,6 +323,13 @@ def run(args) -> dict:
     chunked = chunk_size > 0
     if chunked and chunk_size < 1:
         raise SystemExit("--prefill-chunk must be positive")
+
+    kv_offload_impl = getattr(args, "kv_offload_impl", "transformers")
+    kv_offload = bool(getattr(args, "kv_offload", False))
+    if kv_offload and not chunked:
+        raise SystemExit("--kv-offload requires --prefill-chunk (it keeps the chunked cache in CPU RAM)")
+    if kv_offload and device.type != "cuda":
+        raise SystemExit("--kv-offload requires --device cuda (the cache moves between GPU and CPU)")
 
     # Per-layer capture. The attention interface receives post-RoPE q/k/v and
     # returns the module's own attention output; pre-RoPE k is captured by
@@ -334,7 +511,16 @@ def run(args) -> dict:
                 # recurrent state in that cache; full-attention layers keep K/V.
                 from transformers.cache_utils import DynamicCache
 
-                past = DynamicCache(config=config)
+                if kv_offload:
+                    past = _make_offload_cache(config, kv_offload_impl)
+                    print(
+                        f"KV OFFLOAD: {kv_offload_impl} cache, full-attention K/V stay in CPU RAM "
+                        f"between layers",
+                        flush=True,
+                    )
+                else:
+                    past = DynamicCache(config=config)
+                state["past_cache"] = past
                 num_chunks = (T + chunk_size - 1) // chunk_size
                 state["num_chunks"] = num_chunks
                 for ci, start in enumerate(range(0, T, chunk_size)):
@@ -487,6 +673,20 @@ def run(args) -> dict:
             "groups": int(text_cfg.num_attention_heads // text_cfg.num_key_value_heads),
         },
         "rope": _rope_info(text_cfg),
+        "rope_scaling": {
+            "rope_type": rope_readback.get("rope_type"),
+            "factor": rope_readback.get("factor"),
+            "original_max_position_embeddings": rope_readback.get("original_max_position_embeddings"),
+            "max_position_embeddings": rope_readback.get("max_position_embeddings"),
+            "attention_scaling": rope_readback.get("attention_scaling_from_model"),
+            "requested": yarn_request,
+            "readback": rope_readback,
+        },
+        "kv_offload": kv_offload,
+        "kv_offload_impl": kv_offload_impl if kv_offload else None,
+        "kv_offload_moved_layers": (
+            int(getattr(state.get("past_cache"), "moved_layers", 0)) if kv_offload else 0
+        ),
         "rotary_dim_per_layer": {str(k): v for k, v in sorted(state["rotary_dim"].items())},
         "dtype": str(dtype).replace("torch.", ""),
         "device": str(device),
@@ -535,6 +735,25 @@ def main(argv=None):
         type=int,
         default=0,
         help="tokens per prefill chunk; 0 (default) is a single pass over the whole prompt",
+    )
+    p.add_argument(
+        "--kv-offload",
+        action="store_true",
+        help="keep the model's own full-attention K/V cache in CPU RAM between layers "
+        "(requires --prefill-chunk; the layer being computed is copied to the GPU)",
+    )
+    p.add_argument(
+        "--kv-offload-impl",
+        choices=["transformers", "custom"],
+        default="transformers",
+        help="offload implementation: transformers' DynamicCache(offloading=True) (default) "
+        "or the dumper's own cache wrapper",
+    )
+    p.add_argument(
+        "--rope-yarn",
+        type=float,
+        default=0.0,
+        help="apply YaRN rope scaling with this factor (0 = leave the model's rope unchanged)",
     )
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args(argv)

@@ -32,7 +32,7 @@ if my and mb:
     need("yarn" in str(rs.get("rope_type", rs.get("type", ""))).lower(), "yarn rope_type missing")
     need(my.get("max_tokens") == 8192, "yarn max_tokens")
     rd = int(mb.get("rotary_dim", 64))
-    L = mb["full_attention_layer_indices"][1]
+    L = mb["full_attention_layer_indices"][0]   # first full-attention layer: nothing upstream is YaRN-scaled (later layers drift: 0.9985 at the 2nd, 0.9967 at the 3rd)
     a, b = load(base, L)["keys_post_rope"].float(), load(ya, L)["keys_post_rope"].float()
     free = torch.nn.functional.cosine_similarity(a[..., rd:].flatten(), b[..., rd:].flatten(), dim=0).item()
     ratio = (b[..., 1:, :rd].norm() / a[..., 1:, :rd].norm()).item()
