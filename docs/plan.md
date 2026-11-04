@@ -17,7 +17,8 @@ use distilled indexers, H200 and B300 GPUs, SGLang, and end-task accuracy (RULER
 | Retrieval quality of the paper's training-free recipe on full-attention layers, at 4K to 128K | The headline speedups (10M tokens, H200/B300, SGLang, context parallelism) |
 | Whether it holds on models the paper did not use (Ornith 9B, Nanbeige 33B) | End-task accuracy at 1M+ tokens |
 | Per-layer behaviour, and how mass grows with budget | Distilled projections (D-LSA), unless we run a distillation |
-| The cost of each indexing stage on an AMD GPU | Any claim about 10M-token behaviour |
+| The cost of each indexing stage on an AMD GPU, including synthetic 10M-token index timing | Retrieval quality at 10M (the real model's KV cache does not fit anywhere we own) |
+| Retrieval quality at 1M, and about 2M on the Strix Halo, as stretch goals (YaRN-extended, so out of distribution) | Any claim about end-task behaviour at those lengths |
 
 **Question:** does the paper's training-free recipe retrieve the keys that matter on the full-attention layers of
 current models at the contexts we can run, and what do its stages cost on an R9700?
@@ -111,6 +112,9 @@ These were written on 2026-11-03 **before** the paper-mode sweep was run. Change
 | B2.3 | Run Ornith at 4K and 32K, prose, code and technical prompts. I read the numbers and decide Gate 1. | after B2.1, B2.2 |
 | B2.4 | Spike: load Nanbeige (FP8 compressed-tensors, else bf16 with CPU offload) on ROCm and dump 32K | parallel, may need a download |
 | B3 | GPU stage timing on the R9700 at 4K, 32K, 128K (needs a 128K dump, expected to fit now) | after Gate 1 |
+| B3b | Index-stage timing at 1M and 10M with synthetic keys (64-dim index vectors, 10M is about 1.3 GB). Measures cost only, not quality. Tests the claim that search dominates at 10M. | after Gate 1 |
+| B2.5 | Stretch: Ornith 1M-token dump and retrieval-quality run. Needs chunked prefill and the model split over both R9700s (KV 32 GiB), YaRN factor 4 beyond the 262K native context. | after Gate 1 at 32K and 128K |
+| B2.6 | Stretch: Ornith about 2M tokens on the Strix Halo node (KV 64 GiB plus 18 GiB weights inside its ~112 GiB GPU-addressable RAM). Needs a ROCm torch for gfx1151, chunked prefill, YaRN factor 8. 3M does not fit. | after B2.5, spike first |
 | B4 | Qwen3.8-27B quantized spike and run, then small models and gpt-oss control | after Gate 2 |
 | B5 | `FINDINGS.md`, each claim linked to an experiment | last |
 
