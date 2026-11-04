@@ -311,13 +311,27 @@ def run(args) -> dict:
         load_config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
         yarn_request = _apply_rope_yarn(load_config, rope_yarn)
 
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        dtype=dtype,
-        trust_remote_code=True,
-        attn_implementation=args.attn,
-        config=load_config,
-    ).to(device)
+    offload_gib = float(getattr(args, "offload_weights_gib", 0.0) or 0.0)
+    if offload_gib > 0:
+        # Weights larger than one GPU: keep up to offload_gib GiB of layers on the (single visible) GPU and the
+        # rest in CPU RAM; accelerate streams each layer to the GPU when it runs. Slow but exact.
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            dtype=dtype,
+            trust_remote_code=True,
+            attn_implementation=args.attn,
+            config=load_config,
+            device_map="auto",
+            max_memory={0: f"{offload_gib}GiB", "cpu": "150GiB"},
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            dtype=dtype,
+            trust_remote_code=True,
+            attn_implementation=args.attn,
+            config=load_config,
+        ).to(device)
     model.eval()
     # What transformers actually put on the config (never assume the request was honoured).
     actual_impl = str(getattr(model.config, "_attn_implementation", args.attn))
@@ -720,6 +734,7 @@ def run(args) -> dict:
             "readback": rope_readback,
         },
         "kv_offload": kv_offload,
+        "weights_offload_gib": float(getattr(args, "offload_weights_gib", 0.0) or 0.0),
         "kv_offload_impl": kv_offload_impl if kv_offload else None,
         "kv_offload_moved_layers": (
             int(getattr(state.get("past_cache"), "moved_layers", 0)) if kv_offload else 0
@@ -775,6 +790,7 @@ def main(argv=None):
         "The stock sdpa path expands K/V 4x when a mask is present, which does not fit beyond about 450K tokens.",
     )
     p.add_argument("--gqa-rows", type=int, default=128, help="queries per sub-block for --gqa-sdpa")
+    p.add_argument("--offload-weights-gib", type=float, default=0.0, help="load with accelerate offload: keep this many GiB of weights on the GPU, the rest in CPU RAM (for models larger than one GPU, e.g. Nanbeige 33B bf16)")
     p.add_argument(
         "--prefill-chunk",
         type=int,
