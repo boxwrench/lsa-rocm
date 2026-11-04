@@ -6,3 +6,5 @@ __pycache__/
 third_party/*/
 agents/reports/*.log
 agents/scratch/
+experiments/data/texts/
+results/dumps/

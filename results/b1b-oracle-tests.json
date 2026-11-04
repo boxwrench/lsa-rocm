@@ -1,0 +1,110 @@
+{
+  "task": "B1b",
+  "git_commit": "b75251933d49c46dbbc33bfa508cbf3edc55a6c1",
+  "python": "3.12.13",
+  "executable": "/ai/github/lsa-rocm/agents/scratch/venv-lsa-min/bin/python",
+  "torch": "2.13.0+cpu",
+  "device": "cpu",
+  "model": null,
+  "seed": 0,
+  "config": {
+    "keys": 8192,
+    "index_dim": 32,
+    "clusters": 32,
+    "sigma": 0.15,
+    "n_queries": 64,
+    "recall_top_p": 32,
+    "recall_top_k": 256,
+    "sink_size": 4,
+    "window_size": 128,
+    "pool_size": 4,
+    "bucket_size": 8,
+    "bucket_cap": 16,
+    "cluster_block_size": 64,
+    "top_level": 4,
+    "node_bucket_size": 4,
+    "node_cluster_block_size": 16,
+    "beam_width": 8,
+    "page_size": 512,
+    "growth_buckets": 0
+  },
+  "tests_run": 7,
+  "failures": 0,
+  "successful": true,
+  "recall": {
+    "clustered": {
+      "flat_recall": 0.9720458984375,
+      "tree_recall": 0.97125244140625,
+      "chance": 0.03252445686698005,
+      "top_p": 32,
+      "top_k": 256,
+      "n_queries": 64,
+      "clusters": 32,
+      "keys": 8192,
+      "index_dim": 32
+    },
+    "random": {
+      "flat_recall": 0.1427001953125,
+      "tree_recall": 0.0859375,
+      "chance": 0.03252445686698005,
+      "top_p": 32,
+      "top_k": 256,
+      "n_queries": 64,
+      "clusters": 0,
+      "keys": 8192,
+      "index_dim": 32
+    }
+  },
+  "containment": {
+    "mean": 0.97589111328125,
+    "min": 0.4609375,
+    "max": 1.0,
+    "top_p": 1024,
+    "top_k": 256,
+    "n_buckets": 1024
+  },
+  "tests": [
+    {
+      "test": "test_oracle.test_determinism_same_seed_identical_selections",
+      "status": "pass",
+      "seconds": 0.06263479200424626,
+      "detail": ""
+    },
+    {
+      "test": "test_oracle.test_selected_indices_are_valid_and_causal",
+      "status": "pass",
+      "seconds": 0.027257894980721176,
+      "detail": ""
+    },
+    {
+      "test": "test_oracle.test_sinks_and_window_are_always_included",
+      "status": "pass",
+      "seconds": 0.0034254780039191246,
+      "detail": ""
+    },
+    {
+      "test": "test_oracle.test_clustered_recall_is_clearly_above_chance",
+      "status": "pass",
+      "seconds": 0.04343000898370519,
+      "detail": ""
+    },
+    {
+      "test": "test_oracle.test_random_keys_recall_far_below_clustered",
+      "status": "pass",
+      "seconds": 0.0679141340078786,
+      "detail": ""
+    },
+    {
+      "test": "test_oracle.test_full_top_p_and_full_top_k_covers_every_causal_key",
+      "status": "pass",
+      "seconds": 0.01900219399249181,
+      "detail": ""
+    },
+    {
+      "test": "test_oracle.test_full_top_p_with_a_limited_top_k_does_not_contain_the_exhaustive_top_k",
+      "status": "pass",
+      "seconds": 0.031983719003619626,
+      "detail": ""
+    }
+  ]
+}
