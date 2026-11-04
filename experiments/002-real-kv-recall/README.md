@@ -158,6 +158,11 @@ Dump `ornith-yarn-code-coh-917504` (self-check cosine 0.999998927116394), tree p
 | 4096 (0.45%) | 0.61 | 0.61 | 0.62 | 0.16 | 4/8 | 8/8 | 1/8 |
 | 8192 (0.89%) | 0.66 | 0.66 | 0.67 | 0.37 | 4/8 | 7/8 | 1/8 |
 
+### Cross-prompt PCA check (Ornith 32K, k=2048, mean efficiency)
+
+Basis fitted on the essay prompt, applied to the code prompt: flat 0.528 (own-prompt fit 0.540). Applied to the technical prompt: flat 0.817 (own-prompt fit 0.835).
+The same-prompt fit used in the other sections flatters flat retrieval by about 0.01 to 0.02. Sources: `results/b2_1-xpca-ornith-*32768-from-prose-k2048.json`.
+
 ## Conclusion
 As pre-registered, **Gate 1 fails** on this run: efficiency is below 0.70 on every layer at k=2048, and LSA does not beat the block-sparse baseline. Two readings, both preliminary: (a) the paper's claim is parity with block-sparse at a much cheaper index, and parity is what we see, so the 'beats block-sparse' criterion was mis-specified; (b) the efficiency criterion is a real shortfall at 32K for this model, though the paper's own budget regime is 1M and beyond. Diagnostics: the projected 64-dim shared index space reaches 68 to 80% of the ideal at k=2048 and clustering costs roughly a third more; raising d_idx to 768 changes efficiency by under 0.02.
 

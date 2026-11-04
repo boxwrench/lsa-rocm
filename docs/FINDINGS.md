@@ -97,7 +97,7 @@ Written before the paper-mode sweep ([plan.md](plan.md)). Outcomes, not edited a
 - Generality across models: the long runs are all one 9B hybrid, plus one 33B dense model at 32K and one genre.
 
 ## Limitations of the experiments
-Queries are only from the last 16 positions of each prompt (decode-like), one prompt per cell, and the PCA basis is fitted on the same prompt it serves (the cross-prompt option `--pca-from` exists but was not run).
+Queries are only from the last 16 positions of each prompt (decode-like), one prompt per cell, and the PCA basis is fitted on the same prompt it serves in all headline runs. A cross-prompt check (basis fitted on the 32K essay prompt, applied to the 32K code and technical prompts, k=2048) lowers flat efficiency by only 0.012 on code (0.528 against 0.540) and 0.018 on technical docs (0.817 against 0.835), so the same-prompt fit flatters the numbers by about 0.01 to 0.02 (`results/b2_1-xpca-*.json`).
 Prompts differ across lengths and genres in repetition and source, so cross-length comparisons are indicative. The window is 512 keys at every length, 12.5% of the 4K-scale contexts and negligible at 917K.
 Clustering uses the reference implementation, not a GPU kernel. The first probe (experiment 000) is superseded: it counted the window mass and did not follow the paper's index recipe.
 
@@ -113,5 +113,5 @@ Clustering uses the reference implementation, not a GPU kernel. The first probe 
 `experiments/003-stage-timing/bench_stages.py` (timing). Models: Ornith 1.5 9B and Nanbeige4.3-33B from the Hub. Environment notes are in [env.md](env.md).
 
 ## Next steps
-Run the training-free recipe against a distilled indexer, or at least check the cross-prompt PCA question. Repeat the long-context runs on a second model and second prompt per cell. Time the clustering on the GPU.
+Run the training-free recipe against a distilled indexer. Repeat the long-context runs on a second model and second prompt per cell. Time the clustering on the GPU.
 Test the Strix Halo node for a roughly 2M-token run. Replace the synthetic timing keys with real index vectors.
