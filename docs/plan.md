@@ -144,7 +144,11 @@ a cross-prompt PCA test, a second model at long context, and any end-task accura
 
 - Review found two measurement problems in experiment 003, both confirmed: the GPU file's clustering time (755 s at 10M) was a thread-oversubscription artifact, fixed and rerun (13.5 s); the gather is always timed on a fixed 1M-row table, so its flat cost is an assumption. See `experiments/003-stage-timing/README.md`.
 - B2.6 prerequisite met: Nimo has a ROCm torch for gfx1151 (`~/lsa-rocm-env`, torch 2.9.1+rocm7.13.0, sees the Radeon 8060S with ~120 GB addressable). The 2M-token dump itself has not run.
-- Proposed next experiment (from the review): end-to-end sparse-attention microbenchmark on real captured KV at 32K, 128K and 512K, comparing full attention, block-sparse and LSA flat/tree, with output error, VRAM traffic, tree nodes visited, and prefill vs decode separated. Not started.
+- DONE (first pass): experiment 004, flat LSA and block-sparse vs full attention on real KV at 32K, 128K, 512K; see `experiments/004-e2e-attention/README.md`. Still to do from the proposal: tree nodes visited, prefill, and the CPU-offloaded gather. Original proposal: end-to-end sparse-attention microbenchmark on real captured KV at 32K, 128K and 512K, comparing full attention, block-sparse and LSA flat/tree, with output error, VRAM traffic, tree nodes visited, and prefill vs decode separated. Not started.
+
+### Direction, 2026-11-04 (second review)
+
+North star proposed by a reviewer and adopted as a goal, not yet started: Ornith 9B at long context producing correct answers with sparse decoding, with tokens per second measured. Steps: (1) sparse decoding in the real model at 128K, comparing output and speed with full attention; (2) a fact-at-depth (needle) test at 128K and 512K, the first end-task measurement; (3) GPU-side selection and CPU-offloaded KV gather; (4) sparse prefill; (5) 2M on the Strix Halo node. Attention-mass numbers do not show that facts are retrieved, so step 2 comes early.
 
 ## Open questions
 

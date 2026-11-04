@@ -1,0 +1,33 @@
+{
+ "dump": "results/dumps/ornith-yarn-code-coh-524288",
+ "layer": 11,
+ "T": 524288,
+ "k": 2048,
+ "gpu": "AMD Radeon AI PRO R9700",
+ "torch": "2.12.0+rocm7.14.0",
+ "kv_bytes_layer_gib": 2.0,
+ "paths": {
+  "full_masked": {
+   "ms_per_step": 48.23977949854452,
+   "rel_l2_err_vs_full": 0.0
+  },
+  "full_sdpa_nomask": {
+   "ms_per_step": 38.9883239986375,
+   "rel_l2_err_vs_full": 0.0
+  },
+  "full_bmm": {
+   "ms_per_step": 6.891714510857128,
+   "rel_l2_err_vs_full": 0.006933092139661312
+  },
+  "blocksparse": {
+   "ms_per_step": 0.845611997647211,
+   "rel_l2_err_vs_full": 0.16565835569053888
+  },
+  "lsa_flat": {
+   "ms_per_step": 1.3324929896043614,
+   "rel_l2_err_vs_full": 0.1810863148421049
+  }
+ },
+ "selected_keys_read_per_step": 2564,
+ "kv_read_fraction": 0.00489044189453125
+}

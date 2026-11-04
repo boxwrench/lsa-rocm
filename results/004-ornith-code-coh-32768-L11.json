@@ -1,0 +1,33 @@
+{
+ "dump": "results/dumps/ornith-code-coh-32768",
+ "layer": 11,
+ "T": 32768,
+ "k": 2048,
+ "gpu": "AMD Radeon AI PRO R9700",
+ "torch": "2.12.0+rocm7.14.0",
+ "kv_bytes_layer_gib": 0.125,
+ "paths": {
+  "full_masked": {
+   "ms_per_step": 3.4439430019119754,
+   "rel_l2_err_vs_full": 0.0
+  },
+  "full_sdpa_nomask": {
+   "ms_per_step": 2.793155988911167,
+   "rel_l2_err_vs_full": 0.0
+  },
+  "full_bmm": {
+   "ms_per_step": 0.46964101784396917,
+   "rel_l2_err_vs_full": 0.005486345384269953
+  },
+  "blocksparse": {
+   "ms_per_step": 0.4698959965026006,
+   "rel_l2_err_vs_full": 0.08769822726026177
+  },
+  "lsa_flat": {
+   "ms_per_step": 1.1673679982777685,
+   "rel_l2_err_vs_full": 0.10441152658313513
+  }
+ },
+ "selected_keys_read_per_step": 2564,
+ "kv_read_fraction": 0.0782470703125
+}

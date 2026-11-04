@@ -1,0 +1,33 @@
+{
+ "dump": "results/dumps/ornith-code-coh-131072",
+ "layer": 11,
+ "T": 131072,
+ "k": 2048,
+ "gpu": "AMD Radeon AI PRO R9700",
+ "torch": "2.12.0+rocm7.14.0",
+ "kv_bytes_layer_gib": 0.5,
+ "paths": {
+  "full_masked": {
+   "ms_per_step": 13.070267988950945,
+   "rel_l2_err_vs_full": 0.0
+  },
+  "full_sdpa_nomask": {
+   "ms_per_step": 10.24628701270558,
+   "rel_l2_err_vs_full": 0.0
+  },
+  "full_bmm": {
+   "ms_per_step": 1.874319015769288,
+   "rel_l2_err_vs_full": 0.007682669907808304
+  },
+  "blocksparse": {
+   "ms_per_step": 0.5491515039466321,
+   "rel_l2_err_vs_full": 0.1294881235808134
+  },
+  "lsa_flat": {
+   "ms_per_step": 1.1716574954334646,
+   "rel_l2_err_vs_full": 0.1407936541363597
+  }
+ },
+ "selected_keys_read_per_step": 2564,
+ "kv_read_fraction": 0.019561767578125
+}
