@@ -1,0 +1,58 @@
+{
+ "device": "cuda",
+ "gpu": "AMD Radeon AI PRO R9700",
+ "torch": "2.12.0+rocm7.14.0",
+ "params": {
+  "d_idx": 64,
+  "n_pool": 4,
+  "bucket": 8,
+  "cluster_block": 512,
+  "k": 4096,
+  "p": 1024,
+  "nq": 32
+ },
+ "rows": [
+  {
+   "T": 32768,
+   "pool_keys": 8192,
+   "buckets": 1024,
+   "score_centroids_s": 0.00010217999806627631,
+   "score_exhaustive_s": 0.0001646309974603355,
+   "gather_s": 0.002203789015766233,
+   "cluster_total_s_cpu_reference": 2.360445895930752,
+   "bytes_index_vectors_pool_GB": 0.001
+  },
+  {
+   "T": 131072,
+   "pool_keys": 32768,
+   "buckets": 4096,
+   "score_centroids_s": 0.00010996000492013991,
+   "score_exhaustive_s": 0.00028765099705196917,
+   "gather_s": 0.0021968779910821468,
+   "cluster_total_s_cpu_reference": 9.441783583723009,
+   "bytes_index_vectors_pool_GB": 0.004
+  },
+  {
+   "T": 1048576,
+   "pool_keys": 262144,
+   "buckets": 32768,
+   "score_centroids_s": 0.00027934100944548845,
+   "score_exhaustive_s": 0.0006884930189698935,
+   "gather_s": 0.0022039889881853014,
+   "cluster_total_s_cpu_reference": 75.53426866978407,
+   "bytes_index_vectors_pool_GB": 0.034
+  },
+  {
+   "T": 10485760,
+   "pool_keys": 2621440,
+   "buckets": 327680,
+   "score_centroids_s": 0.000837133004097268,
+   "score_exhaustive_s": 0.006254465988604352,
+   "gather_s": 0.002204229007475078,
+   "cluster_total_s_cpu_reference": 755.3426866978407,
+   "bytes_index_vectors_pool_GB": 0.336
+  }
+ ],
+ "cluster_s_per_512_key_block_cpu_reference": 0.036881967123918,
+ "git_commit": "1c6e716624689da3b5f2e697a46bd993dd27ee47"
+}
