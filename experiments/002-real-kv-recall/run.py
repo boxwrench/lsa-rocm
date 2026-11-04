@@ -953,6 +953,7 @@ def paper_run(args) -> dict:
         "p": p,
         "rotary_dim": int(default_rotary) if default_rotary is not None else None,
         "rotary_dim_per_layer": rotary_per_layer,
+        "tree_preset": getattr(args, "tree", "scaled"),
         "index_dims_source": ("all_dims_post_rope_all_kv_heads" if getattr(args, "index_all_dims", False) else "rope_free_dims_all_kv_heads"),
         "pca_fit_source": (
             f"pca-from:{pca_from_meta}" if pca_from is not None else "fit-on-this-prompt"
