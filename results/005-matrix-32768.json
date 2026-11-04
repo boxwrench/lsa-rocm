@@ -1,0 +1,437 @@
+{
+ "length": 32768,
+ "configs": [
+  [
+   "full",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   512
+  ],
+  [
+   "lsa",
+   "none",
+   128
+  ],
+  [
+   "lsa",
+   "none",
+   64
+  ],
+  [
+   "lsa",
+   "int4rht",
+   128
+  ]
+ ],
+ "results": [
+  {
+   "depth": 0.05,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 32741,
+   "prefill_s": 19.829602003097534,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the main argument",
+     "correct": true,
+     "decode_s": 1.184967279434204
+    },
+    "lsa:none:2048": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the main argument",
+     "correct": true,
+     "decode_s": 1.1328599452972412
+    },
+    "lsa:none:512": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the main theme",
+     "correct": true,
+     "decode_s": 0.8297393321990967
+    },
+    "lsa:none:128": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.8107197284698486
+    },
+    "lsa:none:64": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the main theme",
+     "correct": true,
+     "decode_s": 0.8066861629486084
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.9067347049713135
+    }
+   }
+  },
+  {
+   "depth": 0.05,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 32741,
+   "prefill_s": 17.29415225982666,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the main argument",
+     "correct": true,
+     "decode_s": 1.18569016456604
+    },
+    "lsa:none:2048": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the main argument",
+     "correct": true,
+     "decode_s": 0.9125099182128906
+    },
+    "lsa:none:512": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the main argument",
+     "correct": true,
+     "decode_s": 0.8299517631530762
+    },
+    "lsa:none:128": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.8169534206390381
+    },
+    "lsa:none:64": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the main argument",
+     "correct": true,
+     "decode_s": 0.8106884956359863
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.9138171672821045
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 466,
+   "code": "4578-SEK",
+   "tokens": 32742,
+   "prefill_s": 17.248101949691772,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 1.1863923072814941
+    },
+    "lsa:none:2048": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9092047214508057
+    },
+    "lsa:none:512": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8288912773132324
+    },
+    "lsa:none:128": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8118462562561035
+    },
+    "lsa:none:64": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the name",
+     "correct": true,
+     "decode_s": 0.8086874485015869
+    },
+    "lsa:int4rht:128": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.911304235458374
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 243,
+   "code": "2553-VJT",
+   "tokens": 32741,
+   "prefill_s": 17.30981707572937,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the main cost",
+     "correct": true,
+     "decode_s": 1.1838526725769043
+    },
+    "lsa:none:2048": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the main thesis",
+     "correct": true,
+     "decode_s": 0.908984899520874
+    },
+    "lsa:none:512": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.8300409317016602
+    },
+    "lsa:none:128": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.8137359619140625
+    },
+    "lsa:none:64": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.8067648410797119
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.9122934341430664
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 822,
+   "code": "3407-KDZ",
+   "tokens": 32742,
+   "prefill_s": 17.24139165878296,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 1.184070348739624
+    },
+    "lsa:none:2048": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9116387367248535
+    },
+    "lsa:none:512": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8337442874908447
+    },
+    "lsa:none:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8105816841125488
+    },
+    "lsa:none:64": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8112750053405762
+    },
+    "lsa:int4rht:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9100315570831299
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 175,
+   "code": "6409-RTD",
+   "tokens": 32742,
+   "prefill_s": 17.271390199661255,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 1.1870496273040771
+    },
+    "lsa:none:2048": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9083425998687744
+    },
+    "lsa:none:512": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8325095176696777
+    },
+    "lsa:none:128": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.814093828201294
+    },
+    "lsa:none:64": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8058736324310303
+    },
+    "lsa:int4rht:128": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9119727611541748
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 462,
+   "code": "8113-LVW",
+   "tokens": 32742,
+   "prefill_s": 17.237266302108765,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 1.1860299110412598
+    },
+    "lsa:none:2048": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9057192802429199
+    },
+    "lsa:none:512": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8316550254821777
+    },
+    "lsa:none:128": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8107442855834961
+    },
+    "lsa:none:64": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8086166381835938
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9130649566650391
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 309,
+   "code": "8815-QSJ",
+   "tokens": 32741,
+   "prefill_s": 17.2429141998291,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the main cost",
+     "correct": true,
+     "decode_s": 1.1795954704284668
+    },
+    "lsa:none:2048": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the main reason",
+     "correct": true,
+     "decode_s": 0.9094226360321045
+    },
+    "lsa:none:512": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the main thesis",
+     "correct": true,
+     "decode_s": 0.8303632736206055
+    },
+    "lsa:none:128": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the average age",
+     "correct": true,
+     "decode_s": 0.810441255569458
+    },
+    "lsa:none:64": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the essence of",
+     "correct": true,
+     "decode_s": 0.8072607517242432
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the main difference",
+     "correct": true,
+     "decode_s": 0.9135067462921143
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 163,
+   "code": "9989-ACZ",
+   "tokens": 32742,
+   "prefill_s": 17.249194383621216,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 1.1803643703460693
+    },
+    "lsa:none:2048": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9102158546447754
+    },
+    "lsa:none:512": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8295576572418213
+    },
+    "lsa:none:128": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the essence",
+     "correct": true,
+     "decode_s": 0.8115739822387695
+    },
+    "lsa:none:64": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the essence",
+     "correct": true,
+     "decode_s": 0.8063876628875732
+    },
+    "lsa:int4rht:128": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9092388153076172
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 960,
+   "code": "7534-YXW",
+   "tokens": 32742,
+   "prefill_s": 17.271268606185913,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 1.1801300048828125
+    },
+    "lsa:none:2048": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9137425422668457
+    },
+    "lsa:none:512": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8296828269958496
+    },
+    "lsa:none:128": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.8130481243133545
+    },
+    "lsa:none:64": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the essence",
+     "correct": true,
+     "decode_s": 0.8055233955383301
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the main",
+     "correct": true,
+     "decode_s": 0.9115650653839111
+    }
+   }
+  }
+ ]
+}

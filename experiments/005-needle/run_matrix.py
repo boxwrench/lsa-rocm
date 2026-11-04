@@ -17,7 +17,7 @@ ap.add_argument("--model", default="/ai/models/llm/Ornith-1.5-9B"); ap.add_argum
 ap.add_argument("--depths", default="0.05,0.25,0.5,0.75,0.95"); ap.add_argument("--facts", type=int, default=2)
 ap.add_argument("--chunk", type=int, default=2048); ap.add_argument("--max-new", type=int, default=16)
 ap.add_argument("--seed", type=int, default=0); ap.add_argument("--configs", required=True); ap.add_argument("--out", required=True)
-ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None); ap.add_argument("--rope-yarn", type=float, default=0.0)
+ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None); ap.add_argument("--distractors", type=int, default=0); ap.add_argument("--rope-yarn", type=float, default=0.0)
 a = ap.parse_args()
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
@@ -54,12 +54,27 @@ def build_layer_index(key, Tp):
     b = build_flat_index(idxk[:ncl].contiguous().cpu(), cfg).buckets
     return {"mean": mean, "basis": basis, "cent": b.bucket_centroids.cuda(), "mem": b.bucket_members.long().cuda()}
 
+def build_bsp(key, Tp):
+    raw = key[0, :, :Tp, ROT:].float().permute(1, 0, 2).reshape(Tp, -1); nb = Tp // 4
+    return {"blk": F.normalize(raw[: nb * 4].reshape(nb, 4, -1).mean(1), dim=-1).to(torch.bfloat16)}
+
 def attn(module, query, key, value, attention_mask, dropout=0.0, scaling=None, **kw):
     layer = getattr(module, "layer_idx", None)
     if cur["mode"] == "full" or query.shape[2] != 1 or layer not in FULL:
         return gqa(module, query, key, value, attention_mask, dropout=dropout, scaling=scaling, **kw)
     B, Hq, _, D = query.shape; Hkv = key.shape[1]; G = Hq // Hkv; p = key.shape[2] - 1; st = sparse_state[layer]; k = cur["k"]
     q = query[0, :, 0].view(Hkv, G, D)
+    if cur["mode"] == "bsp":   # block-sparse control: score mean raw keys of 4-key blocks, take the top blocks
+        rq = F.normalize(q.float().sum(1)[:, ROT:].reshape(-1), dim=-1).to(torch.bfloat16); nb = st["blk"].shape[0]
+        sc = (st["blk"] @ rq).float().masked_fill(torch.arange(nb, device=key.device) * 4 > p - WIN, -1e4)
+        top = sc.topk(max(k // 4, 1)).indices
+        idx = torch.cat([(top[:, None] * 4 + torch.arange(4, device=key.device)).flatten(), torch.arange(SINK, device=key.device),
+                         (p + 1 - WIN + torch.arange(WIN, device=key.device)).clamp(min=0)])
+        valid = torch.cat([(top[:, None] * 4 + torch.arange(4, device=key.device)).flatten() <= p - WIN,
+                           torch.ones(SINK + WIN, dtype=torch.bool, device=key.device)]) & (idx <= p)
+        o = F.scaled_dot_product_attention(q.unsqueeze(0), key[0].index_select(1, idx).unsqueeze(0), value[0].index_select(1, idx).unsqueeze(0),
+                                           attn_mask=valid.view(1, 1, 1, -1), scale=scaling)
+        return o.reshape(1, Hq, 1, -1).transpose(1, 2).contiguous(), None
     qi = F.normalize(((q.float().sum(1)[:, ROT:].reshape(1, -1)) - st["mean"]) @ st["basis"].T, dim=-1)[0]
     sc = (st["cent"] @ qi).masked_fill(st["mem"][:, 0] > p - WIN, -1e4)
     top = sc.topk(max(k // 4, 1)).indices; m = st["mem"][top].flatten(); ok = m >= 0
@@ -92,7 +107,15 @@ def qdq(x, quant):
 results = []
 for d, n, code in jobs:
     body = base_ids[: a.length - 80]; cut = int(len(body) * d)
-    text = tok.decode(body[:cut]) + f"\n\nNote for the record: the access code for vault {n} is {code}.\n\n" + tok.decode(body[cut:]) + \
+    marks = [(cut, n, code)]
+    drng = random.Random(a.seed * 1000 + n)
+    for j in range(a.distractors):   # similar facts about other vaults, spread over the whole text
+        vn = drng.choice([x for x in range(100, 1000) if x != n]); marks.append((int(len(body) * (j + 0.5) / a.distractors), vn, f"{drng.randint(1000,9999)}-{''.join(drng.choice('ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(3))}"))
+    marks.sort(); pieces = []; prev = 0
+    for c_, vn, vc in marks:
+        pieces.append(tok.decode(body[prev:c_])); pieces.append(f"\n\nNote for the record: the access code for vault {vn} is {vc}.\n\n"); prev = c_
+    pieces.append(tok.decode(body[prev:]))
+    text = "".join(pieces) + \
         f"\n\nQuestion: What is the access code for vault {n}?\nAnswer: The access code for vault {n} is"
     ids = tok(text, add_special_tokens=False, return_tensors="pt")["input_ids"].cuda(); T = ids.shape[1]; faults = 0
     for attempt in range(1, 4):
@@ -111,11 +134,13 @@ for d, n, code in jobs:
     pre_s = time.time() - t0
     row = {"depth": d, "vault": n, "code": code, "tokens": T, "prefill_s": pre_s, "faults_retried": faults, "configs": {}}
     for mode, quant, k in configs:
-        name = f"{mode}:{quant}" + (f":{k}" if mode == "lsa" else "")
+        name = f"{mode}:{quant}" + (f":{k}" if mode != "full" else "")
         pc = copy.deepcopy(past); sparse_state.clear(); cur.update(mode=mode, k=k)
         with torch.no_grad():
             if mode == "lsa":
                 for l in FULL: sparse_state[l] = build_layer_index(pc.layers[l].keys, T - 1)   # index from unquantized keys
+            if mode == "bsp":
+                for l in FULL: sparse_state[l] = build_bsp(pc.layers[l].keys, T - 1)
             for l in FULL:
                 pc.layers[l].keys = qdq(pc.layers[l].keys, quant); pc.layers[l].values = qdq(pc.layers[l].values, quant)
             gen = []; t1 = time.time()
