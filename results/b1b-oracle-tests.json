@@ -1,6 +1,6 @@
 {
   "task": "B1b",
-  "git_commit": "b75251933d49c46dbbc33bfa508cbf3edc55a6c1",
+  "git_commit": "89b9adfc4caa68d21ba957117ac227479c348a5a",
   "python": "3.12.13",
   "executable": "/ai/github/lsa-rocm/agents/scratch/venv-lsa-min/bin/python",
   "torch": "2.13.0+cpu",
@@ -67,43 +67,43 @@
     {
       "test": "test_oracle.test_determinism_same_seed_identical_selections",
       "status": "pass",
-      "seconds": 0.06263479200424626,
+      "seconds": 0.21997168401139788,
       "detail": ""
     },
     {
       "test": "test_oracle.test_selected_indices_are_valid_and_causal",
       "status": "pass",
-      "seconds": 0.027257894980721176,
+      "seconds": 0.03797657499671914,
       "detail": ""
     },
     {
       "test": "test_oracle.test_sinks_and_window_are_always_included",
       "status": "pass",
-      "seconds": 0.0034254780039191246,
+      "seconds": 0.0033778150100260973,
       "detail": ""
     },
     {
       "test": "test_oracle.test_clustered_recall_is_clearly_above_chance",
       "status": "pass",
-      "seconds": 0.04343000898370519,
+      "seconds": 0.12723089699284174,
       "detail": ""
     },
     {
       "test": "test_oracle.test_random_keys_recall_far_below_clustered",
       "status": "pass",
-      "seconds": 0.0679141340078786,
+      "seconds": 0.08251327998004854,
       "detail": ""
     },
     {
       "test": "test_oracle.test_full_top_p_and_full_top_k_covers_every_causal_key",
       "status": "pass",
-      "seconds": 0.01900219399249181,
+      "seconds": 0.054891162988496944,
       "detail": ""
     },
     {
       "test": "test_oracle.test_full_top_p_with_a_limited_top_k_does_not_contain_the_exhaustive_top_k",
       "status": "pass",
-      "seconds": 0.031983719003619626,
+      "seconds": 0.04070531702018343,
       "detail": ""
     }
   ]
