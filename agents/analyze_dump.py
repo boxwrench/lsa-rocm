@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Run paper-mode analysis on one dump, write per-k result JSON, a summary JSON, and a README section.
-usage: analyze_dump.py <dump_dir_name> <label> [--ks 512,2048,4096] [--tree scaled|upstream] [--n-queries 16]
+usage: analyze_dump.py <dump_dir_name> <label> [--ks 512,2048,4096] [--tree scaled|upstream] [--n-queries 16] [--index-all-dims yes]
 Example: analyze_dump.py ornith-code-coh-32768 ornith-code32768
 Uses the CPU venv. Idempotent: replaces the README section for the same label."""
 import sys, os, json, subprocess, collections, re
@@ -9,14 +9,14 @@ PY = f"{R}/agents/scratch/venv-lsa-min/bin/python"
 dump, label = sys.argv[1], sys.argv[2]
 opt = dict(zip(sys.argv[3::2], sys.argv[4::2]))
 ks = [int(x) for x in opt.get("--ks", "512,2048,4096").split(",")]
-tree = opt.get("--tree", "scaled"); nq = opt.get("--n-queries", "16")
+tree = opt.get("--tree", "scaled"); nq = opt.get("--n-queries", "16"); all_dims = opt.get("--index-all-dims", "no") == "yes"
 meta = json.load(open(f"{R}/results/dumps/{dump}/meta.json")); T = int(meta["max_tokens"])
 env = dict(os.environ, PYTHONPATH=f"{R}/src:{R}/third_party/lsa/src")
 for K in ks:
     out = f"{R}/results/b2_1-{label}-k{K}.json"
     if os.path.exists(out): continue
     r = subprocess.run([PY, f"{R}/experiments/002-real-kv-recall/run.py", "--mode", "paper", "--dump", f"{R}/results/dumps/{dump}",
-                        "--out", out, "--layers", "all", "--n-queries", nq, "--n-cluster", "512", "--k", str(K), "--tree", tree],
+                        "--out", out, "--layers", "all", "--n-queries", nq, "--n-cluster", "512", "--k", str(K), "--tree", tree] + (["--index-all-dims"] if all_dims else []),
                        env=env, capture_output=True, text=True)
     if r.returncode != 0: print("FAILED", K, r.stderr[-400:]); sys.exit(1)
 per = {}; rows = []
