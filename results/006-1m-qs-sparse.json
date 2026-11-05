@@ -1,0 +1,479 @@
+{
+ "length": 1048576,
+ "text": "/ai/github/lsa-rocm/experiments/data/texts/code-coh-917504.txt,/ai/github/lsa-rocm/experiments/data/texts/prose-coh-524288.txt",
+ "rope_yarn": 4.0,
+ "question_full": false,
+ "prefill_s": 4315.899071931839,
+ "facts": 10,
+ "distractors": 20,
+ "configs": [
+  [
+   "full",
+   0,
+   "none"
+  ],
+  [
+   "lsa",
+   2048,
+   "none"
+  ],
+  [
+   "lsa",
+   128,
+   "none"
+  ],
+  [
+   "bsp",
+   2048,
+   "none"
+  ],
+  [
+   "bsp",
+   128,
+   "none"
+  ],
+  [
+   "lsa",
+   128,
+   "int4rht"
+  ],
+  [
+   "full",
+   0,
+   "int4rht"
+  ]
+ ],
+ "results": [
+  {
+   "vault": 964,
+   "code": "6081-DZC",
+   "depth_tokens": 80706,
+   "depth_frac": 0.07696723937988281,
+   "configs": {
+    "full:none": {
+     "answer": " 2501-VNL.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 252.86504101753235
+    },
+    "lsa:none:2048": {
+     "answer": " 6081-DZC.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 3.694624423980713
+    },
+    "lsa:none:128": {
+     "answer": " 2494-CLS.\n\n# ==== file: exllam",
+     "correct": false,
+     "seconds": 2.2143962383270264
+    },
+    "bsp:none:2048": {
+     "answer": " 6081-DZC.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.74821138381958
+    },
+    "bsp:none:128": {
+     "answer": " 6081-DZC.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.254877805709839
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2501-VNL.\n\n**9\\. No demand for more",
+     "correct": false,
+     "seconds": 2.51786208152771
+    },
+    "full:int4rht": {
+     "answer": " 2494-CLS.\n\n== essay: 006",
+     "correct": false,
+     "seconds": 288.2738790512085
+    }
+   }
+  },
+  {
+   "vault": 494,
+   "code": "6409-RTD",
+   "depth_tokens": 179277,
+   "depth_frac": 0.17097187042236328,
+   "configs": {
+    "full:none": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 246.6795060634613
+    },
+    "lsa:none:2048": {
+     "answer": " 6409-RTD.\n\n**9\\. No room for",
+     "correct": true,
+     "seconds": 3.3348188400268555
+    },
+    "lsa:none:128": {
+     "answer": " 2494-CLS.\n\n# ==== file: exllam",
+     "correct": false,
+     "seconds": 2.2092812061309814
+    },
+    "bsp:none:2048": {
+     "answer": " 6409-RTD.\n\n# ==== file: exll",
+     "correct": true,
+     "seconds": 2.5794734954833984
+    },
+    "bsp:none:128": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.254737615585327
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2494-CLS.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.5017645359039307
+    },
+    "full:int4rht": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 288.4755983352661
+    }
+   }
+  },
+  {
+   "vault": 876,
+   "code": "6796-PLV",
+   "depth_tokens": 277848,
+   "depth_frac": 0.26497650146484375,
+   "configs": {
+    "full:none": {
+     "answer": " 4059-BVX.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 246.02560544013977
+    },
+    "lsa:none:2048": {
+     "answer": " 2430-PLM.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 3.3369643688201904
+    },
+    "lsa:none:128": {
+     "answer": " 6794-TRC.\n\n**9\\. No limit to",
+     "correct": false,
+     "seconds": 2.2172024250030518
+    },
+    "bsp:none:2048": {
+     "answer": " 2031-GHA.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.6099560260772705
+    },
+    "bsp:none:128": {
+     "answer": " 6796-PLV.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.2599639892578125
+    },
+    "lsa:int4rht:128": {
+     "answer": " 6796-PLV.\n\n**9\\. No limit to",
+     "correct": true,
+     "seconds": 2.497648239135742
+    },
+    "full:int4rht": {
+     "answer": " 4059-BVX.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 288.7137248516083
+    }
+   }
+  },
+  {
+   "vault": 530,
+   "code": "4350-TRQ",
+   "depth_tokens": 376419,
+   "depth_frac": 0.3589811325073242,
+   "configs": {
+    "full:none": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 246.83955216407776
+    },
+    "lsa:none:2048": {
+     "answer": " 4350-TRQ.\n\n**Notes**\n\n\\[1",
+     "correct": true,
+     "seconds": 3.350496530532837
+    },
+    "lsa:none:128": {
+     "answer": " 2018-DEY.\n\n**9\\. No time**",
+     "correct": false,
+     "seconds": 2.2081797122955322
+    },
+    "bsp:none:2048": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.584383010864258
+    },
+    "bsp:none:128": {
+     "answer": " 4350-TRQ.\n\n**9\\. No limit to",
+     "correct": true,
+     "seconds": 2.256744146347046
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2018-DEY.\n\n# ==== file: exll",
+     "correct": false,
+     "seconds": 2.496455669403076
+    },
+    "full:int4rht": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 288.28626346588135
+    }
+   }
+  },
+  {
+   "vault": 141,
+   "code": "9541-JBT",
+   "depth_tokens": 474990,
+   "depth_frac": 0.4529857635498047,
+   "configs": {
+    "full:none": {
+     "answer": " 5260-RCC.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 246.2456042766571
+    },
+    "lsa:none:2048": {
+     "answer": " 5260-RCC.\n\n# ==== file: exllam",
+     "correct": false,
+     "seconds": 3.3356659412384033
+    },
+    "lsa:none:128": {
+     "answer": " 2494-CLS.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.206087589263916
+    },
+    "bsp:none:2048": {
+     "answer": " 2031-GUH.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.5839316844940186
+    },
+    "bsp:none:128": {
+     "answer": " 2494-CLS.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.257246494293213
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2494-CLS.\n\n# ==== file: exllam",
+     "correct": false,
+     "seconds": 2.497932195663452
+    },
+    "full:int4rht": {
+     "answer": " 5260-RCC.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 288.6008069515228
+    }
+   }
+  },
+  {
+   "vault": 365,
+   "code": "1230-CZN",
+   "depth_tokens": 573560,
+   "depth_frac": 0.5469894409179688,
+   "configs": {
+    "full:none": {
+     "answer": " 4059-BVX.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 246.2382514476776
+    },
+    "lsa:none:2048": {
+     "answer": " 4525-XUP.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 3.3376924991607666
+    },
+    "lsa:none:128": {
+     "answer": " 2018-DEY.\n\n# ==== file: 0",
+     "correct": false,
+     "seconds": 2.210156202316284
+    },
+    "bsp:none:2048": {
+     "answer": " 2889-RUW.\n\nQuestion: What is the arch",
+     "correct": false,
+     "seconds": 2.5845444202423096
+    },
+    "bsp:none:128": {
+     "answer": " 2018-DEY.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 2.2576892375946045
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2018-DEY.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 2.5072720050811768
+    },
+    "full:int4rht": {
+     "answer": " 4059-BVX.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 287.9384341239929
+    }
+   }
+  },
+  {
+   "vault": 623,
+   "code": "1018-VRL",
+   "depth_tokens": 672129,
+   "depth_frac": 0.6409921646118164,
+   "configs": {
+    "full:none": {
+     "answer": " 2889-RTD.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 245.53623270988464
+    },
+    "lsa:none:2048": {
+     "answer": " 2018-DEY.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 3.3476011753082275
+    },
+    "lsa:none:128": {
+     "answer": " 2494-CLS.\n\n**9\\. No one will invest",
+     "correct": false,
+     "seconds": 2.2134718894958496
+    },
+    "bsp:none:2048": {
+     "answer": " 2018-DEY.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 2.5944972038269043
+    },
+    "bsp:none:128": {
+     "answer": " 1018-VRL.\n\n# ==== file: 00",
+     "correct": true,
+     "seconds": 2.2563681602478027
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2018-DEY.\n\n**9\\. No demand for",
+     "correct": false,
+     "seconds": 2.4970479011535645
+    },
+    "full:int4rht": {
+     "answer": " 2889-TRQ.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 287.41722226142883
+    }
+   }
+  },
+  {
+   "vault": 597,
+   "code": "4996-ZLY",
+   "depth_tokens": 770700,
+   "depth_frac": 0.7349967956542969,
+   "configs": {
+    "full:none": {
+     "answer": " 5769-YDT.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 245.73104763031006
+    },
+    "lsa:none:2048": {
+     "answer": " 4996-ZLY.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 3.3594536781311035
+    },
+    "lsa:none:128": {
+     "answer": " 4996-ZLY.\n\n**9\\. No idea what to",
+     "correct": true,
+     "seconds": 2.2101247310638428
+    },
+    "bsp:none:2048": {
+     "answer": " 5769-YDT.\n\nQuestion: What is the name of",
+     "correct": false,
+     "seconds": 2.5833096504211426
+    },
+    "bsp:none:128": {
+     "answer": " 4996-ZLY.\n\nQuestion: What is the chat template",
+     "correct": true,
+     "seconds": 2.256707191467285
+    },
+    "lsa:int4rht:128": {
+     "answer": " 4996-ZLY.\n\n**9\\. No demand**\n\n",
+     "correct": true,
+     "seconds": 2.495189666748047
+    },
+    "full:int4rht": {
+     "answer": " 5769-YDT.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 287.6439559459686
+    }
+   }
+  },
+  {
+   "vault": 514,
+   "code": "2031-GUH",
+   "depth_tokens": 869270,
+   "depth_frac": 0.8290004730224609,
+   "configs": {
+    "full:none": {
+     "answer": " 2018-DEY.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 245.36817908287048
+    },
+    "lsa:none:2048": {
+     "answer": " 2031-GUH.\n\nQuestion: What is the architecture string",
+     "correct": true,
+     "seconds": 3.342101573944092
+    },
+    "lsa:none:128": {
+     "answer": " 2494-CLS.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.2067453861236572
+    },
+    "bsp:none:2048": {
+     "answer": " 2031-GUH.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 2.580704927444458
+    },
+    "bsp:none:128": {
+     "answer": " 4909-ETQ.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 2.259125232696533
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2494-CLS.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.5012922286987305
+    },
+    "full:int4rht": {
+     "answer": " 2018-DEY.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 287.9194116592407
+    }
+   }
+  },
+  {
+   "vault": 902,
+   "code": "4909-ETQ",
+   "depth_tokens": 967842,
+   "depth_frac": 0.9230060577392578,
+   "configs": {
+    "full:none": {
+     "answer": " 4909-ETQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 244.7178795337677
+    },
+    "lsa:none:2048": {
+     "answer": " 4909-ETQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 3.33717679977417
+    },
+    "lsa:none:128": {
+     "answer": " 2031-DEY.\n\n# ==== file: exll",
+     "correct": false,
+     "seconds": 2.208956480026245
+    },
+    "bsp:none:2048": {
+     "answer": " 4909-ETQ.\n\nQuestion: What is the name",
+     "correct": true,
+     "seconds": 2.5870203971862793
+    },
+    "bsp:none:128": {
+     "answer": " 4909-ETQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.258089303970337
+    },
+    "lsa:int4rht:128": {
+     "answer": " 4909-ETQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.5015337467193604
+    },
+    "full:int4rht": {
+     "answer": " 6081-DZC.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 287.52026081085205
+    }
+   }
+  }
+ ],
+ "torch": "2.12.0+rocm7.14.0"
+}
