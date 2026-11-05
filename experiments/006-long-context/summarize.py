@@ -21,6 +21,7 @@ def table(path):
     return "\n".join(lines), d
 secs = []
 for title, f in (("128K, question read through the sparse path", "006-128k-qs-sparse.json"), ("128K, question read densely (exact)", "006-128k-qs-dense.json"),
+                 ("256K native (no YaRN), question read through the sparse path", "006-256k-native-qs-sparse.json"), ("256K native (no YaRN), question read densely (exact)", "006-256k-native-qs-dense.json"),
                  ("1M, question read through the sparse path", "006-1m-qs-sparse.json"), ("1M, question read densely (exact)", "006-1m-qs-dense.json")):
     p = f"{R}/{f}"
     if not os.path.exists(p): continue

@@ -17,6 +17,9 @@ Wrong answers are split into: a distractor's code (the model found a vault note 
 - Prefill of 1,048,576 tokens took 4316 s (72 min) on one R9700 with the cache offloaded to RAM, chunk 1024. A two-GPU split run hit a GPU memory fault at about 820K tokens after 28 min. A flash-kernel prefill path (`src/lsa_rocm/fastattn.py`) cut a 128K prefill from 121 s to 83 s; the 1M two-GPU run was on pace for about 40 min.
 - A bug in an early version (cache state of the linear-attention layers not saved) invalidated the first 128K stage; those results were discarded, and the fixed pipeline reproduces in-process answers when reloaded from disk.
 
+## Reading the 256K native-length results (written 2026-11-05)
+At 262,144 tokens with no YaRN (the model's native limit, 20 distractors, 10 questions) exact full attention scored 10 of 10, so the reference is reliable there and the comparison is meaningful. With the question read through sparse attention, LSA matched it at budgets of 512 keys and up (10 of 10) and fell to 3 of 10 at 128 keys, while block-sparse at 128 keys scored 9 of 10. The 1M failures below are therefore due to the YaRN extension beyond 262K, not to the 9B being unable to resolve these facts.
+
 ## Reading the 1M results (written 2026-11-05)
 At 1M the test cannot separate the methods. With the question read through sparse attention, sparse configs scored 1 to 7 of 10 against 3 for exact attention; with the question read exactly, every config scored 2 or 3 of 10, including exact full attention. The 9B is close to unreliable here (YaRN x4 beyond its native 262K, 20 similar distractors), so the earlier edge of the sparse paths over the reference is best read as noise. 128K is the length where the reference is reliable and the comparison is meaningful.
 
