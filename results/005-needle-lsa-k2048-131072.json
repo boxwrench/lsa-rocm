@@ -1,0 +1,132 @@
+{
+ "mode": "lsa",
+ "length": 131072,
+ "model": "/ai/models/llm/Ornith-1.5-9B",
+ "text": "/ai/github/lsa-rocm/experiments/data/texts/prose-131072.txt",
+ "accuracy": 1.0,
+ "k": 2048,
+ "faults_total": 0,
+ "results": [
+  {
+   "depth": 0.05,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 131045,
+   "answer": " 7311-PBJ.\nQuestion: What is the access code",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 118.69082975387573,
+   "decode_s": 10.701425552368164
+  },
+  {
+   "depth": 0.05,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 131045,
+   "answer": " 8961-NKR.\nQuestion: What is the access code",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 116.92446208000183,
+   "decode_s": 10.693753480911255
+  },
+  {
+   "depth": 0.25,
+   "vault": 466,
+   "code": "4578-SEK",
+   "tokens": 131046,
+   "answer": " 4578-SEK.\nQuestion: What is the main",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 117.01498746871948,
+   "decode_s": 10.378139734268188
+  },
+  {
+   "depth": 0.25,
+   "vault": 243,
+   "code": "2553-VJT",
+   "tokens": 131045,
+   "answer": " 2553-VJT.\nQuestion: What is the main reason",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 117.06043577194214,
+   "decode_s": 10.543321132659912
+  },
+  {
+   "depth": 0.5,
+   "vault": 822,
+   "code": "3407-KDZ",
+   "tokens": 131046,
+   "answer": " 3407-KDZ.\nQuestion: What is the access",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 116.95921468734741,
+   "decode_s": 11.134601831436157
+  },
+  {
+   "depth": 0.5,
+   "vault": 175,
+   "code": "6409-RTD",
+   "tokens": 131046,
+   "answer": " 6409-RTD.\nQuestion: What is the access",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 117.09752249717712,
+   "decode_s": 10.788121700286865
+  },
+  {
+   "depth": 0.75,
+   "vault": 462,
+   "code": "8113-LVW",
+   "tokens": 131046,
+   "answer": " 8113-LVW.\n</think>\n\nThe access code for",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 117.02279734611511,
+   "decode_s": 10.626399755477905
+  },
+  {
+   "depth": 0.75,
+   "vault": 309,
+   "code": "8815-QSJ",
+   "tokens": 131045,
+   "answer": " 8815-QSJ.\nQuestion: What is the access code",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 117.09823489189148,
+   "decode_s": 10.675570249557495
+  },
+  {
+   "depth": 0.95,
+   "vault": 163,
+   "code": "9989-ACZ",
+   "tokens": 131046,
+   "answer": " 9989-ACZ.\nQuestion: What is the name",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 117.18955683708191,
+   "decode_s": 10.717198610305786
+  },
+  {
+   "depth": 0.95,
+   "vault": 960,
+   "code": "7534-YXW",
+   "tokens": 131046,
+   "answer": " 7534-YXW.\nQuestion: What is the access",
+   "correct": true,
+   "faults_retried": 0,
+   "degenerate": false,
+   "prefill_s": 117.1143946647644,
+   "decode_s": 10.455216407775879
+  }
+ ],
+ "torch": "2.12.0+rocm7.14.0"
+}

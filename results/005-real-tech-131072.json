@@ -1,0 +1,707 @@
+{
+ "length": 131072,
+ "configs": [
+  [
+   "full",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   128
+  ],
+  [
+   "lsa",
+   "none",
+   32
+  ],
+  [
+   "bsp",
+   "none",
+   2048
+  ],
+  [
+   "bsp",
+   "none",
+   128
+  ],
+  [
+   "bsp",
+   "none",
+   32
+  ],
+  [
+   "lsa",
+   "int4rht",
+   128
+  ]
+ ],
+ "results": [
+  {
+   "depth": 0.05,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 131543,
+   "prefill_s": 121.83508205413818,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7311-PBJ.\n\n_6.svg\n   :alt",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.677137613296509
+    },
+    "lsa:none:2048": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4153289794921875
+    },
+    "lsa:none:128": {
+     "answer": " 7311-PBJ.\n</think>\n\nThe access code for vault",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0726196765899658
+    },
+    "lsa:none:32": {
+     "answer": " 7311-PBJ.\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0674047470092773
+    },
+    "bsp:none:2048": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1087243556976318
+    },
+    "bsp:none:128": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.091714859008789
+    },
+    "bsp:none:32": {
+     "answer": " 7311-PBJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0923330783843994
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7311-PBJ.\n</think>\n\nThe access code for vault",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4634511470794678
+    }
+   }
+  },
+  {
+   "depth": 0.05,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 131545,
+   "prefill_s": 119.5533390045166,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8961-NKR.\n\n.. ==== file: docs/concept",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6790611743927
+    },
+    "lsa:none:2048": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1692829132080078
+    },
+    "lsa:none:128": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0775096416473389
+    },
+    "lsa:none:32": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0696969032287598
+    },
+    "bsp:none:2048": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1130530834197998
+    },
+    "bsp:none:128": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0914528369903564
+    },
+    "bsp:none:32": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0881876945495605
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8961-NKR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4703078269958496
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 466,
+   "code": "4578-SEK",
+   "tokens": 131549,
+   "prefill_s": 119.43492388725281,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 4578-SEK.\n\n   :alt: Diagram\n",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6752607822418213
+    },
+    "lsa:none:2048": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.167555332183838
+    },
+    "lsa:none:128": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0694196224212646
+    },
+    "lsa:none:32": {
+     "answer": " 4578-SEK.\n\nNote for the record: the",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.064021348953247
+    },
+    "bsp:none:2048": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.102468729019165
+    },
+    "bsp:none:128": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0868666172027588
+    },
+    "bsp:none:32": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0862412452697754
+    },
+    "lsa:int4rht:128": {
+     "answer": " 4578-SEK.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4679961204528809
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 243,
+   "code": "2553-VJT",
+   "tokens": 131549,
+   "prefill_s": 119.86643815040588,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 2553-VJT.\n\n_6.svg\n   :alt",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6740076541900635
+    },
+    "lsa:none:2048": {
+     "answer": " 2553-VJT.\n\n_6.svg\n   :alt",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.166874647140503
+    },
+    "lsa:none:128": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0681865215301514
+    },
+    "lsa:none:32": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0621833801269531
+    },
+    "bsp:none:2048": {
+     "answer": " 2553-VJT.\n\n_6.svg\n   :alt",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1071083545684814
+    },
+    "bsp:none:128": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0861396789550781
+    },
+    "bsp:none:32": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0825951099395752
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2553-VJT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4688329696655273
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 822,
+   "code": "3407-KDZ",
+   "tokens": 131548,
+   "prefill_s": 119.70534777641296,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 3407-KDZ.\n\n_6.svg\n   :",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6753385066986084
+    },
+    "lsa:none:2048": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1653194427490234
+    },
+    "lsa:none:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.067692756652832
+    },
+    "lsa:none:32": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0643610954284668
+    },
+    "bsp:none:2048": {
+     "answer": " 3407-KDZ.\n\n_6.svg\n   :",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1096975803375244
+    },
+    "bsp:none:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.08906888961792
+    },
+    "bsp:none:32": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0869097709655762
+    },
+    "lsa:int4rht:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4681193828582764
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 175,
+   "code": "6409-RTD",
+   "tokens": 131544,
+   "prefill_s": 119.75074791908264,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 6409-RTD.\n\n_6.svg\n   :",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6739726066589355
+    },
+    "lsa:none:2048": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1658005714416504
+    },
+    "lsa:none:128": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0704224109649658
+    },
+    "lsa:none:32": {
+     "answer": " 6409-KTR.\n\nQuestion: What is the access code",
+     "correct": false,
+     "found": 0,
+     "n_targets": 1,
+     "decode_s": 1.0675163269042969
+    },
+    "bsp:none:2048": {
+     "answer": " 6409-RTD.\n\n_6.svg\n   :",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1100339889526367
+    },
+    "bsp:none:128": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.087869644165039
+    },
+    "bsp:none:32": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0857412815093994
+    },
+    "lsa:int4rht:128": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4703879356384277
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 462,
+   "code": "8113-LVW",
+   "tokens": 131547,
+   "prefill_s": 119.66080164909363,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6740174293518066
+    },
+    "lsa:none:2048": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1660304069519043
+    },
+    "lsa:none:128": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0679900646209717
+    },
+    "lsa:none:32": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0641984939575195
+    },
+    "bsp:none:2048": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1078743934631348
+    },
+    "bsp:none:128": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.087508201599121
+    },
+    "bsp:none:32": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0832850933074951
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8113-LVW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.466498613357544
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 309,
+   "code": "8815-QSJ",
+   "tokens": 131544,
+   "prefill_s": 119.481454372406,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.675377368927002
+    },
+    "lsa:none:2048": {
+     "answer": " 8815-QSJ.\n\n_6.svg\n   :alt",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.164308786392212
+    },
+    "lsa:none:128": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0699291229248047
+    },
+    "lsa:none:32": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.065828800201416
+    },
+    "bsp:none:2048": {
+     "answer": " 8815-QSJ.\n\n_6.svg\n   :alt",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1046931743621826
+    },
+    "bsp:none:128": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0865330696105957
+    },
+    "bsp:none:32": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.087508201599121
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8815-QSJ.\n\nQuestion: What is the access code",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4686686992645264
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 163,
+   "code": "9989-ACZ",
+   "tokens": 131543,
+   "prefill_s": 119.53331637382507,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 9989-ACZ.\n\n_6.svg\n   :",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6755592823028564
+    },
+    "lsa:none:2048": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1661860942840576
+    },
+    "lsa:none:128": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.072009801864624
+    },
+    "lsa:none:32": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0654385089874268
+    },
+    "bsp:none:2048": {
+     "answer": " 9989-ACZ.\n\n_6.svg\n   :",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1088902950286865
+    },
+    "bsp:none:128": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0869994163513184
+    },
+    "bsp:none:32": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0858771800994873
+    },
+    "lsa:int4rht:128": {
+     "answer": " 9989-ACZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.4683778285980225
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 960,
+   "code": "7534-YXW",
+   "tokens": 131546,
+   "prefill_s": 119.83632302284241,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7534-YXW.\n\n_6.svg\n   :",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 2.6763088703155518
+    },
+    "lsa:none:2048": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1645162105560303
+    },
+    "lsa:none:128": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0727403163909912
+    },
+    "lsa:none:32": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0650131702423096
+    },
+    "bsp:none:2048": {
+     "answer": " 7534-YXW.\n\nNote for the record: the",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.1109356880187988
+    },
+    "bsp:none:128": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0856437683105469
+    },
+    "bsp:none:32": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.0862865447998047
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7534-YXW.\n\nQuestion: What is the access",
+     "correct": true,
+     "found": 1,
+     "n_targets": 1,
+     "decode_s": 1.467775583267212
+    }
+   }
+  }
+ ]
+}

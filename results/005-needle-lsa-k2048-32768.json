@@ -1,0 +1,130 @@
+{
+ "mode": "lsa",
+ "length": 32768,
+ "model": "/ai/models/llm/Ornith-1.5-9B",
+ "text": "/ai/github/lsa-rocm/experiments/data/texts/prose-32768.txt",
+ "accuracy": 1.0,
+ "results": [
+  {
+   "depth": 0.05,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 32741,
+   "answer": " 7311-PBJ.\n\nQuestion: What is the main argument",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 19.285990715026855,
+   "decode_s": 6.352325916290283
+  },
+  {
+   "depth": 0.05,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 32741,
+   "answer": " 8961-NKR.\n\nQuestion: What is the main argument",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.72827458381653,
+   "decode_s": 6.747518539428711
+  },
+  {
+   "depth": 0.25,
+   "vault": 466,
+   "code": "4578-SEK",
+   "tokens": 32742,
+   "answer": " 4578-SEK.\n\nQuestion: What is the main",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.72444796562195,
+   "decode_s": 6.8256611824035645
+  },
+  {
+   "depth": 0.25,
+   "vault": 243,
+   "code": "2553-VJT",
+   "tokens": 32741,
+   "answer": " 2553-VJT.\n\nQuestion: What is the main thesis",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.769354104995728,
+   "decode_s": 6.665680646896362
+  },
+  {
+   "depth": 0.5,
+   "vault": 822,
+   "code": "3407-KDZ",
+   "tokens": 32742,
+   "answer": " 3407-KDZ.\n\nQuestion: What is the main",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.72538113594055,
+   "decode_s": 6.554848909378052
+  },
+  {
+   "depth": 0.5,
+   "vault": 175,
+   "code": "6409-RTD",
+   "tokens": 32742,
+   "answer": " 6409-RTD.\n\nQuestion: What is the main",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.737428903579712,
+   "decode_s": 6.406877517700195
+  },
+  {
+   "depth": 0.75,
+   "vault": 462,
+   "code": "8113-LVW",
+   "tokens": 32742,
+   "answer": " 8113-LVW.\n\nQuestion: What is the main",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.723873138427734,
+   "decode_s": 5.860481023788452
+  },
+  {
+   "depth": 0.75,
+   "vault": 309,
+   "code": "8815-QSJ",
+   "tokens": 32741,
+   "answer": " 8815-QSJ.\n\nQuestion: What is the main theme",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.72848606109619,
+   "decode_s": 5.666805744171143
+  },
+  {
+   "depth": 0.95,
+   "vault": 163,
+   "code": "9989-ACZ",
+   "tokens": 32742,
+   "answer": " 9989-ACZ.\n\nQuestion: What is the main",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.71026611328125,
+   "decode_s": 6.33101224899292
+  },
+  {
+   "depth": 0.95,
+   "vault": 960,
+   "code": "7534-YXW",
+   "tokens": 32742,
+   "answer": " 7534-YXW.\n\nQuestion: What is the main",
+   "correct": true,
+   "nan_after_prefill": false,
+   "degenerate": false,
+   "prefill_s": 16.731585025787354,
+   "decode_s": 6.003673791885376
+  }
+ ],
+ "torch": "2.12.0+rocm7.14.0"
+}
