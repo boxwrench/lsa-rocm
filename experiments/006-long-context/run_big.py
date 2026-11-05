@@ -30,6 +30,8 @@ ap.add_argument("--cache-dir", default=None, help="save/load the prefilled cache
 ap.add_argument("--split-gpus", action="store_true", help="prefill with the model split over cuda:0 and cuda:1, KV kept in VRAM (needs both visible)")
 ap.add_argument("--question-full", action="store_true", help="feed the question tokens with exact (streamed) attention; only the answer tokens use the config"); ap.add_argument("--slow-prefill-attn", action="store_true", help="use the old masked folded-GQA attention instead of the flash prefix + diagonal path"); ap.add_argument("--prefill-only", action="store_true"); ap.add_argument("--stream-chunk", type=int, default=65536); ap.add_argument("--max-questions", type=int, default=0)
 a = ap.parse_args()
+if a.length % a.chunk:   # a short final chunk produced non-finite logits at 262000 tokens (chunk 1024); use whole chunks only
+    print(f"rounding length {a.length} down to a multiple of chunk {a.chunk}", flush=True); a.length -= a.length % a.chunk
 cache_dir = a.cache_dir or f"/ai/github/lsa-rocm/results/dumps/big-cache-{a.length}"
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
@@ -126,6 +128,8 @@ else:
             e = min(s + a.chunk, T0)
             out = model(input_ids=inp[:, s:e], position_ids=torch.arange(s, e, device=d0)[None], past_key_values=cache, use_cache=True, logits_to_keep=1)
             if (s // a.chunk) % 50 == 0: print(f"prefill {e}/{T0} {time.time()-t0:.0f}s", flush=True)
+            if not bool(torch.isfinite(out.logits).all()):   # find where a numerical fault first appears (state is corrupt after this)
+                print(f"NONFINITE at chunk [{s},{e}) of {T0}", flush=True); raise SystemExit("non-finite logits during prefill")
     if not bool(torch.isfinite(out.logits).all()): raise SystemExit("non-finite logits after prefill: rerun")
     t_pre = time.time() - t0; print(f"prefill done {t_pre:.0f}s", flush=True)
     os.makedirs(cache_dir, exist_ok=True)
