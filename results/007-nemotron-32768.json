@@ -1,0 +1,113 @@
+{
+ "length": 32768,
+ "model": "/home/keith/lsa/models/Nemotron-3-Nano-30B-A3B-BF16",
+ "patched": true,
+ "chunk": 8192,
+ "prefill_s": 22.53138494491577,
+ "tok_s": 1454.3269346340883,
+ "peak_gib": 60.72254705429077,
+ "weights_gib": 58.89623785018921,
+ "nonfinite_chunks": [],
+ "facts": 8,
+ "distractors": 20,
+ "accuracy": 0.0,
+ "correct": 0,
+ "scored": 8,
+ "wrong_breakdown": {
+  "distractor": 0,
+  "other_target": 0,
+  "neither": 8
+ },
+ "results": [
+  {
+   "vault": 964,
+   "code": "3407-KDZ",
+   "depth_tokens": 2897,
+   "depth_frac": 0.088409423828125,
+   "answer": " 2075-967.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.7783496379852295
+  },
+  {
+   "vault": 494,
+   "code": "2208-XLR",
+   "depth_tokens": 6740,
+   "depth_frac": 0.2056884765625,
+   "answer": " 2089-RYH.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 0.8894498348236084
+  },
+  {
+   "vault": 876,
+   "code": "2649-MPL",
+   "depth_tokens": 10608,
+   "depth_frac": 0.32373046875,
+   "answer": " 2018-03-15-03-15-03-03-",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.9093027114868164
+  },
+  {
+   "vault": 530,
+   "code": "4350-TRQ",
+   "depth_tokens": 14450,
+   "depth_frac": 0.44097900390625,
+   "answer": " 2020-03-03-03-03-03-03-",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.964099407196045
+  },
+  {
+   "vault": 141,
+   "code": "9541-JBT",
+   "depth_tokens": 18294,
+   "depth_frac": 0.55828857421875,
+   "answer": " 5010-VYH.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 0.8658144474029541
+  },
+  {
+   "vault": 365,
+   "code": "1230-CZN",
+   "depth_tokens": 22160,
+   "depth_frac": 0.67626953125,
+   "answer": " 5509-GRX.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 0.7469875812530518
+  },
+  {
+   "vault": 623,
+   "code": "1018-VRL",
+   "depth_tokens": 26028,
+   "depth_frac": 0.7943115234375,
+   "answer": " 2018-VRL.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 0.7439451217651367
+  },
+  {
+   "vault": 597,
+   "code": "4996-ZLY",
+   "depth_tokens": 29871,
+   "depth_frac": 0.911590576171875,
+   "answer": " 0010-0000-0000-0000-000",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.905836820602417
+  }
+ ],
+ "complete": true,
+ "torch": "2.9.1+rocm7.13.0"
+}

@@ -26,3 +26,9 @@ Baseline (given): 92 / 71 / OOM / -. Same-run fallback 2K forward took 23 s (inc
 - First run without `TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1`: 2K 1829, 8K 810 tok/s, 16K OOM (32 GiB alloc, math-path SDPA in the attention layers). The flag (efficient/flash SDPA, marked experimental by torch) fixed it; the verify script sets it for both reference and patched runs. Needs a user decision whether to accept an experimental flag.
 - Baseline MoE already used transformers `grouped_mm` experts (not the python loop), so MoE gain is smaller than assumed; Mamba scan/conv + attention were the bulk.
 - Decode path (seq_len 1) not patched (uses transformers fallback); only prefill kernels. Batch>1 loops per sequence. No GPU faults.
+
+## Needle gate result (negative)
+
+Exact full attention, raw prompt, 20 distractors, patched kernels, Nimo: 2K 6/6, 8K 5/6, 16K 5/6, **32K 0/8**, 128K 0/8, 262K 0/8 (the 512K run was killed at ~401K tokens after 1101 s). The unpatched reference scores the same at 8K (5/6) and 32K (1/8), and chunked prefill matches single-pass (last-token cosine 0.999, same argmax), so this is not a kernel or chunking bug. Zero distractors (0/8), a plain completion prompt (1/8) and the chat template (1/8) did not help. With the chat template the model often gets the 4-digit part of the code right and the 3-letter suffix wrong, so exact copying of a random string may be the failure rather than retrieval; a numeric-only or word code was not tried.
+Conclusion: Nemotron-3-Nano is not a usable long-context test model for this protocol, so the 1M LSA question stays open. Prefill throughput also fell from ~2.5K tok/s to ~320 tok/s by 200-260K at chunk 8192 (likely masked SDPA against the growing KV plus per-chunk cache concatenation; not profiled).
+Preliminary: one model, one protocol, one run per length.

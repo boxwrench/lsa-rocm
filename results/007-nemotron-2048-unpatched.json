@@ -1,0 +1,91 @@
+{
+ "length": 2048,
+ "model": "/home/keith/lsa/models/Nemotron-3-Nano-30B-A3B-BF16",
+ "patched": false,
+ "chunk": 2048,
+ "prefill_s": 22.380250930786133,
+ "tok_s": 91.50925100588502,
+ "peak_gib": 67.3926830291748,
+ "weights_gib": 58.89623785018921,
+ "nonfinite_chunks": [],
+ "facts": 6,
+ "distractors": 20,
+ "accuracy": 1.0,
+ "correct": 6,
+ "scored": 6,
+ "wrong_breakdown": {
+  "distractor": 0,
+  "other_target": 0,
+  "neither": 0
+ },
+ "results": [
+  {
+   "vault": 964,
+   "code": "3407-KDZ",
+   "depth_tokens": 201,
+   "depth_frac": 0.09814453125,
+   "answer": " 3407-KDZ.<|im_end|>",
+   "correct": true,
+   "wrong_kind": null,
+   "nonfinite": false,
+   "seconds": 2.026790142059326
+  },
+  {
+   "vault": 494,
+   "code": "2208-XLR",
+   "depth_tokens": 522,
+   "depth_frac": 0.2548828125,
+   "answer": " 2208-XLR.<|im_end|>",
+   "correct": true,
+   "wrong_kind": null,
+   "nonfinite": false,
+   "seconds": 0.9908466339111328
+  },
+  {
+   "vault": 876,
+   "code": "2649-MPL",
+   "depth_tokens": 865,
+   "depth_frac": 0.42236328125,
+   "answer": " 2649-MPL.<|im_end|>",
+   "correct": true,
+   "wrong_kind": null,
+   "nonfinite": false,
+   "seconds": 0.98760986328125
+  },
+  {
+   "vault": 530,
+   "code": "4350-TRQ",
+   "depth_tokens": 1183,
+   "depth_frac": 0.57763671875,
+   "answer": " 4350-TRQ.<|im_end|>",
+   "correct": true,
+   "wrong_kind": null,
+   "nonfinite": false,
+   "seconds": 1.0461561679840088
+  },
+  {
+   "vault": 141,
+   "code": "9541-JBT",
+   "depth_tokens": 1502,
+   "depth_frac": 0.7333984375,
+   "answer": " 9541-JBT.<|im_end|>",
+   "correct": true,
+   "wrong_kind": null,
+   "nonfinite": false,
+   "seconds": 0.9861047267913818
+  },
+  {
+   "vault": 365,
+   "code": "1230-CZN",
+   "depth_tokens": 1844,
+   "depth_frac": 0.900390625,
+   "answer": " 1230-CZN.<|im_end|>",
+   "correct": true,
+   "wrong_kind": null,
+   "nonfinite": false,
+   "seconds": 1.047605276107788
+  }
+ ],
+ "complete": true,
+ "torch": "2.9.1+rocm7.13.0"
+}

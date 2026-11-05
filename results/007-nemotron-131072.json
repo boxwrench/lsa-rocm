@@ -1,0 +1,113 @@
+{
+ "length": 131072,
+ "model": "/home/keith/lsa/models/Nemotron-3-Nano-30B-A3B-BF16",
+ "patched": true,
+ "chunk": 8192,
+ "prefill_s": 139.14379286766052,
+ "tok_s": 941.9895584179052,
+ "peak_gib": 65.03577947616577,
+ "weights_gib": 58.89623785018921,
+ "nonfinite_chunks": [],
+ "facts": 8,
+ "distractors": 20,
+ "accuracy": 0.0,
+ "correct": 0,
+ "scored": 8,
+ "wrong_breakdown": {
+  "distractor": 0,
+  "other_target": 0,
+  "neither": 8
+ },
+ "results": [
+  {
+   "vault": 964,
+   "code": "3407-KDZ",
+   "depth_tokens": 11622,
+   "depth_frac": 0.0886688232421875,
+   "answer": " 3135-JKL.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 2.4795987606048584
+  },
+  {
+   "vault": 494,
+   "code": "2208-XLR",
+   "depth_tokens": 27016,
+   "depth_frac": 0.20611572265625,
+   "answer": " 3133-JZK.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.7756640911102295
+  },
+  {
+   "vault": 876,
+   "code": "2649-MPL",
+   "depth_tokens": 42434,
+   "depth_frac": 0.3237457275390625,
+   "answer": " 3133-JSB.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.6262669563293457
+  },
+  {
+   "vault": 530,
+   "code": "4350-TRQ",
+   "depth_tokens": 57827,
+   "depth_frac": 0.44118499755859375,
+   "answer": " 1234567890.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 2.160494327545166
+  },
+  {
+   "vault": 141,
+   "code": "9541-JBT",
+   "depth_tokens": 73221,
+   "depth_frac": 0.5586318969726562,
+   "answer": " 3133-JSB.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.6306827068328857
+  },
+  {
+   "vault": 365,
+   "code": "1230-CZN",
+   "depth_tokens": 88638,
+   "depth_frac": 0.6762542724609375,
+   "answer": " 3135-JQZ.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.7577488422393799
+  },
+  {
+   "vault": 623,
+   "code": "1018-VRL",
+   "depth_tokens": 104056,
+   "depth_frac": 0.79388427734375,
+   "answer": " 1018-RVL.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.7563107013702393
+  },
+  {
+   "vault": 597,
+   "code": "4996-ZLY",
+   "depth_tokens": 119450,
+   "depth_frac": 0.9113311767578125,
+   "answer": " 1018-JZK.<|im_end|>",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 1.7586324214935303
+  }
+ ],
+ "complete": true,
+ "torch": "2.9.1+rocm7.13.0"
+}

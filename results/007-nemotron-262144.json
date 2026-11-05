@@ -1,0 +1,113 @@
+{
+ "length": 262144,
+ "model": "/home/keith/lsa/models/Nemotron-3-Nano-30B-A3B-BF16",
+ "patched": true,
+ "chunk": 8192,
+ "prefill_s": 480.4735143184662,
+ "tok_s": 545.5951102150584,
+ "peak_gib": 70.78675603866577,
+ "weights_gib": 58.89623785018921,
+ "nonfinite_chunks": [],
+ "facts": 8,
+ "distractors": 20,
+ "accuracy": 0.0,
+ "correct": 0,
+ "scored": 8,
+ "wrong_breakdown": {
+  "distractor": 0,
+  "other_target": 0,
+  "neither": 8
+ },
+ "results": [
+  {
+   "vault": 964,
+   "code": "3407-KDZ",
+   "depth_tokens": 23254,
+   "depth_frac": 0.08870697021484375,
+   "answer": " 5440.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 3.2352981567382812
+  },
+  {
+   "vault": 494,
+   "code": "2208-XLR",
+   "depth_tokens": 54049,
+   "depth_frac": 0.20618057250976562,
+   "answer": " 4900. The access code for vault 0000 is 4900. The",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 5.9978344440460205
+  },
+  {
+   "vault": 876,
+   "code": "2649-MPL",
+   "depth_tokens": 84868,
+   "depth_frac": 0.3237457275390625,
+   "answer": " 5440.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 2.2205677032470703
+  },
+  {
+   "vault": 530,
+   "code": "4350-TRQ",
+   "depth_tokens": 115662,
+   "depth_frac": 0.44121551513671875,
+   "answer": " 4996ZY. The access code is 4996Z The 10th of",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 5.964270353317261
+  },
+  {
+   "vault": 141,
+   "code": "9541-JBT",
+   "depth_tokens": 146458,
+   "depth_frac": 0.5586929321289062,
+   "answer": " 5440.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 2.2195639610290527
+  },
+  {
+   "vault": 365,
+   "code": "1230-CZN",
+   "depth_tokens": 177276,
+   "depth_frac": 0.6762542724609375,
+   "answer": " 5440-DYL.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 2.676940679550171
+  },
+  {
+   "vault": 623,
+   "code": "1018-VRL",
+   "depth_tokens": 208095,
+   "depth_frac": 0.7938194274902344,
+   "answer": " 4996ZY.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 2.4678351879119873
+  },
+  {
+   "vault": 597,
+   "code": "4996-ZLY",
+   "depth_tokens": 238890,
+   "depth_frac": 0.9112930297851562,
+   "answer": " 4996ZY.\n\n",
+   "correct": false,
+   "wrong_kind": "neither",
+   "nonfinite": false,
+   "seconds": 2.4617393016815186
+  }
+ ],
+ "complete": true,
+ "torch": "2.9.1+rocm7.13.0"
+}
