@@ -1,0 +1,857 @@
+{
+ "length": 131072,
+ "configs": [
+  [
+   "full",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   128
+  ],
+  [
+   "lsa",
+   "none",
+   32
+  ],
+  [
+   "lsa",
+   "none",
+   8
+  ],
+  [
+   "bsp",
+   "none",
+   2048
+  ],
+  [
+   "bsp",
+   "none",
+   128
+  ],
+  [
+   "bsp",
+   "none",
+   32
+  ],
+  [
+   "bsp",
+   "none",
+   8
+  ],
+  [
+   "lsa",
+   "int4rht",
+   128
+  ]
+ ],
+ "results": [
+  {
+   "depth": 0.05,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 131603,
+   "prefill_s": 121.4648060798645,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7311-PBJ, 9265-PTT, and 4955-GSY.\nQuestion: What are the access codes for vaults 13",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.563960075378418
+    },
+    "lsa:none:2048": {
+     "answer": " 7311-PBJ, 9265-PTT, and 4955-GSY.\nQuestion: What are the access codes for vaults 81",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.2447361946105957
+    },
+    "lsa:none:128": {
+     "answer": " 7311-PBJ, 9265-PTT, and 4955-GSY.\nQuestion: What are the access codes for vaults 81",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.640836715698242
+    },
+    "lsa:none:32": {
+     "answer": " 7311-PBJ, 9265-P\n\nQuestion: What are the access codes for vaults 136, 810, 983?",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 2.633472204208374
+    },
+    "lsa:none:8": {
+     "answer": " 9265, 9265, 4955.\nQuestion: What are the access codes for vaults 949, 178, ",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.623638153076172
+    },
+    "bsp:none:2048": {
+     "answer": " 7311-PBJ, 9265-PTT, and 4955-GSY.\nQuestion: What are the access codes for vaults 13",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.71183443069458
+    },
+    "bsp:none:128": {
+     "answer": " 7311-PBJ, 9265-PTT, and 4955-GSY.\nQuestion: What are the access codes for vaults 13",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.650080919265747
+    },
+    "bsp:none:32": {
+     "answer": " 7311-PBJ, 9265-PTT, and 4959-DSF.\nQuestion: What are the access codes for vaults 8",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.644723892211914
+    },
+    "bsp:none:8": {
+     "answer": " 7311-PBJ, 9265-ZSE, and 4955-PTT.\nQuestion: What hard liquor, cigarettes, heroin, and crack have",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 2.6397488117218018
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7311-PBJ, 9265-PTT, and 4955-GSY.\nQuestion: What are the access codes for vaults 13",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.049222230911255
+    }
+   }
+  },
+  {
+   "depth": 0.05,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 131605,
+   "prefill_s": 119.49969577789307,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8961-NKR, 7183-FCN, and 1769-BDX.\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.5586419105529785
+    },
+    "lsa:none:2048": {
+     "answer": " 8961-NKR, 7183-FCN, and 1769-BDX.\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.878774881362915
+    },
+    "lsa:none:128": {
+     "answer": " 8961-NKR, 7183-FCN, and 1769-BDX.\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.638535737991333
+    },
+    "lsa:none:32": {
+     "answer": " 8961-NKR, 7183-FCN, and 1769-BDX.\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.635820150375366
+    },
+    "lsa:none:8": {
+     "answer": " 8961-NKR, 7142-PLM, and 5390-THJ.\nQuestion: What are the access codes for vaults 6",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 2.623037576675415
+    },
+    "bsp:none:2048": {
+     "answer": " 8961-NKR, 7183-FCN, and 1769-BDX.\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.7122931480407715
+    },
+    "bsp:none:128": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.642019271850586
+    },
+    "bsp:none:32": {
+     "answer": " 8961-NKR, 7183-FCN, and 1761-NUN.\nQuestion: What are the access codes for vaults 36",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.649752378463745
+    },
+    "bsp:none:8": {
+     "answer": " 8961-NKR, 7183-FCN, and 1761-NUN.\nQuestion: What are the access codes for vaults 31",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.638977527618408
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8961-NKR, 7183-FCN, and 1769-BDX.\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.0519392490386963
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 466,
+   "code": "4578-SEK",
+   "tokens": 131608,
+   "prefill_s": 119.36346793174744,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What are the access codes for vaults 94",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.547327518463135
+    },
+    "lsa:none:2048": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What are the access codes for vaults 94",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.8694169521331787
+    },
+    "lsa:none:128": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What hard liquor, cigarettes, heroin, and crack have",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.639669179916382
+    },
+    "lsa:none:32": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What are the access codes for vaults 53",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6202235221862793
+    },
+    "lsa:none:8": {
+     "answer": " 466, 154, 236.\nQuestion: What are the access codes for vaults 54, 154, 236?",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.631554365158081
+    },
+    "bsp:none:2048": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What are the access codes for vaults 94",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.7096006870269775
+    },
+    "bsp:none:128": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What are the access codes for vaults 15",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6533896923065186
+    },
+    "bsp:none:32": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What are the access codes for vaults 54",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.64839243888855
+    },
+    "bsp:none:8": {
+     "answer": " 4578-ENR, 3011-KGE, and 4700-SRY.\nQuestion: What are the access codes for vaults 46",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.6505308151245117
+    },
+    "lsa:int4rht:128": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\nQuestion: What is the name of the new NFT launched by No",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.0613675117492676
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 243,
+   "code": "2553-VJT",
+   "tokens": 131609,
+   "prefill_s": 119.42983984947205,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What are the access codes for vaults 50",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.556441783905029
+    },
+    "lsa:none:2048": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What are the access codes for vaults 75",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.8713080883026123
+    },
+    "lsa:none:128": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What are the access codes for vaults 10",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6517722606658936
+    },
+    "lsa:none:32": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What hard liquor, cigarettes, heroin, and crack have",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.621458053588867
+    },
+    "lsa:none:8": {
+     "answer": " 2553-VJT, 6118-PLQ, and 3018-FJD.\nQuestion: What hard liquor, cigarettes, heroin, and crack have",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 2.6325032711029053
+    },
+    "bsp:none:2048": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What are the access codes for vaults 75",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.700913667678833
+    },
+    "bsp:none:128": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What are the access codes for vaults 75",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6601619720458984
+    },
+    "bsp:none:32": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What are the access codes for vaults 10",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6439080238342285
+    },
+    "bsp:none:8": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-MLU.\nQuestion: What are the access codes for vaults 1",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.6520988941192627
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2553-VJT, 6143-PBQ, and 6018-FJD.\nQuestion: What are the access codes for vaults 75",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.045062303543091
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 822,
+   "code": "3407-KDZ",
+   "tokens": 131608,
+   "prefill_s": 119.43231010437012,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 3407-KDZ, 7530-LFZ, and 5852-PZX respectively.\nQuestion: What are the access codes for vaults ",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.560330152511597
+    },
+    "lsa:none:2048": {
+     "answer": " 3407-KDZ, 7530-LFZ, and 5852-PZX.\nQuestion: What are the access codes for vaults 9",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.8652210235595703
+    },
+    "lsa:none:128": {
+     "answer": " 3407-KDZ, 7530-LFZ, and 5852-PZX.\nQuestion: What are the access codes for vaults 1",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6418256759643555
+    },
+    "lsa:none:32": {
+     "answer": " 3407-KDV, 7530-LFZ, and 5852-PZX.\nQuestion: What are the access codes for vaults 21",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.621340036392212
+    },
+    "lsa:none:8": {
+     "answer": " 7341, 7341, 559.\nQuestion: What are the access codes for vaults 822, 216, 5",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.6250240802764893
+    },
+    "bsp:none:2048": {
+     "answer": " 3407-KDZ, 7530-LFZ, and 5852-PZX.\nQuestion: What are the access codes for vaults 9",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.696423053741455
+    },
+    "bsp:none:128": {
+     "answer": " 3407-KDZ, 7530-LFZ, and 5852-PZX.\n\nWhat program would one like to write? Whatever _would be",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.65374493598938
+    },
+    "bsp:none:32": {
+     "answer": " 3407-KDZ, 7530-LFZ, and 5852-PZX.\nQuestion: What are the access codes for vaults 1",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.64030385017395
+    },
+    "bsp:none:8": {
+     "answer": " 3407, 7500, and 5852 respectively.\nQuestion: What are the access codes for vaults 970, 216",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.6490652561187744
+    },
+    "lsa:int4rht:128": {
+     "answer": " 3407-KDZ, 7530-LFZ, and 5852-PZX.\nQuestion: What are the access codes for vaults 1",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.0396769046783447
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 175,
+   "code": "6409-RTD",
+   "tokens": 131604,
+   "prefill_s": 119.38522386550903,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 2",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.565561771392822
+    },
+    "lsa:none:2048": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 2",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.86657977104187
+    },
+    "lsa:none:128": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 2",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6379072666168213
+    },
+    "lsa:none:32": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 5",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.618626832962036
+    },
+    "lsa:none:8": {
+     "answer": " 6409, 4844, 9234.\nQuestion: What are the access codes for vaults 175, 555, ",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.613205671310425
+    },
+    "bsp:none:2048": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 2",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.697509288787842
+    },
+    "bsp:none:128": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 2",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6479103565216064
+    },
+    "bsp:none:32": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 2",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.642606258392334
+    },
+    "bsp:none:8": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\nQuestion: What are the access codes for vaults 56",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6393868923187256
+    },
+    "lsa:int4rht:128": {
+     "answer": " 6409-RTD, 4844-BZU, and 9238-GJV.\nQuestion: What are the access codes for vaults 2",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.0441081523895264
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 462,
+   "code": "8113-LVW",
+   "tokens": 131607,
+   "prefill_s": 119.58133101463318,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8113-LVW, 2218-NZF, and 2551-AXU.\nQuestion: What are the access codes for vaults 3",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.56443977355957
+    },
+    "lsa:none:2048": {
+     "answer": " 8113-LVW, 2218-NZF, and 2551-AXU.\nQuestion: What are the access codes for vaults 3",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.8671634197235107
+    },
+    "lsa:none:128": {
+     "answer": " 8113-LVW, 2218-NZF, and 2551-AXU.\nQuestion: What are the access codes for vaults 3",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6387722492218018
+    },
+    "lsa:none:32": {
+     "answer": " 8113-LVW, 2218-NZF, and 3750-AXU.\nQuestion: What are the access codes for vaults 7",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.6250081062316895
+    },
+    "lsa:none:8": {
+     "answer": " 8113, 2218, 255.\nQuestion: What are the access codes for vaults 462, 707, 1",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.6203248500823975
+    },
+    "bsp:none:2048": {
+     "answer": " 8113-LVW, 2218-NZF, and 2551-AXU.\nQuestion: What are the access codes for vaults 3",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.692983865737915
+    },
+    "bsp:none:128": {
+     "answer": " 8113-LVW, 2218-NZF, and 2551-AXU.\nQuestion: What are the access codes for vaults 3",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.650493621826172
+    },
+    "bsp:none:32": {
+     "answer": " 8113-LVW, 2218-NZF, and 2551-AXU.\nQuestion: What are the access codes for vaults 3",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6371428966522217
+    },
+    "bsp:none:8": {
+     "answer": " 462: 811-LVW, 707: 2018-NZF, 126: 4551-AXU.",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.6479852199554443
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8113-LVW, 2218-NZF, and 2551-AXU.\nQuestion: What is the name of the new NFT launched by",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.0468571186065674
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 309,
+   "code": "8815-QSJ",
+   "tokens": 131603,
+   "prefill_s": 119.56587505340576,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8815-QSJ, 5869-AEG, and 4334-HZZ.\nQuestion: What is the main reason startups have been using convertible notes in",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.567402601242065
+    },
+    "lsa:none:2048": {
+     "answer": " 8815-QSJ, 5869-AEG, and 4334-HZZ.\nQuestion: What are the access codes for vaults 776",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.869143009185791
+    },
+    "lsa:none:128": {
+     "answer": " 8815-QSJ, 5869-AEG, and 4334-HZZ.\nQuestion: What are the access codes for vaults 180",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6422603130340576
+    },
+    "lsa:none:32": {
+     "answer": " 8815-QET, 5869-AEG, and 4334-HZZ.\nQuestion: What hard liquor, cigarettes, heroin, and crack have in",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.6199822425842285
+    },
+    "lsa:none:8": {
+     "answer": " 309: 8666, 164: 5555, 345: 9999.\nQuestion: What hard liquor,",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.6223137378692627
+    },
+    "bsp:none:2048": {
+     "answer": " 8815-QSJ, 5869-AEG, and 4334-HZZ.\nQuestion: What are the access codes for vaults 776",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6942713260650635
+    },
+    "bsp:none:128": {
+     "answer": " 8815-QSJ, 5869-AEG, and 4334-HZZ.\nQuestion: What are the access codes for vaults 776",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6503400802612305
+    },
+    "bsp:none:32": {
+     "answer": " 8815-QSJ, 5869-AEG, and 4334-HZZ.\nQuestion: What are the access codes for vaults 317",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6369376182556152
+    },
+    "bsp:none:8": {
+     "answer": " 7669, 5869, 345.\nQuestion: What are the access codes for vaults 309, 164, 3",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.645869016647339
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8815-QSJ, 5869-AEG, and 4334-HZZ.\nQuestion: What are the access codes for vaults 795",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.041391372680664
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 163,
+   "code": "9989-ACZ",
+   "tokens": 131602,
+   "prefill_s": 119.56390976905823,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 9989-ACZ, 8489-UFR, and 5665-GMG.\nQuestion: What are the access codes for vaults 43",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.570120334625244
+    },
+    "lsa:none:2048": {
+     "answer": " 9989-ACZ, 8489-UFR, and 5665-GMG.\nQuestion: What are the access codes for vaults 43",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.8690500259399414
+    },
+    "lsa:none:128": {
+     "answer": " 9989-ACZ, 8489-UFR, and 5665-GMG.\nQuestion: What are the access codes for vaults 47",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.635822057723999
+    },
+    "lsa:none:32": {
+     "answer": " 163: 9989-ACZ, 655: 8489-UFR, 985: 5665-GMG.",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6235690116882324
+    },
+    "lsa:none:8": {
+     "answer": " 163, 655, 985.\nQuestion: What are the access codes for vaults 163, 655, 985",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.617828369140625
+    },
+    "bsp:none:2048": {
+     "answer": " 9989-ACZ, 8489-UFR, and 5665-GMG.\nQuestion: What are the access codes for vaults 43",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.695862054824829
+    },
+    "bsp:none:128": {
+     "answer": " 9989-ACZ, 8489-UFR, and 5665-GMG.\nQuestion: What are the access codes for vaults 43",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.642021894454956
+    },
+    "bsp:none:32": {
+     "answer": " 9989-ACZ, 8489-UFR, and 5665-GMG.\nQuestion: What kind of programming language will they use to write the",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6375808715820312
+    },
+    "bsp:none:8": {
+     "answer": " 9923-ACZ, 8489-UFR, and 2123-LEB.\nQuestion: What are the access codes for vaults 1",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 2.6409413814544678
+    },
+    "lsa:int4rht:128": {
+     "answer": " 9989-ACZ, 8489-UFR, and 5665-GMG.\nQuestion: What is the name of the nonprofit that launched a new",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.0417158603668213
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 960,
+   "code": "7534-YXW",
+   "tokens": 131605,
+   "prefill_s": 119.55770516395569,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What is the main point of high-level languages?\n",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 6.5585551261901855
+    },
+    "lsa:none:2048": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What are the access codes for vaults 25",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.8652069568634033
+    },
+    "lsa:none:128": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What are the access codes for vaults 25",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6344313621520996
+    },
+    "lsa:none:32": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What are the access codes for vaults 30",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6212639808654785
+    },
+    "lsa:none:8": {
+     "answer": " 7534, 8261, 3147.\nQuestion: What are the access codes for vaults 819, 264, ",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 2.619567394256592
+    },
+    "bsp:none:2048": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What are the access codes for vaults 25",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.693673849105835
+    },
+    "bsp:none:128": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What are the access codes for vaults 25",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.6434695720672607
+    },
+    "bsp:none:32": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What are the access codes for vaults 25",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.636915683746338
+    },
+    "bsp:none:8": {
+     "answer": " 960: 7534-KRR, 497: 3844-BKS, 832: 5104-MVC.\n",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 2.6367743015289307
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7534-YXW, 3844-BKS, and 7219-KRR.\nQuestion: What are the access codes for vaults 25",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 3.0408740043640137
+    }
+   }
+  }
+ ]
+}

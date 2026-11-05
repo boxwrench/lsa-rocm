@@ -12,6 +12,7 @@ The prompt is prefilled once with ordinary attention (all but the last prompt to
 ## Reading the results (written 2026-11-04 after the 128K hard run)
 - At budgets of 128 keys and up, LSA, block-sparse and full attention are indistinguishable on this test, at 32K and 128K, with 20 distractors, and with a simulated 4-bit cache.
 - At a budget of 32 keys at 128K, LSA found 5 of 10 facts against 9 of 10 for block-sparse (at 32K, 8 against 9). Suggestive, not significant at 10 prompts. A possible reason, untested: block-sparse reads contiguous 4-key blocks, which keep the planted sentence's neighbouring tokens together, while Ward buckets group tokens by key similarity and split a sentence across buckets, so a tiny budget covers it only partly.
+- Three facts in one answer (`--multi 3`, 20 distractors): full attention and both selectors at 2048 keys found all three in 10 of 10 prompts at 32K and at 128K. At 128 keys both selectors still found all three in 10 of 10 at 128K (9 of 10 at 32K). At 32 keys LSA found all three in 6 of 10 (128K) and 5 of 10 (32K), block-sparse in 8 and 9. At 8 keys both mostly fail (LSA 0 and 0, block-sparse 1 and 3). The pattern is consistent across the single and three-fact tests: parity down to about 128 keys, block-sparse ahead at 32 keys and below. A simulated rotated 4-bit cache at 128 keys scored the same as the exact cache.
 - The one full-attention miss at 128K (depth 0.25, vault 243) is a model error: it answered with a distractor's code. It is not a retrieval failure of the sparse path.
 - `bsp:*:0` is not a true zero-budget control: the block-sparse code always takes at least one 4-key block, so it is effectively K = 4 (and got 3 of 10 at 128K). `lsa:*:0` reads no long-range keys (0 of 10 at both lengths).
 
@@ -90,3 +91,37 @@ Source: `results/005-hard-131072.json`. GPU numerical faults detected and retrie
 | `bsp:none:128` | 10 |
 | `bsp:none:32` | 9 |
 | `bsp:none:0` | 3 |
+
+### Three facts in one answer, 32K (20 distractors)
+
+Source: `results/005-multi3-32768.json`. GPU numerical faults detected and retried: 0.
+
+| config | all 3 found (of 10 prompts) | mean facts found (of 3) |
+|---|---|---|
+| `full:none` | 10 | 3.00 |
+| `lsa:none:2048` | 10 | 3.00 |
+| `lsa:none:128` | 9 | 2.90 |
+| `lsa:none:32` | 5 | 2.10 |
+| `lsa:none:8` | 0 | 0.00 |
+| `bsp:none:2048` | 10 | 3.00 |
+| `bsp:none:128` | 9 | 2.90 |
+| `bsp:none:32` | 9 | 2.90 |
+| `bsp:none:8` | 3 | 2.00 |
+| `lsa:int4rht:128` | 9 | 2.90 |
+
+### Three facts in one answer, 128K (20 distractors)
+
+Source: `results/005-multi3-131072.json`. GPU numerical faults detected and retried: 0.
+
+| config | all 3 found (of 10 prompts) | mean facts found (of 3) |
+|---|---|---|
+| `full:none` | 10 | 3.00 |
+| `lsa:none:2048` | 10 | 3.00 |
+| `lsa:none:128` | 10 | 3.00 |
+| `lsa:none:32` | 6 | 2.50 |
+| `lsa:none:8` | 0 | 0.20 |
+| `bsp:none:2048` | 10 | 3.00 |
+| `bsp:none:128` | 10 | 3.00 |
+| `bsp:none:32` | 8 | 2.80 |
+| `bsp:none:8` | 1 | 1.20 |
+| `lsa:int4rht:128` | 10 | 3.00 |

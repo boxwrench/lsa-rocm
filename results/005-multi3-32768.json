@@ -1,0 +1,857 @@
+{
+ "length": 32768,
+ "configs": [
+  [
+   "full",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   128
+  ],
+  [
+   "lsa",
+   "none",
+   32
+  ],
+  [
+   "lsa",
+   "none",
+   8
+  ],
+  [
+   "bsp",
+   "none",
+   2048
+  ],
+  [
+   "bsp",
+   "none",
+   128
+  ],
+  [
+   "bsp",
+   "none",
+   32
+  ],
+  [
+   "bsp",
+   "none",
+   8
+  ],
+  [
+   "lsa",
+   "int4rht",
+   128
+  ]
+ ],
+ "results": [
+  {
+   "depth": 0.05,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 33300,
+   "prefill_s": 20.105942249298096,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7311-PBJ, 9265-PTT, 4955-GSY.\n\nQuestion: What is the main argument in the essay \"Why Startups",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.928809881210327
+    },
+    "lsa:none:2048": {
+     "answer": " 7311-PBJ, 9265-PTT, 4955-GSY.\n\nQuestion: What is the main argument against the record labels and movie studios",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.464780807495117
+    },
+    "lsa:none:128": {
+     "answer": " 7311-PBJ, 9265-PTT, 4955-GSY.\nQuestion: What are the access codes for vaults 136",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9871859550476074
+    },
+    "lsa:none:32": {
+     "answer": " 7311-PBJ, 9265-DSF, 4955-GSY.\nQuestion: What are the access codes for vaults 949",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9781935214996338
+    },
+    "lsa:none:8": {
+     "answer": " 7311-PTB, 9247-PTB, 4955-PTB.\nQuestion: What are the access codes for vaults 9",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.9615309238433838
+    },
+    "bsp:none:2048": {
+     "answer": " 7311-PBJ, 9265-PTT, 4955-GSY.\n\nQuestion: What is the main argument against the record labels and movie studios",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.173729181289673
+    },
+    "bsp:none:128": {
+     "answer": " 7311-PBJ, 9265-PTT, 4955-GSY.\n\nQuestion: What is the main argument against the idea that startups should move",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.975144624710083
+    },
+    "bsp:none:32": {
+     "answer": " 7311-PBJ, 9265-DSF, 4955-GSY.\nQuestion: What are the access codes for vaults 949",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9705195426940918
+    },
+    "bsp:none:8": {
+     "answer": " 7311-PBJ, 9598-DSF, 4955-GSY.\nQuestion: What are the access codes for vaults 949",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9651718139648438
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7311-PBJ, 9265-PTT, 4955-GSY.\nQuestion: What are the access codes for vaults 949",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.091055393218994
+    }
+   }
+  },
+  {
+   "depth": 0.05,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 33302,
+   "prefill_s": 17.581854581832886,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.9336330890655518
+    },
+    "lsa:none:2048": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.231444835662842
+    },
+    "lsa:none:128": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9890320301055908
+    },
+    "lsa:none:32": {
+     "answer": " 8961-NKR, 7183-BDX, 7183-BDX.\nQuestion: What are the access codes for vaults 623,",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 1.98931884765625
+    },
+    "lsa:none:8": {
+     "answer": " 8961-NKN, 7183-FCF, and 6981-FCF.\nQuestion: What are the access codes for vaults 1",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.9713878631591797
+    },
+    "bsp:none:2048": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.0335466861724854
+    },
+    "bsp:none:128": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9702517986297607
+    },
+    "bsp:none:32": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9710025787353516
+    },
+    "bsp:none:8": {
+     "answer": " 8961-NKR, 7623-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 314",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9608087539672852
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8961-NKR, 7183-FCN, 1769-BDX.\nQuestion: What are the access codes for vaults 368",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.102843999862671
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 466,
+   "code": "4578-SEK",
+   "tokens": 33305,
+   "prefill_s": 17.557406187057495,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\n\nQuestion: What is the main argument in the essay \"The Secret",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.9354310035705566
+    },
+    "lsa:none:2048": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\n\nQuestion: What is the main argument of the essay \"How to",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.238466501235962
+    },
+    "lsa:none:128": {
+     "answer": " 4578-SEK, 3011-KGE, 4700-SRY.\n\nQuestion: What is the main argument against trusting one's opinions about things",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.996272087097168
+    },
+    "lsa:none:32": {
+     "answer": " 4578-SEK, 3011-KGE, 4700-SRY.\n\nQuestion: What are the access codes for vaults 949",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9833438396453857
+    },
+    "lsa:none:8": {
+     "answer": " 470-236, 301-154, 470-236.\nQuestion: What are the access codes for vaults 4",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.9745745658874512
+    },
+    "bsp:none:2048": {
+     "answer": " 4578-SEK, 3011-KGE, and 4700-SRY.\n\nQuestion: What is the main thesis of the essay \"Content\"?",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.026657819747925
+    },
+    "bsp:none:128": {
+     "answer": " 4578-SEK, 3011-KGE, 4700-SRY.\n\nQuestion: What are the access codes for vaults 948",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9765710830688477
+    },
+    "bsp:none:32": {
+     "answer": " 4578-SEK, 3011-KGE, 4700-SRY.\n\nQuestion: What are the access codes for vaults 948",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9651110172271729
+    },
+    "bsp:none:8": {
+     "answer": " 4700-SRY, 3011-KGE, 4700-SRY.\nQuestion: What are the access codes for vaults 466,",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9673562049865723
+    },
+    "lsa:int4rht:128": {
+     "answer": " 4578-SEK, 3011-KGE, 4700-SRY.\n\nQuestion: What is the main argument against the idea that startups should move",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.096914768218994
+    }
+   }
+  },
+  {
+   "depth": 0.25,
+   "vault": 243,
+   "code": "2553-VJT",
+   "tokens": 33306,
+   "prefill_s": 20.190783739089966,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 2553-VJT, 6143-PBQ, 6018-FJD.\n\nQuestion: What is the main reason the author believes startups should move to",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.92183518409729
+    },
+    "lsa:none:2048": {
+     "answer": " 2553-VJT, 6143-PBQ, 6018-FJD.\n\nQuestion: What is the main thesis of the essay \"Content\"?\n",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.4626553058624268
+    },
+    "lsa:none:128": {
+     "answer": " 2553-YJT, 6143-PBQ, 6018-FJD.\n\nQuestion: What is the main argument against trusting one's opinions about things",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9881751537322998
+    },
+    "lsa:none:32": {
+     "answer": " 2553-VJD, 6018-FJD, 6018-FJD.\nQuestion: What are the access codes for vaults 103,",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 1.9837768077850342
+    },
+    "lsa:none:8": {
+     "answer": " 25, 61, 60.\nQuestion: What are the access codes for vaults 1, 10, 100?\nAnswer: The access",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.963874101638794
+    },
+    "bsp:none:2048": {
+     "answer": " 2553-VJT, 6143-PBQ, 6018-FJD.\n\nQuestion: What is the main cost of starting a Web-based startup?",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.172471046447754
+    },
+    "bsp:none:128": {
+     "answer": " 2553-VJT, 6143-PBQ, 6018-FJD.\n\nQuestion: What are the access codes for vaults 103",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.974698781967163
+    },
+    "bsp:none:32": {
+     "answer": " 2553-VJT, 6143-PBQ, 6018-FJD.\n\nQuestion: What is the main argument against trusting one's opinions about things",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.97249436378479
+    },
+    "bsp:none:8": {
+     "answer": " 2553-VJT, 639-FJD, 677-MLU.\nQuestion: What are the access codes for vaults 103, ",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 1.9655394554138184
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2553-YJT, 6143-PBQ, 6018-FJD.\n\nQuestion: What are the access codes for vaults 103",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 2.093759298324585
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 822,
+   "code": "3407-KDZ",
+   "tokens": 33305,
+   "prefill_s": 17.624258518218994,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\n\nQuestion: What are the access codes for vaults 19",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.934136152267456
+    },
+    "lsa:none:2048": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\n\nQuestion: What is the main argument in the essay \"How to",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.2349700927734375
+    },
+    "lsa:none:128": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\nQuestion: What are the access codes for vaults 83",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9910130500793457
+    },
+    "lsa:none:32": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\nQuestion: What are the access codes for vaults 83",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.984928846359253
+    },
+    "lsa:none:8": {
+     "answer": " 3407-LFZ, 7530-73X, 4950-73X.\nQuestion: What are the access codes for vaults",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.973146677017212
+    },
+    "bsp:none:2048": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\n\nQuestion: What are the access codes for vaults 83",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.0349342823028564
+    },
+    "bsp:none:128": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\n\nQuestion: What are the access codes for vaults 83",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9641671180725098
+    },
+    "bsp:none:32": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\n\nQuestion: What are the access codes for vaults 19",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9727284908294678
+    },
+    "bsp:none:8": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\nQuestion: What are the access codes for vaults 83",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9602949619293213
+    },
+    "lsa:int4rht:128": {
+     "answer": " 3407-KDZ, 7530-LFZ, 5852-PZX.\nQuestion: What are the access codes for vaults 83",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.104020595550537
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 175,
+   "code": "6409-RTD",
+   "tokens": 33301,
+   "prefill_s": 17.59224033355713,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\n\nQuestion: What is the main argument in the essay \"How to",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.9400346279144287
+    },
+    "lsa:none:2048": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\n\nQuestion: What is the main thesis of the essay \"Content\"?",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.2404167652130127
+    },
+    "lsa:none:128": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\n\nQuestion: What are the access codes for vaults 28",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9905662536621094
+    },
+    "lsa:none:32": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\nQuestion: What are the access codes for vaults 56",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9840006828308105
+    },
+    "lsa:none:8": {
+     "answer": " 620, 481, 929.\nQuestion: What are the access codes for vaults 13, 14, 15?\nAnswer",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.97200608253479
+    },
+    "bsp:none:2048": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\n\nQuestion: What is the main cost of starting a Web-based startup",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.026428461074829
+    },
+    "bsp:none:128": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\n\nQuestion: What is the main argument against the idea that startups should",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9719443321228027
+    },
+    "bsp:none:32": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\n\nQuestion: What are the access codes for vaults 28",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.963151216506958
+    },
+    "bsp:none:8": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\nQuestion: What are the access codes for vaults 17",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9646031856536865
+    },
+    "lsa:int4rht:128": {
+     "answer": " 6409-RTD, 4844-BZU, 9238-GJV.\n\nQuestion: What are the access codes for vaults 28",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.096187114715576
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 462,
+   "code": "8113-LVW",
+   "tokens": 33304,
+   "prefill_s": 17.58652138710022,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8113-LVW, 2218-NZF, 2551-AXU.\n\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.9258368015289307
+    },
+    "lsa:none:2048": {
+     "answer": " 8113-LVW, 2218-NZF, 2551-AXU.\n\nQuestion: What is the main argument in the essay \"How to",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.230848550796509
+    },
+    "lsa:none:128": {
+     "answer": " 8113-LVW, 2218-NZF, 2551-AXU.\n\nQuestion: What are the access codes for vaults 15",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.99141526222229
+    },
+    "lsa:none:32": {
+     "answer": " 8113-LVW, 2218-NZF, 5511-AXU.\nQuestion: What are the access codes for vaults 46",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9791057109832764
+    },
+    "lsa:none:8": {
+     "answer": " 8115, 2218, 255.\n\nQuestion: What are the access codes for vaults 462, 707, 1",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.9659423828125
+    },
+    "bsp:none:2048": {
+     "answer": " 8113-LVW, 2218-NZF, 2551-AXU.\n\nQuestion: What are the access codes for vaults 36",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.023678779602051
+    },
+    "bsp:none:128": {
+     "answer": " 8113-LVW, 2218-NZF, 2551-AXU.\n\nQuestion: What are the access codes for vaults 15",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9628069400787354
+    },
+    "bsp:none:32": {
+     "answer": " 8113-LVW, 2218-NZF, 2551-AXU.\n\nQuestion: What are the access codes for vaults 15",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9599502086639404
+    },
+    "bsp:none:8": {
+     "answer": " 8113-LVW, 2198-NZW, 2551-AXU.\nQuestion: What are the access codes for vaults 46",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.9598052501678467
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8113-LVW, 2218-NZF, 2551-AXU.\n\nQuestion: What are the access codes for vaults 33",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.098876714706421
+    }
+   }
+  },
+  {
+   "depth": 0.75,
+   "vault": 309,
+   "code": "8815-QSJ",
+   "tokens": 33300,
+   "prefill_s": 17.599016666412354,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\n\nQuestion: What are the access codes for vaults 188,",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.93721604347229
+    },
+    "lsa:none:2048": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\n\nQuestion: What is the main thesis of the essay \"Publishers of all",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.23169207572937
+    },
+    "lsa:none:128": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\n\nQuestion: What are the access codes for vaults 371,",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9862146377563477
+    },
+    "lsa:none:32": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\nQuestion: What are the access codes for vaults 317,",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9727282524108887
+    },
+    "lsa:none:8": {
+     "answer": " 5866-A, 5866-A, 4333-A.\nQuestion: What are the access codes for vaults 164, 30",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.967061996459961
+    },
+    "bsp:none:2048": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\n\nQuestion: What is the main cost of starting a Web-based startup?\n",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.030097484588623
+    },
+    "bsp:none:128": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\n\nQuestion: What are the access codes for vaults 188,",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.968571662902832
+    },
+    "bsp:none:32": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\n\nQuestion: What are the access codes for vaults 371,",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9662978649139404
+    },
+    "bsp:none:8": {
+     "answer": " 5869-AEG, 5869-AEG, 5869-AEG.\nQuestion: What are the access codes for vaults 371,",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 1.9631049633026123
+    },
+    "lsa:int4rht:128": {
+     "answer": " 8815-QSJ, 5869-AEG, 4334-HZZ.\n\nQuestion: What are the access codes for vaults 371,",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.0925700664520264
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 163,
+   "code": "9989-ACZ",
+   "tokens": 33299,
+   "prefill_s": 17.604403734207153,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 9989-ACZ, 8489-UFR, 5665-GMG.\n\nQuestion: What is the main cost of starting a Web-based startup?",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.940201997756958
+    },
+    "lsa:none:2048": {
+     "answer": " 9989-ACZ, 8489-UFR, 5665-GMG.\n\nQuestion: What is the main thesis of the essay \"Publishers of",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.2413527965545654
+    },
+    "lsa:none:128": {
+     "answer": " 9989-ACZ, 8489-UFR, 5665-GMG.\n\nQuestion: What are the access codes for vaults 473",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9918148517608643
+    },
+    "lsa:none:32": {
+     "answer": " 9989, 8489, 5665.\nQuestion: What are the access codes for vaults 473, 810, ",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.9797499179840088
+    },
+    "lsa:none:8": {
+     "answer": " 9989, 8484, 5666.\nQuestion: What are the access codes for vaults 159, 655, ",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.9735491275787354
+    },
+    "bsp:none:2048": {
+     "answer": " 9989-ACZ, 8489-UFR, 5665-GMG.\n\nQuestion: What is the main cost of starting a Web-based startup?",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.0390243530273438
+    },
+    "bsp:none:128": {
+     "answer": " 9989-ACZ, 8489-UFR, 5665-GMG.\n\nQuestion: What are the access codes for vaults 433",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.969179391860962
+    },
+    "bsp:none:32": {
+     "answer": " 9989-ACZ, 8489-UFR, 5665-GMG.\n\nQuestion: What are the access codes for vaults 473",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9756577014923096
+    },
+    "bsp:none:8": {
+     "answer": " 9985-ACZ, 8485-UFR, 5665-GMG.\nQuestion: What are the access codes for vaults 163",
+     "correct": false,
+     "found": 1,
+     "n_targets": 3,
+     "decode_s": 1.9622492790222168
+    },
+    "lsa:int4rht:128": {
+     "answer": " 9989-ACZ, 8489-UFR, 5665-GMG.\n\nQuestion: What are the access codes for vaults 473",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.087693452835083
+    }
+   }
+  },
+  {
+   "depth": 0.95,
+   "vault": 960,
+   "code": "7534-YXW",
+   "tokens": 33302,
+   "prefill_s": 17.603758335113525,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\n\nQuestion: What are the access codes for vaults 250",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.9372432231903076
+    },
+    "lsa:none:2048": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\n\nQuestion: What are the access codes for vaults 250",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.2357194423675537
+    },
+    "lsa:none:128": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\nQuestion: What are the access codes for vaults 250",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.988490104675293
+    },
+    "lsa:none:32": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\n\nQuestion: What are the access codes for vaults 497",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.983041524887085
+    },
+    "lsa:none:8": {
+     "answer": " 753, 381, 294.\n\nQuestion: What are the access codes for vaults 960, 497, 832",
+     "correct": false,
+     "found": 0,
+     "n_targets": 3,
+     "decode_s": 1.9743032455444336
+    },
+    "bsp:none:2048": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\n\nQuestion: What are the access codes for vaults 250",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.030880928039551
+    },
+    "bsp:none:128": {
+     "answer": " 7536-YXW, 3844-BKS, 7219-KRR.\nQuestion: What are the access codes for vaults 250",
+     "correct": false,
+     "found": 2,
+     "n_targets": 3,
+     "decode_s": 1.966867208480835
+    },
+    "bsp:none:32": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\nQuestion: What are the access codes for vaults 250",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9743270874023438
+    },
+    "bsp:none:8": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\nQuestion: What are the access codes for vaults 250",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 1.9596796035766602
+    },
+    "lsa:int4rht:128": {
+     "answer": " 7534-YXW, 3844-BKS, 7219-KRR.\nQuestion: What are the access codes for vaults 250",
+     "correct": true,
+     "found": 3,
+     "n_targets": 3,
+     "decode_s": 2.0999250411987305
+    }
+   }
+  }
+ ]
+}
