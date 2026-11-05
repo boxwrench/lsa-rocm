@@ -13,6 +13,7 @@ The prompt is prefilled once with ordinary attention (all but the last prompt to
 - At budgets of 128 keys and up, LSA, block-sparse and full attention are indistinguishable on this test, at 32K and 128K, with 20 distractors, and with a simulated 4-bit cache.
 - At a budget of 32 keys at 128K, LSA found 5 of 10 facts against 9 of 10 for block-sparse (at 32K, 8 against 9). Suggestive, not significant at 10 prompts. A possible reason, untested: block-sparse reads contiguous 4-key blocks, which keep the planted sentence's neighbouring tokens together, while Ward buckets group tokens by key similarity and split a sentence across buckets, so a tiny budget covers it only partly.
 - Three facts in one answer (`--multi 3`, 20 distractors): full attention and both selectors at 2048 keys found all three in 10 of 10 prompts at 32K and at 128K. At 128 keys both selectors still found all three in 10 of 10 at 128K (9 of 10 at 32K). At 32 keys LSA found all three in 6 of 10 (128K) and 5 of 10 (32K), block-sparse in 8 and 9. At 8 keys both mostly fail (LSA 0 and 0, block-sparse 1 and 3). The pattern is consistent across the single and three-fact tests: parity down to about 128 keys, block-sparse ahead at 32 keys and below. A simulated rotated 4-bit cache at 128 keys scored the same as the exact cache.
+- 512K (Nimo, Radeon 8060S, YaRN x4 beyond the native 262K): 2 prompts only (depths 0.1 and 0.5, no distractors), every config correct (full, lsa at 2048 and 256 keys, lsa with a simulated rotated 4-bit cache at 2048). Each prefill took about 3 h 16 min with the old masked attention path, which is why only 2 of the planned 3 prompts were run. Two prompts is an existence check, not a rate.
 - The one full-attention miss at 128K (depth 0.25, vault 243) is a model error: it answered with a distractor's code. It is not a retrieval failure of the sparse path.
 - `bsp:*:0` is not a true zero-budget control: the block-sparse code always takes at least one 4-key block, so it is effectively K = 4 (and got 3 of 10 at 128K). `lsa:*:0` reads no long-range keys (0 of 10 at both lengths).
 
@@ -125,3 +126,44 @@ Source: `results/005-multi3-131072.json`. GPU numerical faults detected and retr
 | `bsp:none:32` | 8 | 2.80 |
 | `bsp:none:8` | 1 | 1.20 |
 | `lsa:int4rht:128` | 10 | 3.00 |
+
+### Real code haystack (exllamav3 repo source), 128K, 20 distractors
+
+Source: `results/005-real-code-131072.json`. GPU numerical faults detected and retried: 0.
+
+| config | correct / 10 |
+|---|---|
+| `full:none` | 10 |
+| `lsa:none:2048` | 10 |
+| `lsa:none:128` | 10 |
+| `lsa:none:32` | 7 |
+| `bsp:none:2048` | 10 |
+| `bsp:none:128` | 10 |
+| `bsp:none:32` | 10 |
+| `lsa:int4rht:128` | 10 |
+
+### Real technical docs haystack (Composable Kernel), 128K, 20 distractors
+
+Source: `results/005-real-tech-131072.json`. GPU numerical faults detected and retried: 0.
+
+| config | correct / 10 |
+|---|---|
+| `full:none` | 10 |
+| `lsa:none:2048` | 10 |
+| `lsa:none:128` | 10 |
+| `lsa:none:32` | 9 |
+| `bsp:none:2048` | 10 |
+| `bsp:none:128` | 10 |
+| `bsp:none:32` | 10 |
+| `lsa:int4rht:128` | 10 |
+
+### 512K, Nimo (YaRN x4)
+
+Source: `results/nimo-matrix-524288-yarn4.json`. GPU numerical faults detected and retried: 0.
+
+| config | correct / 2 |
+|---|---|
+| `full:none` | 2 |
+| `lsa:none:2048` | 2 |
+| `lsa:int4rht:2048` | 2 |
+| `lsa:none:256` | 2 |

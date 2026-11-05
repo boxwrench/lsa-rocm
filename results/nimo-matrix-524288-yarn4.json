@@ -1,0 +1,87 @@
+{
+ "length": 524288,
+ "configs": [
+  [
+   "full",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   2048
+  ],
+  [
+   "lsa",
+   "int4rht",
+   2048
+  ],
+  [
+   "lsa",
+   "none",
+   256
+  ]
+ ],
+ "results": [
+  {
+   "depth": 0.1,
+   "vault": 964,
+   "code": "7311-PBJ",
+   "tokens": 524261,
+   "prefill_s": 11753.206043958664,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 7311-PBJ.\nQuestion: What is the access code",
+     "correct": true,
+     "decode_s": 19.05674457550049
+    },
+    "lsa:none:2048": {
+     "answer": " 7311-PBJ.\n== essay: 099",
+     "correct": true,
+     "decode_s": 5.838104724884033
+    },
+    "lsa:int4rht:2048": {
+     "answer": " 7311-PBJ.\nQuestion: What is the access code",
+     "correct": true,
+     "decode_s": 11.641111135482788
+    },
+    "lsa:none:256": {
+     "answer": " 7311-PBJ.\nQuestion: What is the access code",
+     "correct": true,
+     "decode_s": 5.432710647583008
+    }
+   }
+  },
+  {
+   "depth": 0.5,
+   "vault": 623,
+   "code": "8961-NKR",
+   "tokens": 524261,
+   "prefill_s": 11804.632288217545,
+   "faults_retried": 0,
+   "configs": {
+    "full:none": {
+     "answer": " 8961-NKR.\nQuestion: What is the access code",
+     "correct": true,
+     "decode_s": 17.805307149887085
+    },
+    "lsa:none:2048": {
+     "answer": " 8961-NKR.\nQuestion: What is the access code",
+     "correct": true,
+     "decode_s": 5.655501842498779
+    },
+    "lsa:int4rht:2048": {
+     "answer": " 8961-NKR.\nQuestion: What is the access code",
+     "correct": true,
+     "decode_s": 11.655587911605835
+    },
+    "lsa:none:256": {
+     "answer": " 8961-NKR.\nQuestion: What is the access code",
+     "correct": true,
+     "decode_s": 5.42351508140564
+    }
+   }
+  }
+ ]
+}

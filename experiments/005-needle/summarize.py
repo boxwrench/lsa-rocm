@@ -24,6 +24,7 @@ sections = []
 for title, f in (("Easy test, 128K (one needle per prompt)", "005-matrix-131072.json"), ("Easy test, 32K", "005-matrix-32768.json"),
                  ("Hard test, 32K (20 distractor facts)", "005-hard-32768.json"), ("Hard test, 128K (20 distractor facts)", "005-hard-131072.json"),
                  ("Three facts in one answer, 32K (20 distractors)", "MULTI:005-multi3-32768.json"), ("Three facts in one answer, 128K (20 distractors)", "MULTI:005-multi3-131072.json"),
+                 ("Real code haystack (exllamav3 repo source), 128K, 20 distractors", "005-real-code-131072.json"), ("Real technical docs haystack (Composable Kernel), 128K, 20 distractors", "005-real-tech-131072.json"),
                  ("512K, Nimo (YaRN x4)", "nimo-matrix-524288-yarn4.json")):
     multi = f.startswith("MULTI:"); f = f.replace("MULTI:", ""); p = f"{R}/{f}"
     if not os.path.exists(p): continue
