@@ -21,9 +21,10 @@ BLOCK = 512
 
 
 class SparsePrefill:
-    def __init__(self, full_layers, rot, k=2048, sink=4, win=544, start=8192, fit_tokens=8192, qblock=128):
+    def __init__(self, full_layers, rot, k=2048, sink=4, win=544, start=8192, fit_tokens=8192, qblock=128, shared=0):
         self.full, self.rot, self.k, self.sink, self.win = set(full_layers), rot, k, sink, win
         self.start, self.fit_tokens, self.qblock = start, fit_tokens, qblock
+        self.shared = shared   # >0: one selection per `shared` consecutive queries (query directions summed), K/V gathered once per group
         self.p = max(k // 4, 1)
         self.cfg = OracleConfig(pool_size=4, bucket_size=8, bucket_cap=CAP, cluster_block_size=BLOCK)
         self.state = {}
@@ -67,6 +68,38 @@ class SparsePrefill:
         st["covered"] = ncl
 
     # ---- attention ---------------------------------------------------------------------------------------------------
+    def _attend_shared(self, st, qb, qpos, kb, vb, ks, vs, jpos, scaling, dt, Hq, QB, D):
+        """Block-shared selection: groups of `shared` queries pick the same k keys (score = sum of unit projected queries, validity from the
+        group's first position), so K/V are gathered once per group instead of once per query."""
+        Hkv = qb.shape[0]
+        outs = []
+        for g in range(0, QB, self.shared):
+            ge = min(g + self.shared, QB)
+            qg, pg = qb[:, :, g:ge], qpos[g:ge]
+            raw = qg.float().sum(1)[:, :, self.rot:].permute(1, 0, 2).reshape(ge - g, -1)
+            qi = self._project(raw, st).sum(0, keepdim=True)
+            sc = (qi @ st["cent"].T)
+            sc = sc.masked_fill(st["first"][None, :] > (pg[0] - self.win), -1e4)
+            top = sc.topk(self.p, dim=1).indices
+            m = st["mem"][top].reshape(1, -1)
+            ok = (m >= self.sink) & (m <= pg[0] - self.win)
+            keep = ok & (ok.cumsum(1) <= self.k)
+            order = torch.argsort((~keep).to(torch.int8), dim=1, stable=True)[:, :self.k]
+            sel = m.gather(1, order).clamp(min=0)[0]
+            valid = keep.gather(1, order)[0]
+            Ks, Vs = st["K0"].index_select(1, sel), st["V0"].index_select(1, sel)
+            s_band = torch.einsum("hgqd,hjd->hgqj", qg, kb).float()
+            allow = (jpos[None, :] <= pg[:, None]) & ((jpos[None, :] > pg[:, None] - self.win) | (jpos[None, :] >= st["s"]))
+            s_band = s_band.masked_fill(~allow[None, None], float("-inf"))
+            s_sink = torch.einsum("hgqd,hjd->hgqj", qg, ks).float()
+            s_sel = torch.einsum("hgqd,hkd->hgqk", qg, Ks).float().masked_fill(~valid[None, None, None], float("-inf"))
+            pr = torch.softmax(torch.cat([s_band, s_sink, s_sel], -1) * scaling, dim=-1).to(dt)
+            nb_, ns_ = s_band.shape[-1], s_sink.shape[-1]
+            o = torch.einsum("hgqj,hjd->hgqd", pr[..., :nb_], vb) + torch.einsum("hgqj,hjd->hgqd", pr[..., nb_:nb_ + ns_], vs) \
+                + torch.einsum("hgqk,hkd->hgqd", pr[..., nb_ + ns_:], Vs)
+            outs.append(o.reshape(Hq, ge - g, D))
+        return torch.cat(outs, 1)
+
     def usable(self, layer, s):
         st = self.state.get(layer)
         return layer in self.full and st is not None and st["covered"] >= s and s >= self.start and st["covered"] > 0
@@ -78,6 +111,7 @@ class SparsePrefill:
         G = Hq // Hkv
         dev = query.device
         K0, V0 = key[0], value[0]                                        # [Hkv,Tk,D]
+        st["K0"], st["V0"], st["s"] = K0, V0, s
         bs = max(0, s - self.win + 1)
         kb, vb = K0[:, bs:s + S], V0[:, bs:s + S]                        # local band keys: prefix window + the whole chunk
         ks, vs = K0[:, :self.sink], V0[:, :self.sink]
@@ -88,6 +122,9 @@ class SparsePrefill:
             QB = qe - qs
             qpos = s + torch.arange(qs, qe, device=dev)
             qb = query[0, :, qs:qe].reshape(Hkv, G, QB, D)
+            if self.shared:
+                outs.append(self._attend_shared(st, qb, qpos, kb, vb, ks, vs, jpos, scaling, query.dtype, Hq, QB, D))
+                continue
             # --- per-query selection from the closed blocks before the chunk
             raw_q = qb.float().sum(1)[:, :, self.rot:].permute(1, 0, 2).reshape(QB, -1)
             qi = self._project(raw_q, st)

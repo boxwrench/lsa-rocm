@@ -28,11 +28,11 @@ ap.add_argument("--rope-yarn", type=float, default=0.0); ap.add_argument("--seed
 ap.add_argument("--configs", required=True); ap.add_argument("--out", required=True)
 ap.add_argument("--cache-dir", default=None, help="save/load the prefilled cache here (default results/dumps/big-cache-<length>)")
 ap.add_argument("--split-gpus", action="store_true", help="prefill with the model split over cuda:0 and cuda:1, KV kept in VRAM (needs both visible)")
-ap.add_argument("--question-full", action="store_true", help="feed the question tokens with exact (streamed) attention; only the answer tokens use the config"); ap.add_argument("--slow-prefill-attn", action="store_true", help="use the old masked folded-GQA attention instead of the flash prefix + diagonal path"); ap.add_argument("--sparse-prefill", type=int, default=0, help="k > 0: use sparse (LSA) attention during prefill with this long-range budget"); ap.add_argument("--prefill-only", action="store_true"); ap.add_argument("--stream-chunk", type=int, default=65536); ap.add_argument("--max-questions", type=int, default=0)
+ap.add_argument("--question-full", action="store_true", help="feed the question tokens with exact (streamed) attention; only the answer tokens use the config"); ap.add_argument("--slow-prefill-attn", action="store_true", help="use the old masked folded-GQA attention instead of the flash prefix + diagonal path"); ap.add_argument("--sparse-prefill", type=int, default=0, help="k > 0: use sparse (LSA) attention during prefill with this long-range budget"); ap.add_argument("--sp-shared", type=int, default=0, help="block-shared selection: queries per shared selection (0 = per query)"); ap.add_argument("--prefill-only", action="store_true"); ap.add_argument("--stream-chunk", type=int, default=65536); ap.add_argument("--max-questions", type=int, default=0)
 a = ap.parse_args()
 if a.length % a.chunk:   # a short final chunk produced non-finite logits at 262000 tokens (chunk 1024); use whole chunks only
     print(f"rounding length {a.length} down to a multiple of chunk {a.chunk}", flush=True); a.length -= a.length % a.chunk
-cache_dir = a.cache_dir or f"/ai/github/lsa-rocm/results/dumps/big-cache-{a.length}" + (f"-sp{a.sparse_prefill}" if a.sparse_prefill else "")
+cache_dir = a.cache_dir or f"/ai/github/lsa-rocm/results/dumps/big-cache-{a.length}" + (f"-sp{a.sparse_prefill}" if a.sparse_prefill else "") + (f"-sh{a.sp_shared}" if a.sp_shared else "")
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 from transformers.cache_utils import DynamicLayer
@@ -112,7 +112,7 @@ def attn_prefill(module, query, key, value, attention_mask, dropout=0.0, scaling
 SP = None
 if a.sparse_prefill:
     from lsa_rocm.sparse_prefill import SparsePrefill, make_sparse_prefill_attn
-    SP = SparsePrefill(FULL, ROT, k=a.sparse_prefill)
+    SP = SparsePrefill(FULL, ROT, k=a.sparse_prefill, shared=a.sp_shared)
     attn_prefill = make_sparse_prefill_attn(SP, lambda module, q, k, v, m, dropout=0.0, scaling=None, **kw: gqa(module, q, k, v, m, dropout=dropout, scaling=scaling, **kw))
 ALL_ATTENTION_FUNCTIONS["sdpa"] = attn_prefill
 if a.split_gpus and not have_cache:
@@ -283,7 +283,7 @@ for vn, code in qs:
         row["configs"][name] = {"answer": ans, "correct": ok, "seconds": time.time() - t1}
         print(f"vault {vn} depth {depth_of[vn]/T0:.2f} {name:10s} {'OK ' if ok else 'MISS'} {time.time()-t1:5.1f}s -> {ans[:34]!r}", flush=True)
     results.append(row)
-    json.dump({"length": T0, "text": a.text, "rope_yarn": a.rope_yarn, "sparse_prefill_k": a.sparse_prefill, "question_full": a.question_full, "prefill_s": t_pre, "facts": a.facts, "distractors": a.distractors,
+    json.dump({"length": T0, "text": a.text, "rope_yarn": a.rope_yarn, "sparse_prefill_k": a.sparse_prefill, "sp_shared": a.sp_shared, "question_full": a.question_full, "prefill_s": t_pre, "facts": a.facts, "distractors": a.distractors,
                "configs": [list(c) for c in configs], "results": results, "torch": torch.__version__}, open(a.out, "w"), indent=1)
 summ = {}
 for r in results:
