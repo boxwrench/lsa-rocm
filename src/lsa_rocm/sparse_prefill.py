@@ -100,8 +100,9 @@ class SparsePrefill:
             order = torch.argsort((~keep).to(torch.int8), dim=1, stable=True)[:, :self.k]
             sel = m.gather(1, order).clamp(min=0)
             valid = keep.gather(1, order)                                  # [QB,k]
-            Ks = K0[:, sel.reshape(-1)].reshape(Hkv, QB, -1, D)
-            Vs = V0[:, sel.reshape(-1)].reshape(Hkv, QB, -1, D)
+            flat = sel.reshape(-1)   # index_select copies whole rows (advanced indexing used a slow generic kernel: 65% of the time)
+            Ks = K0.index_select(1, flat).reshape(Hkv, QB, -1, D)
+            Vs = V0.index_select(1, flat).reshape(Hkv, QB, -1, D)
             # --- scores of the three parts, one joint softmax
             s_band = torch.einsum("hgqd,hjd->hgqj", qb, kb).float()
             allow = (jpos[None, :] <= qpos[:, None]) & ((jpos[None, :] > qpos[:, None] - self.win) | (jpos[None, :] >= s))
