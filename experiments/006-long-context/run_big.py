@@ -135,15 +135,20 @@ else:
     if a.prefill_only: raise SystemExit(0)
 
 # ---- per-layer decode-time structures ---------------------------------------------------------------------------------
-Kc = {l: inner.layers[l].keys for l in FULL}; Vc = {l: inner.layers[l].values for l in FULL}   # CPU [1,Hkv,T0,D], read-only
-assert all(Kc[l].shape[2] == T0 for l in FULL), "cache length mismatch"
-Hkv, D = Kc[FULL[0]].shape[1], Kc[FULL[0]].shape[3]
-WK = {l: Kc[l][0, :, T0 - WINP:].cuda() for l in FULL}; WV = {l: Vc[l][0, :, T0 - WINP:].cuda() for l in FULL}
-SK = {l: Kc[l][0, :, :SINK].cuda() for l in FULL}; SV = {l: Vc[l][0, :, :SINK].cuda() for l in FULL}
+# CPU-resident prefix K/V as pinned, head-contiguous [Hkv,T0,D] tensors: streaming then runs near PCIe speed (pageable, strided copies were ~2 GB/s)
+Kc, Vc = {}, {}
+for l in FULL:
+    Kc[l] = inner.layers[l].keys[0].contiguous().pin_memory(); Vc[l] = inner.layers[l].values[0].contiguous().pin_memory()
+    stub = torch.zeros(1, dtype=torch.bfloat16).expand(1, *Kc[l].shape)   # shape-only stand-in (no memory) so get_seq_length() still reports T0
+    inner.layers[l].keys = stub; inner.layers[l].values = stub
+assert all(Kc[l].shape[1] == T0 for l in FULL), "cache length mismatch"
+Hkv, D = Kc[FULL[0]].shape[0], Kc[FULL[0]].shape[2]
+WK = {l: Kc[l][:, T0 - WINP:].cuda() for l in FULL}; WV = {l: Vc[l][:, T0 - WINP:].cuda() for l in FULL}
+SK = {l: Kc[l][:, :SINK].cuda() for l in FULL}; SV = {l: Vc[l][:, :SINK].cuda() for l in FULL}
 
 def raw_chunks(l, step=65536):
     for s in range(0, T0, step):
-        yield s, Kc[l][0, :, s:s + step, ROT:].cuda().float().permute(1, 0, 2).reshape(-1, Hkv * (D - ROT))
+        yield s, Kc[l][:, s:s + step, ROT:].cuda().float().permute(1, 0, 2).reshape(-1, Hkv * (D - ROT))
 
 def build_lsa(l):
     n = 0; ssum = torch.zeros(Hkv * (D - ROT), device="cuda", dtype=torch.float64)
@@ -186,7 +191,7 @@ def qdq(x, quant):
 
 def gather(l, idx):
     """idx: 1-D long tensor of prefix positions (GPU) -> K,V [Hkv,S,D] on GPU, read from the CPU cache."""
-    ic = idx.cpu(); return Kc[l][0].index_select(1, ic).cuda(non_blocking=True), Vc[l][0].index_select(1, ic).cuda(non_blocking=True)
+    ic = idx.cpu(); return Kc[l].index_select(1, ic).cuda(non_blocking=True), Vc[l].index_select(1, ic).cuda(non_blocking=True)
 
 def attend(q, k, v, valid, scaling):
     G = q.shape[1]
@@ -197,7 +202,11 @@ def stream_full(l, q, tk, tv, scaling):
     """Exact attention over the whole prefix (streamed from CPU in chunks) plus the GPU tail, online softmax."""
     m = l_ = o = None
     for s in range(0, T0, a.stream_chunk):
-        k = qdq(Kc[l][0, :, s:s + a.stream_chunk].cuda(non_blocking=True), cur["quant"]); v = qdq(Vc[l][0, :, s:s + a.stream_chunk].cuda(non_blocking=True), cur["quant"])
+        e = min(s + a.stream_chunk, T0)
+        k = torch.empty(Hkv, e - s, D, dtype=torch.bfloat16, device="cuda"); v = torch.empty_like(k)
+        for h in range(Hkv):   # one contiguous pinned slice per head -> a plain DMA copy
+            k[h].copy_(Kc[l][h, s:e], non_blocking=True); v[h].copy_(Vc[l][h, s:e], non_blocking=True)
+        k = qdq(k, cur["quant"]); v = qdq(v, cur["quant"])
         m, l_, o = fold(q, k, v, scaling, m, l_, o)
     m, l_, o = fold(q, tk[0], tv[0], scaling, m, l_, o)
     return (o / l_).to(q.dtype)
