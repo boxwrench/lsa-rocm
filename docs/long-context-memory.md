@@ -36,6 +36,9 @@ Per decode step the selected keys (about 2.6K at k=2048 plus window and sinks) a
 - Accuracy at long context beyond one planted fact (several facts, aggregation, reasoning). Context past the native 262K uses YaRN.
 - The `vllm-htr` claims (2M to 4M tokens on Strix Halo) come from its own page: its qualification profiles are "capacity-qualified, not filled-window benchmarks", its quality figure is next-token agreement with a bf16 cache over 495 positions, and I found no concurrency numbers. Different model (Qwen3.8-Flash). Not verified or reproduced here.
 
+## Sparse prefill (measured 2026-11-05, Ornith 9B, plain PyTorch, one R9700)
+Training-free LSA used during chunked prefill (`src/lsa_rocm/sparse_prefill.py`, experiment 006): the cache it builds kept retrieval intact (128K 6 of 6, 256K native 10 of 10 under exact and LSA decoding with the question read exactly). Prefill time against the dense flash path: 128K 285 s vs 111 s, 256K 620 s vs 344 s (slower), 1M (YaRN x4) 3522 s vs 4316 s (1.23x faster). Sparse cost per chunk is roughly constant (about 145 s per 51K tokens) while dense grows with the prefix, so the crossover is near 400K tokens. In this implementation the per-query gather of K/V is memory-bound (about 17 GB moved per 2048-token chunk), which a fused kernel or a block-shared selection could cut. An outside post (Rapid-MLX on Apple Silicon, unverified) reports a similar picture: sparse prefill helps, sparse decode adds routing overhead.
+
 ## Experiments that would test it, in order
 1. Needle test at 128K and 512K with sparse decoding (running, 005); then several needles, smaller k, block-sparse as a comparison.
 2. KV quantization applied to the cached K/V in the needle runner (simulated: quantize then dequantize), to measure the combined error before writing kernels.

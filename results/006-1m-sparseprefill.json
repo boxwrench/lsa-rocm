@@ -1,0 +1,115 @@
+{
+ "length": 1048576,
+ "text": "/ai/github/lsa-rocm/experiments/data/texts/code-coh-917504.txt,/ai/github/lsa-rocm/experiments/data/texts/prose-coh-524288.txt",
+ "rope_yarn": 4.0,
+ "sparse_prefill_k": 2048,
+ "question_full": true,
+ "prefill_s": 3521.65469789505,
+ "facts": 10,
+ "distractors": 20,
+ "configs": [
+  [
+   "full",
+   0,
+   "none"
+  ],
+  [
+   "lsa",
+   2048,
+   "none"
+  ]
+ ],
+ "results": [
+  {
+   "vault": 964,
+   "code": "6081-DZC",
+   "depth_tokens": 80706,
+   "depth_frac": 0.07696723937988281,
+   "configs": {
+    "full:none": {
+     "answer": " 6081-DZC.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 84.0416567325592
+    },
+    "lsa:none:2048": {
+     "answer": " 6796-PLV.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 54.73587942123413
+    }
+   }
+  },
+  {
+   "vault": 494,
+   "code": "6409-RTD",
+   "depth_tokens": 179277,
+   "depth_frac": 0.17097187042236328,
+   "configs": {
+    "full:none": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 81.80172777175903
+    },
+    "lsa:none:2048": {
+     "answer": " 6409-RTD.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 54.4644455909729
+    }
+   }
+  },
+  {
+   "vault": 876,
+   "code": "6796-PLV",
+   "depth_tokens": 277848,
+   "depth_frac": 0.26497650146484375,
+   "configs": {
+    "full:none": {
+     "answer": " 6081-DZC.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 81.79578065872192
+    },
+    "lsa:none:2048": {
+     "answer": " 6081-RTH.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 54.47013711929321
+    }
+   }
+  },
+  {
+   "vault": 530,
+   "code": "4350-TRQ",
+   "depth_tokens": 376419,
+   "depth_frac": 0.3589811325073242,
+   "configs": {
+    "full:none": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 81.79449510574341
+    },
+    "lsa:none:2048": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 54.451621294021606
+    }
+   }
+  },
+  {
+   "vault": 141,
+   "code": "9541-JBT",
+   "depth_tokens": 474990,
+   "depth_frac": 0.4529857635498047,
+   "configs": {
+    "full:none": {
+     "answer": " 4059-BVX.\n\nQuestion: What is the access",
+     "correct": false,
+     "seconds": 81.79592657089233
+    },
+    "lsa:none:2048": {
+     "answer": " 4059-BXT.\n\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 54.46606707572937
+    }
+   }
+  }
+ ],
+ "torch": "2.12.0+rocm7.14.0"
+}
