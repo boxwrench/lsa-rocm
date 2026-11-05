@@ -17,7 +17,7 @@ ap.add_argument("--model", default="/ai/models/llm/Ornith-1.5-9B"); ap.add_argum
 ap.add_argument("--depths", default="0.05,0.25,0.5,0.75,0.95"); ap.add_argument("--facts", type=int, default=2)
 ap.add_argument("--chunk", type=int, default=2048); ap.add_argument("--max-new", type=int, default=16)
 ap.add_argument("--seed", type=int, default=0); ap.add_argument("--configs", required=True); ap.add_argument("--out", required=True)
-ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None); ap.add_argument("--distractors", type=int, default=0); ap.add_argument("--multi", type=int, default=1); ap.add_argument("--rope-yarn", type=float, default=0.0)
+ap.add_argument("--only-index", type=int, default=None); ap.add_argument("--text", default=None); ap.add_argument("--distractors", type=int, default=0); ap.add_argument("--multi", type=int, default=1); ap.add_argument("--resume", action="store_true"); ap.add_argument("--rope-yarn", type=float, default=0.0)
 a = ap.parse_args()
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
@@ -104,8 +104,13 @@ def qdq(x, quant):
         out[:, :, s:s + 16384] = y.to(x.dtype)
     return out
 
-results = []
+results = []; done = set()
+import os
+if a.resume and os.path.exists(a.out):   # a GPU fault can kill the process: keep finished prompts, redo only the rest
+    prev = json.load(open(a.out)); results = prev["results"]; done = {(r["depth"], r["vault"]) for r in results}
+    print(f"RESUME: {len(done)} prompts already done", flush=True)
 for d, n, code in jobs:
+    if (d, n) in done: continue
     body = base_ids[: a.length - 80]; cut = int(len(body) * d)
     marks = [(cut, n, code)]; targets = [(n, code)]
     mrng = random.Random(a.seed * 77 + n)
