@@ -87,7 +87,21 @@ class BigCache(_OffloadingDynamicCache):
         k = key_states if k0 is None else torch.cat([k0, key_states], 2); v = value_states if v0 is None else torch.cat([v0, value_states], 2)
         self.tail[layer_idx] = (k, v); return k, v
 
-def layer_tensors(layer): return {k: v for k, v in vars(layer).items() if torch.is_tensor(v)}
+def cpu_tree(x):
+    if torch.is_tensor(x): return x.detach().cpu()
+    if isinstance(x, dict): return {k: cpu_tree(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)): return type(x)(cpu_tree(v) for v in x)
+    return x
+def layer_state(layer):
+    """Everything a cache layer holds (tensors, dicts of tensors, flags) so a linear-attention layer is restored exactly."""
+    return {k: cpu_tree(v) for k, v in vars(layer).items() if k != "device"}
+def to_dev(x, dev):
+    if torch.is_tensor(x): return x.to(dev)
+    if isinstance(x, dict): return {k: to_dev(v, dev) for k, v in x.items()}
+    if isinstance(x, (list, tuple)): return type(x)(to_dev(v, dev) for v in x)
+    return x
+def set_layer_state(layer, st, dev=None):
+    for k, v in copy.deepcopy(st).items(): setattr(layer, k, to_dev(v, dev) if dev else v)
 
 # ---- prefill (or load) ------------------------------------------------------------------------------------------------
 cur = {"mode": "full", "k": 2048, "quant": "none"}; STATE = {}
@@ -103,7 +117,7 @@ meta_path = f"{cache_dir}/meta.json"; t_pre = 0.0
 if have_cache:
     t0 = time.time()
     for i, layer in enumerate(inner.layers):
-        for k, v in torch.load(f"{cache_dir}/layer_{i:02d}.pt", map_location="cpu").items(): setattr(layer, k, v)
+        set_layer_state(layer, torch.load(f"{cache_dir}/layer_{i:02d}.pt", map_location="cpu", weights_only=False), None if i in FULLS else "cuda")
     print(f"loaded prefilled cache from {cache_dir} in {time.time()-t0:.0f}s", flush=True)
 else:
     t0 = time.time(); d0 = "cuda:0" if a.split_gpus else "cuda"; inp = torch.tensor([ids], device=d0)
@@ -115,7 +129,7 @@ else:
     if not bool(torch.isfinite(out.logits).all()): raise SystemExit("non-finite logits after prefill: rerun")
     t_pre = time.time() - t0; print(f"prefill done {t_pre:.0f}s", flush=True)
     os.makedirs(cache_dir, exist_ok=True)
-    for i, layer in enumerate(inner.layers): torch.save({k: v.cpu() for k, v in layer_tensors(layer).items()}, f"{cache_dir}/layer_{i:02d}.pt")
+    for i, layer in enumerate(inner.layers): torch.save(layer_state(layer), f"{cache_dir}/layer_{i:02d}.pt")
     json.dump({"tokens": T0, "seed": a.seed, "prefill_s": t_pre}, open(meta_path, "w"))
     del out
     if a.prefill_only: raise SystemExit(0)
@@ -228,15 +242,14 @@ for c in a.configs.split(","):
     p = c.split(":"); configs.append((p[0], int(p[2]) if len(p) > 2 else 0, p[1] if len(p) > 1 else "none"))
 for mode in {m for m, _, _ in configs if m != "full"}: ensure_index(mode)
 lin_ids = [i for i in range(len(inner.layers)) if i not in FULLS]
-snap = {i: {k: v.clone() for k, v in layer_tensors(inner.layers[i]).items()} for i in lin_ids}   # state after the context
+snap = {i: layer_state(inner.layers[i]) for i in lin_ids}   # complete linear-attention state after the context (tensors, dicts, flags)
 results = []; qs = targets[: a.max_questions] if a.max_questions else targets
 for vn, code in qs:
     qids = tok(f"\n\nQuestion: What is the access code for vault {vn}?\nAnswer: The access code for vault {vn} is", add_special_tokens=False)["input_ids"]
     row = {"vault": vn, "code": code, "depth_tokens": depth_of[vn], "depth_frac": depth_of[vn] / T0, "configs": {}}
     for mode, k, qn in configs:
         name = (f"{mode}:{qn}:{k}" if mode != "full" else f"full:{qn}")
-        for i in lin_ids:
-            for kk, vv in snap[i].items(): setattr(inner.layers[i], kk, vv.clone())
+        for i in lin_ids: set_layer_state(inner.layers[i], snap[i], "cuda")
         cache.decode = True; cache.tail = {}; cur.update(mode=mode, k=k, quant=qn); t1 = time.time(); gen = []
         with torch.no_grad():
             pos = T0; nxt = None
