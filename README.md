@@ -17,6 +17,7 @@ the full-attention layers of recent models, and whether it is cheap on an AMD GP
 - `experiments/NNN-name/`: one folder per experiment with hypothesis, command, result and conclusion.
   Negative results are kept.
 - [docs/FINDINGS.md](docs/FINDINGS.md): current conclusions, each linked to an experiment, with caveats.
+- [docs/fidelity.md](docs/fidelity.md): how this project's LSA compares with the paper's, what matches, what differs, and what that means for the results.
 - [docs/long-context-memory.md](docs/long-context-memory.md): a hypothesis, with estimates and open questions, on combining LSA, quantized KV and a CPU-resident cache for much longer context on the same VRAM.
 
 ## How the work is done
