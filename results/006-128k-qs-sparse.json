@@ -1,0 +1,307 @@
+{
+ "length": 131072,
+ "text": "experiments/data/texts/prose-131072.txt",
+ "rope_yarn": 0.0,
+ "question_full": false,
+ "prefill_s": 111.08583736419678,
+ "facts": 6,
+ "distractors": 20,
+ "configs": [
+  [
+   "full",
+   0,
+   "none"
+  ],
+  [
+   "lsa",
+   2048,
+   "none"
+  ],
+  [
+   "lsa",
+   128,
+   "none"
+  ],
+  [
+   "bsp",
+   2048,
+   "none"
+  ],
+  [
+   "bsp",
+   128,
+   "none"
+  ],
+  [
+   "lsa",
+   128,
+   "int4rht"
+  ],
+  [
+   "full",
+   0,
+   "int4rht"
+  ]
+ ],
+ "results": [
+  {
+   "vault": 964,
+   "code": "3407-KDZ",
+   "depth_tokens": 14178,
+   "depth_frac": 0.1081695556640625,
+   "configs": {
+    "full:none": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 31.224356412887573
+    },
+    "lsa:none:2048": {
+     "answer": " 3407-KDZ.\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 3.38165545463562
+    },
+    "lsa:none:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.0270917415618896
+    },
+    "bsp:none:2048": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.565431833267212
+    },
+    "bsp:none:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 1.9777660369873047
+    },
+    "lsa:int4rht:128": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.3473994731903076
+    },
+    "full:int4rht": {
+     "answer": " 3407-KDZ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 36.93295335769653
+    }
+   }
+  },
+  {
+   "vault": 494,
+   "code": "2208-XLR",
+   "depth_tokens": 34711,
+   "depth_frac": 0.26482391357421875,
+   "configs": {
+    "full:none": {
+     "answer": " 2208-XLR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 31.634284257888794
+    },
+    "lsa:none:2048": {
+     "answer": " 2208-XLR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 3.1638925075531006
+    },
+    "lsa:none:128": {
+     "answer": " 2208-XLR.\n</think>\n\nThe access code for vault",
+     "correct": true,
+     "seconds": 2.0286247730255127
+    },
+    "bsp:none:2048": {
+     "answer": " 2208-XLR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 2.2809410095214844
+    },
+    "bsp:none:128": {
+     "answer": " 2208-XLR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 1.975229024887085
+    },
+    "lsa:int4rht:128": {
+     "answer": " 2031-GUH.\nQuestion: What is the single most",
+     "correct": false,
+     "seconds": 2.3277456760406494
+    },
+    "full:int4rht": {
+     "answer": " 2208-XLR.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 36.92907238006592
+    }
+   }
+  },
+  {
+   "vault": 876,
+   "code": "2649-MPL",
+   "depth_tokens": 55269,
+   "depth_frac": 0.42166900634765625,
+   "configs": {
+    "full:none": {
+     "answer": " 2649-MPL.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 31.127201080322266
+    },
+    "lsa:none:2048": {
+     "answer": " 2649-MPL.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 3.140869617462158
+    },
+    "lsa:none:128": {
+     "answer": " 1018-VRL.\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.0325539112091064
+    },
+    "bsp:none:2048": {
+     "answer": " 2649-MPL.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 2.29205322265625
+    },
+    "bsp:none:128": {
+     "answer": " 2649-MPL.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 1.9781262874603271
+    },
+    "lsa:int4rht:128": {
+     "answer": " 1018-VRL.\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.330188035964966
+    },
+    "full:int4rht": {
+     "answer": " 2649-MPL.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 36.83778214454651
+    }
+   }
+  },
+  {
+   "vault": 530,
+   "code": "4350-TRQ",
+   "depth_tokens": 75802,
+   "depth_frac": 0.5783233642578125,
+   "configs": {
+    "full:none": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 31.373904943466187
+    },
+    "lsa:none:2048": {
+     "answer": " 4350-TRQ.\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 3.1393814086914062
+    },
+    "lsa:none:128": {
+     "answer": " 1018-VRL.\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.030409812927246
+    },
+    "bsp:none:2048": {
+     "answer": " 4350-TRQ.\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 2.284461259841919
+    },
+    "bsp:none:128": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 1.9773797988891602
+    },
+    "lsa:int4rht:128": {
+     "answer": " 1018-VRL.\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.3244714736938477
+    },
+    "full:int4rht": {
+     "answer": " 4350-TRQ.\n\nQuestion: What is the access",
+     "correct": true,
+     "seconds": 36.87700033187866
+    }
+   }
+  },
+  {
+   "vault": 141,
+   "code": "9541-JBT",
+   "depth_tokens": 96335,
+   "depth_frac": 0.7349777221679688,
+   "configs": {
+    "full:none": {
+     "answer": " 9541-JBT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 31.29117727279663
+    },
+    "lsa:none:2048": {
+     "answer": " 9541-JBT.\n\nQuestion: What is the recipe for",
+     "correct": true,
+     "seconds": 3.1432418823242188
+    },
+    "lsa:none:128": {
+     "answer": " 9541-JBT.\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 2.0302469730377197
+    },
+    "bsp:none:2048": {
+     "answer": " 9541-JBT.\n\nQuestion: What is the recipe for",
+     "correct": true,
+     "seconds": 2.27958083152771
+    },
+    "bsp:none:128": {
+     "answer": " 9541-JBT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 1.9781548976898193
+    },
+    "lsa:int4rht:128": {
+     "answer": " 9541-JBT.\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 2.329953670501709
+    },
+    "full:int4rht": {
+     "answer": " 9541-JBT.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 36.8110773563385
+    }
+   }
+  },
+  {
+   "vault": 365,
+   "code": "1230-CZN",
+   "depth_tokens": 116892,
+   "depth_frac": 0.891815185546875,
+   "configs": {
+    "full:none": {
+     "answer": " 1230-CZN.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 31.185739994049072
+    },
+    "lsa:none:2048": {
+     "answer": " 1230-CZN.\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 3.148240566253662
+    },
+    "lsa:none:128": {
+     "answer": " 1018-VRL.\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.0371437072753906
+    },
+    "bsp:none:2048": {
+     "answer": " 1230-CZN.\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 2.302225112915039
+    },
+    "bsp:none:128": {
+     "answer": " 1230-CZN.\n\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 1.9819114208221436
+    },
+    "lsa:int4rht:128": {
+     "answer": " 1018-VRL.\nQuestion: What is the access code",
+     "correct": false,
+     "seconds": 2.330265760421753
+    },
+    "full:int4rht": {
+     "answer": " 1230-CZN.\nQuestion: What is the access code",
+     "correct": true,
+     "seconds": 36.927571535110474
+    }
+   }
+  }
+ ],
+ "torch": "2.12.0+rocm7.14.0"
+}

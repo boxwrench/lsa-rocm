@@ -8,6 +8,7 @@ materialised ``num_key_value_groups`` times.
 import torch
 
 _flash = torch.ops.aten._scaled_dot_product_flash_attention
+PIECE = 131072  # keys per flash call over the prefix
 
 
 def make_fast_prefill_attn():
@@ -28,13 +29,17 @@ def make_fast_prefill_attn():
             if P == 0:
                 outs.append(o2)
                 continue
-            kp = key[:, h:h + 1, :P].expand(1, G, P, D)
-            vp = value[:, h:h + 1, :P].expand(1, G, P, value.shape[-1])
-            o1, l1 = _flash(qh, kp, vp, 0.0, False, scale=scaling)[:2]
-            m = torch.maximum(l1, l2)
-            w1 = torch.exp(l1 - m).unsqueeze(-1)
-            w2 = torch.exp(l2 - m).unsqueeze(-1)
-            outs.append(((o1.float() * w1 + o2.float() * w2) / (w1 + w2)).to(query.dtype))
+            # The flash kernel materialises the broadcast K/V, so walk the prefix in pieces and merge by log-sum-exp (bounded memory).
+            acc, lse = o2.float(), l2
+            for s0 in range(0, P, PIECE):
+                s1 = min(s0 + PIECE, P)
+                kp = key[:, h:h + 1, s0:s1].expand(1, G, s1 - s0, D)
+                vp = value[:, h:h + 1, s0:s1].expand(1, G, s1 - s0, value.shape[-1])
+                o1, l1 = _flash(qh, kp, vp, 0.0, False, scale=scaling)[:2]
+                new = torch.logaddexp(lse, l1)
+                acc = acc * torch.exp(lse - new).unsqueeze(-1) + o1.float() * torch.exp(l1 - new).unsqueeze(-1)
+                lse = new
+            outs.append(acc.to(query.dtype))
         return torch.cat(outs, 1).transpose(1, 2).contiguous(), None
 
     return fast
