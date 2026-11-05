@@ -17,6 +17,9 @@ Wrong answers are split into: a distractor's code (the model found a vault note 
 - Prefill of 1,048,576 tokens took 4316 s (72 min) on one R9700 with the cache offloaded to RAM, chunk 1024. A two-GPU split run hit a GPU memory fault at about 820K tokens after 28 min. A flash-kernel prefill path (`src/lsa_rocm/fastattn.py`) cut a 128K prefill from 121 s to 83 s; the 1M two-GPU run was on pace for about 40 min.
 - A bug in an early version (cache state of the linear-attention layers not saved) invalidated the first 128K stage; those results were discarded, and the fixed pipeline reproduces in-process answers when reloaded from disk.
 
+## Reading the 1M results (written 2026-11-05)
+At 1M the test cannot separate the methods. With the question read through sparse attention, sparse configs scored 1 to 7 of 10 against 3 for exact attention; with the question read exactly, every config scored 2 or 3 of 10, including exact full attention. The 9B is close to unreliable here (YaRN x4 beyond its native 262K, 20 similar distractors), so the earlier edge of the sparse paths over the reference is best read as noise. 128K is the length where the reference is reliable and the comparison is meaningful.
+
 ## Limits
 One haystack per length, 6 to 10 questions per cell: differences of one or two answers are noise. At 1M the exact reference itself is wrong most of the time (YaRN extrapolation plus similar distractors), so "close to full attention" is not the right bar there. Mixed code and prose haystack. Hybrid model: the 24 linear-attention layers also carry information and are not sparsified. No speed claims: the 1M question stage timings are dominated by streaming the exact reference over PCIe.
 
@@ -62,4 +65,18 @@ Source: `results/006-1m-qs-sparse.json`. Context 1,048,576 tokens, 10 questions,
 | `bsp:none:2048` | 5 | 3 | 1 | 1 |
 | `bsp:none:128` | 7 | 2 | 1 | 0 |
 | `lsa:int4rht:128` | 3 | 7 | 0 | 0 |
+| `full:int4rht` | 2 | 6 | 1 | 1 |
+
+### 1M, question read densely (exact)
+
+Source: `results/006-1m-qs-dense.json`. Context 1,048,576 tokens, 10 questions, 20 distractor facts, prefill 0 s in this process (0 if loaded from the saved cache).
+
+| config | correct / 10 | wrong: a distractor's code | wrong: another target's | wrong: neither |
+|---|---|---|---|---|
+| `full:none` | 3 | 6 | 0 | 1 |
+| `lsa:none:2048` | 2 | 7 | 1 | 0 |
+| `lsa:none:128` | 3 | 1 | 2 | 4 |
+| `bsp:none:2048` | 2 | 7 | 1 | 0 |
+| `bsp:none:128` | 2 | 5 | 2 | 1 |
+| `lsa:int4rht:128` | 2 | 2 | 1 | 5 |
 | `full:int4rht` | 2 | 6 | 1 | 1 |
