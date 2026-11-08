@@ -45,3 +45,13 @@ Training-free LSA used during chunked prefill (`src/lsa_rocm/sparse_prefill.py`,
 3. Offloaded gather: selected keys from pinned CPU memory, timed against the 004 numbers.
 4. A real corpus with facts the model cannot know.
 5. Sparse prefill.
+
+## Related research: routing vs layer sharing (2026-11-08)
+
+See [research-directions.md](research-directions.md) for a sourced comparison and proposed validation gates. The ideas solve **different** bottlenecks:
+
+- **LSA (already tested here) and ZHA (not implemented here)** select which existing historical KV entries to read. ZHA uses a learned hierarchical summary of contiguous chunks and adaptive top-p routing; it is **not** the current LSA similarity-clustering tree. Neither method inherently reduces the **stored** full leaf KV cache. Both may be candidates for a CPU-resident quantized KV system, but that combination has not been measured in this repository.
+- **HySparse2 (not implemented here)** alters the model architecture to share/derive KV across attention layers and skip cross-decoder prompt-cache computation. Its reduced KV capacity requirement and prefill FLOPs are **author-reported properties of a trained 80B-A3B design**, not an optimization that can be enabled on Ornith's existing pretrained checkpoint.
+- **The practical gate remains the same:** measure actual pinned-RAM gather, quantization/dequantization, transfer overlap, and end-to-end token generation on the R9700 and Strix Halo. Report these separately from the index stage and model quality; theoretical cache capacity is not usable context.
+
+**Quality warning:** On the existing 1M YaRN needle protocol, even exact full attention is incorrect on most questions; success with larger memory allocation is not evidence that the model can use that context. Preserve a reliable dense teacher and run real-corpus tasks with unknown inserted facts before accepting any multi-million-token accuracy claim. The experiment sequence above is a historical plan (some steps now have measurements); new architecture comparison work is tracked separately in [research-directions.md](research-directions.md).
