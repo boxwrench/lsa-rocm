@@ -166,3 +166,15 @@ LSA plus quantized KV plus a CPU-resident cache could raise the context limit we
   (dims after `rotary_dim` are unrotated), so no pre-RoPE dump is needed for Qwen-family models. Nanbeige rotates all
   dims, so it has no RoPE-free part. How the index is built there is a design choice to make and document (B2.4).
 - Whether mass captured predicts end-task accuracy. We cannot test it here. We say so in the findings.
+
+## Research intake addendum (2026-11-08)
+
+Two newer methods are relevant to the **long-term** goal of useful 1M+ local inference; details and primary-paper citations are in [research-directions.md](research-directions.md):
+
+- **Zyphra Hierarchical Attention (ZHA)**: a learned, contiguous-chunk summary tree with adaptive top-p routing. Its index is fundamentally different from LSA's Ward-cluster tree. A correctness-first, matched-budget router comparison on saved Ornith Q/K/V is a practical addition to this lab notebook. Proposed **experiment 008**; no experiment folder, training run, or ZHA result exists yet.
+- **HySparse2**: a trained self-/cross-decoder architecture with KV bridging and reuse, reducing duplicated KV caches and enabling early-exit prompt prefill. It is not a straightforward checkpoint or kernel retrofit. Small isolated KV-bridge studies are a separate architecture track, **not** an immediate change to the Ornith test harness.
+- **Memory complement**: either retriever could in principle pair with CPU-resident, quantized KV, but the offloaded gather/dequant latency and the model's native long-context accuracy still need to be measured. See [long-context-memory.md](long-context-memory.md).
+
+**Priority and scope:** First compare selectors on a reliable **native 256K exact-attention baseline** and profile index + gather; then consider a small frozen-model router distillation. Keep real quantized-KV gather in parallel. Treat HySparse2 as research for a suitably trained architecture, not a promised model conversion. The 1M YaRN exact-attention needle baseline currently fails most cases, so it cannot validate 1M sparse-attention fidelity.
+
+**No reset of the 2026-11-03 pre-registered gates or prior results:** this dated addendum is only a prospective workstream. The numbered experiment IDs are proposed labels, not completed runs or approved large GPU jobs. Do not edit the historical outcomes when executing the new work.
